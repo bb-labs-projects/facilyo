@@ -9,7 +9,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { useGeolocation } from '@/hooks/use-geolocation';
 import { useSimpleMutation } from '@/hooks/use-optimistic-mutation';
 import { getClient } from '@/lib/supabase/client';
-import type { Property, IssueInsert } from '@/types/database';
+import type { Property } from '@/types/database';
 import type { IssueFormData } from '@/lib/validations';
 
 export default function NewIssuePage() {
@@ -38,21 +38,19 @@ export default function NewIssuePage() {
     mutationFn: async (data: IssueFormData) => {
       const supabase = getClient();
 
-      const issueData: IssueInsert = {
-        property_id: data.propertyId,
-        reported_by: profile!.id,
-        category: data.category,
-        priority: data.priority,
-        title: data.title,
-        description: data.description || null,
-        photo_urls: data.photoUrls || [],
-        latitude: coords?.lat ?? null,
-        longitude: coords?.lng ?? null,
-      };
-
       const { data: issue, error } = await supabase
         .from('issues')
-        .insert(issueData)
+        .insert({
+          property_id: data.propertyId,
+          reported_by: profile!.id,
+          category: data.category,
+          priority: data.priority,
+          title: data.title,
+          description: data.description || null,
+          photo_urls: data.photoUrls || [],
+          latitude: coords?.lat ?? null,
+          longitude: coords?.lng ?? null,
+        } as any)
         .select()
         .single();
 

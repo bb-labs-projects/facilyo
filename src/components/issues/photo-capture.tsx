@@ -97,6 +97,7 @@ export function PhotoCapture({
         setUploadProgress(0);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [photos, onPhotosChange, maxPhotos]
   );
 
@@ -181,7 +182,7 @@ export function PhotoCapture({
             className="flex-1"
             onClick={openGallery}
           >
-            <Image className="h-4 w-4 mr-2" />
+            <Image className="h-4 w-4 mr-2" aria-hidden="true" />
             Galerie
           </Button>
         </div>
