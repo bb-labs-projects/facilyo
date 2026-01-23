@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     // Update user's push subscription
     const { error } = await supabase
       .from('profiles')
-      .update({ push_subscription: subscription })
+      .update({ push_subscription: subscription } as any)
       .eq('id', user.id);
 
     if (error) {
@@ -72,7 +72,7 @@ export async function DELETE(request: NextRequest) {
     // Remove user's push subscription
     const { error } = await supabase
       .from('profiles')
-      .update({ push_subscription: null })
+      .update({ push_subscription: null } as any)
       .eq('id', user.id);
 
     if (error) {
