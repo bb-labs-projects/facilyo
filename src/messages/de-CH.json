@@ -1,0 +1,179 @@
+{
+  "common": {
+    "appName": "FacilityTrack",
+    "loading": "Wird geladen...",
+    "error": "Fehler",
+    "success": "Erfolg",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "back": "Zurück",
+    "next": "Weiter",
+    "confirm": "Bestätigen",
+    "close": "Schliessen",
+    "search": "Suchen",
+    "filter": "Filter",
+    "noData": "Keine Daten vorhanden",
+    "refresh": "Aktualisieren",
+    "retry": "Erneut versuchen"
+  },
+  "nav": {
+    "start": "Start",
+    "time": "Zeiten",
+    "tasks": "Aufgaben",
+    "issues": "Probleme",
+    "profile": "Profil"
+  },
+  "auth": {
+    "login": "Anmelden",
+    "logout": "Abmelden",
+    "email": "E-Mail",
+    "password": "Passwort",
+    "rememberMe": "Angemeldet bleiben",
+    "forgotPassword": "Passwort vergessen?",
+    "loginError": "Anmeldung fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.",
+    "invalidCredentials": "Ungültige E-Mail oder Passwort.",
+    "sessionExpired": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an."
+  },
+  "workDay": {
+    "title": "Arbeitstag",
+    "start": "Arbeitstag starten",
+    "end": "Arbeitstag beenden",
+    "active": "Arbeitstag aktiv",
+    "notStarted": "Noch nicht gestartet",
+    "totalTime": "Gesamtzeit heute",
+    "confirmEnd": "Möchten Sie den Arbeitstag wirklich beenden?",
+    "started": "Arbeitstag wurde gestartet",
+    "ended": "Arbeitstag wurde beendet"
+  },
+  "timeTracking": {
+    "title": "Zeiterfassung",
+    "start": "Starten",
+    "pause": "Pause",
+    "resume": "Fortsetzen",
+    "stop": "Beenden",
+    "active": "Aktiv",
+    "paused": "Pausiert",
+    "completed": "Abgeschlossen",
+    "selectProperty": "Liegenschaft wählen",
+    "nearbyProperties": "Liegenschaften in der Nähe",
+    "currentProperty": "Aktuelle Liegenschaft",
+    "duration": "Dauer",
+    "breakTime": "Pausenzeit",
+    "workTime": "Arbeitszeit",
+    "notes": "Notizen",
+    "addNotes": "Notizen hinzufügen...",
+    "noActiveTimer": "Kein aktiver Timer",
+    "timerStarted": "Timer wurde gestartet",
+    "timerPaused": "Timer wurde pausiert",
+    "timerResumed": "Timer wurde fortgesetzt",
+    "timerStopped": "Zeit wurde erfasst",
+    "locationRequired": "Standort erforderlich",
+    "locationDenied": "Standortzugriff verweigert",
+    "entries": "Zeiteinträge",
+    "todayEntries": "Heutige Einträge",
+    "noEntries": "Keine Einträge vorhanden"
+  },
+  "properties": {
+    "title": "Liegenschaften",
+    "name": "Name",
+    "address": "Adresse",
+    "city": "Ort",
+    "type": "Typ",
+    "selectProperty": "Liegenschaft auswählen",
+    "noProperties": "Keine Liegenschaften zugewiesen"
+  },
+  "checklist": {
+    "title": "Checkliste",
+    "progress": "Fortschritt",
+    "complete": "Erledigt",
+    "incomplete": "Offen",
+    "markComplete": "Als erledigt markieren",
+    "required": "Erforderlich",
+    "optional": "Optional",
+    "itemCompleted": "Aufgabe erledigt",
+    "allCompleted": "Alle Aufgaben erledigt!"
+  },
+  "issues": {
+    "title": "Probleme",
+    "new": "Neues Problem",
+    "create": "Problem melden",
+    "edit": "Problem bearbeiten",
+    "category": "Kategorie",
+    "priority": "Priorität",
+    "status": "Status",
+    "description": "Beschreibung",
+    "location": "Ort",
+    "photos": "Fotos",
+    "addPhoto": "Foto hinzufügen",
+    "takePhoto": "Foto aufnehmen",
+    "selectPhoto": "Foto auswählen",
+    "maxPhotos": "Maximal {count} Fotos erlaubt",
+    "created": "Problem wurde gemeldet",
+    "updated": "Problem wurde aktualisiert",
+    "categories": {
+      "damage": "Schaden",
+      "cleaning": "Reinigung",
+      "safety": "Sicherheit",
+      "maintenance": "Wartung",
+      "other": "Sonstiges"
+    },
+    "priorities": {
+      "low": "Niedrig",
+      "medium": "Mittel",
+      "high": "Hoch",
+      "urgent": "Dringend"
+    },
+    "statuses": {
+      "open": "Offen",
+      "inProgress": "In Bearbeitung",
+      "resolved": "Gelöst",
+      "closed": "Geschlossen"
+    },
+    "noIssues": "Keine Probleme vorhanden",
+    "filterByStatus": "Nach Status filtern",
+    "filterByPriority": "Nach Priorität filtern"
+  },
+  "profile": {
+    "title": "Profil",
+    "personalInfo": "Persönliche Informationen",
+    "firstName": "Vorname",
+    "lastName": "Nachname",
+    "email": "E-Mail",
+    "phone": "Telefon",
+    "role": "Rolle",
+    "settings": "Einstellungen",
+    "notifications": "Benachrichtigungen",
+    "language": "Sprache",
+    "darkMode": "Dunkelmodus",
+    "about": "Über die App",
+    "version": "Version",
+    "roles": {
+      "admin": "Administrator",
+      "manager": "Manager",
+      "worker": "Mitarbeiter"
+    }
+  },
+  "validation": {
+    "required": "Dieses Feld ist erforderlich",
+    "email": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+    "minLength": "Mindestens {min} Zeichen erforderlich",
+    "maxLength": "Maximal {max} Zeichen erlaubt",
+    "invalidFormat": "Ungültiges Format"
+  },
+  "errors": {
+    "generic": "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
+    "network": "Netzwerkfehler. Bitte überprüfen Sie Ihre Internetverbindung.",
+    "unauthorized": "Sie sind nicht berechtigt, diese Aktion durchzuführen.",
+    "notFound": "Die angeforderte Ressource wurde nicht gefunden.",
+    "serverError": "Serverfehler. Bitte versuchen Sie es später erneut."
+  },
+  "offline": {
+    "title": "Offline",
+    "message": "Sie sind offline. Einige Funktionen sind eingeschränkt.",
+    "pendingSync": "Änderungen warten auf Synchronisierung",
+    "syncing": "Wird synchronisiert...",
+    "syncComplete": "Synchronisierung abgeschlossen"
+  }
+}

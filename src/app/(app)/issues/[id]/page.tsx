@@ -1,0 +1,230 @@
+'use client';
+
+import { useParams, useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
+import { MapPin, Clock, User, Building2 } from 'lucide-react';
+import { Header, PageContainer } from '@/components/layout/header';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { getClient } from '@/lib/supabase/client';
+import { swissFormat } from '@/lib/i18n';
+import { cn } from '@/lib/utils';
+import type { IssueWithRelations } from '@/types/database';
+
+const priorityConfig = {
+  low: { label: 'Niedrig', class: 'bg-muted text-muted-foreground' },
+  medium: { label: 'Mittel', class: 'badge-info' },
+  high: { label: 'Hoch', class: 'badge-warning' },
+  urgent: { label: 'Dringend', class: 'badge-error' },
+};
+
+const statusConfig = {
+  open: { label: 'Offen', class: 'badge-error' },
+  in_progress: { label: 'In Bearbeitung', class: 'badge-warning' },
+  resolved: { label: 'Gelöst', class: 'badge-success' },
+  closed: { label: 'Geschlossen', class: 'bg-muted text-muted-foreground' },
+};
+
+const categoryConfig = {
+  damage: 'Schaden',
+  cleaning: 'Reinigung',
+  safety: 'Sicherheit',
+  maintenance: 'Wartung',
+  other: 'Sonstiges',
+};
+
+export default function IssueDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const issueId = params.id as string;
+
+  const { data: issue, isLoading } = useQuery({
+    queryKey: ['issue', issueId],
+    queryFn: async () => {
+      const supabase = getClient();
+      const { data, error } = await supabase
+        .from('issues')
+        .select(`
+          *,
+          property:properties (*),
+          reporter:profiles!issues_reported_by_fkey (*),
+          assignee:profiles!issues_assigned_to_fkey (*)
+        `)
+        .eq('id', issueId)
+        .single();
+
+      if (error) throw error;
+      return data as IssueWithRelations;
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <PageContainer header={<Header title="Problem" showBack />}>
+        <div className="space-y-4">
+          <div className="skeleton h-8 w-3/4" />
+          <div className="skeleton h-24 w-full" />
+          <div className="skeleton h-32 w-full" />
+        </div>
+      </PageContainer>
+    );
+  }
+
+  if (!issue) {
+    return (
+      <PageContainer header={<Header title="Problem" showBack />}>
+        <div className="text-center py-12 text-muted-foreground">
+          Problem nicht gefunden
+        </div>
+      </PageContainer>
+    );
+  }
+
+  const priority = priorityConfig[issue.priority];
+  const status = statusConfig[issue.status];
+
+  return (
+    <PageContainer
+      header={<Header title="Problem" showBack backHref="/issues" />}
+    >
+      {/* Status and priority badges */}
+      <div className="flex gap-2 mb-4">
+        <span className={cn('badge', status.class)}>{status.label}</span>
+        <span className={cn('badge', priority.class)}>{priority.label}</span>
+        <span className="badge bg-muted text-muted-foreground">
+          {categoryConfig[issue.category]}
+        </span>
+      </div>
+
+      {/* Title */}
+      <h1 className="text-2xl font-bold mb-4">{issue.title}</h1>
+
+      {/* Description */}
+      {issue.description && (
+        <Card className="mb-4">
+          <CardContent className="p-4">
+            <h2 className="text-sm font-medium text-muted-foreground mb-2">
+              Beschreibung
+            </h2>
+            <p className="whitespace-pre-wrap">{issue.description}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Photos */}
+      {issue.photo_urls && issue.photo_urls.length > 0 && (
+        <Card className="mb-4">
+          <CardContent className="p-4">
+            <h2 className="text-sm font-medium text-muted-foreground mb-3">
+              Fotos ({issue.photo_urls.length})
+            </h2>
+            <div className="grid grid-cols-2 gap-2">
+              {issue.photo_urls.map((url, index) => (
+                <a
+                  key={url}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="aspect-square rounded-lg overflow-hidden bg-muted"
+                >
+                  <img
+                    src={url}
+                    alt={`Foto ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </a>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Details */}
+      <Card className="mb-4">
+        <CardContent className="p-4 space-y-4">
+          {/* Property */}
+          <div className="flex items-start gap-3">
+            <Building2 className="h-5 w-5 text-muted-foreground mt-0.5" />
+            <div>
+              <p className="text-sm text-muted-foreground">Liegenschaft</p>
+              <p className="font-medium">{issue.property.name}</p>
+              <p className="text-sm text-muted-foreground">
+                {issue.property.address}, {issue.property.postal_code}{' '}
+                {issue.property.city}
+              </p>
+            </div>
+          </div>
+
+          {/* Reporter */}
+          <div className="flex items-start gap-3">
+            <User className="h-5 w-5 text-muted-foreground mt-0.5" />
+            <div>
+              <p className="text-sm text-muted-foreground">Gemeldet von</p>
+              <p className="font-medium">
+                {issue.reporter.first_name} {issue.reporter.last_name}
+              </p>
+            </div>
+          </div>
+
+          {/* Assignee */}
+          {issue.assignee && (
+            <div className="flex items-start gap-3">
+              <User className="h-5 w-5 text-muted-foreground mt-0.5" />
+              <div>
+                <p className="text-sm text-muted-foreground">Zugewiesen an</p>
+                <p className="font-medium">
+                  {issue.assignee.first_name} {issue.assignee.last_name}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Timestamp */}
+          <div className="flex items-start gap-3">
+            <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
+            <div>
+              <p className="text-sm text-muted-foreground">Erstellt</p>
+              <p className="font-medium">
+                {swissFormat.datetime(issue.created_at)}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                ({swissFormat.relative(issue.created_at)})
+              </p>
+            </div>
+          </div>
+
+          {/* Location */}
+          {issue.latitude && issue.longitude && (
+            <div className="flex items-start gap-3">
+              <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
+              <div>
+                <p className="text-sm text-muted-foreground">Standort</p>
+                <a
+                  href={`https://maps.google.com/?q=${issue.latitude},${issue.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary-600 hover:underline"
+                >
+                  Auf Karte anzeigen
+                </a>
+              </div>
+            </div>
+          )}
+
+          {/* Resolved timestamp */}
+          {issue.resolved_at && (
+            <div className="flex items-start gap-3">
+              <Clock className="h-5 w-5 text-success-500 mt-0.5" />
+              <div>
+                <p className="text-sm text-muted-foreground">Gelöst</p>
+                <p className="font-medium">
+                  {swissFormat.datetime(issue.resolved_at)}
+                </p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </PageContainer>
+  );
+}

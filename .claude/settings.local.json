@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm view:*)",
+      "Bash(npm --version:*)",
+      "Bash(echo \"npm exit code: $?\")",
+      "Bash(\"C:/Program Files/nodejs/npm.cmd\" --version)",
+      "Bash(\"C:/Program Files/nodejs/npx.cmd\" add-skill vercel-labs/agent-skills)",
+      "Bash(git clone:*)",
+      "Bash(git rev-parse:*)"
+    ]
+  }
+}
