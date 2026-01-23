@@ -11,7 +11,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
 import { swissFormat } from '@/lib/i18n';
 import { addDays, subDays, startOfWeek, endOfWeek, format, isSameDay } from 'date-fns';
-import { deCH } from 'date-fns/locale';
+import { de } from 'date-fns/locale';
 import type { WorkDayWithEntries, TimeEntryWithProperty } from '@/types/database';
 
 export default function TimePage() {
@@ -29,8 +29,8 @@ export default function TimePage() {
       let endDate: string;
 
       if (viewMode === 'week') {
-        const weekStart = startOfWeek(selectedDate, { locale: deCH });
-        const weekEnd = endOfWeek(selectedDate, { locale: deCH });
+        const weekStart = startOfWeek(selectedDate, { locale: de });
+        const weekEnd = endOfWeek(selectedDate, { locale: de });
         startDate = format(weekStart, 'yyyy-MM-dd');
         endDate = format(weekEnd, 'yyyy-MM-dd');
       } else {
@@ -93,8 +93,8 @@ export default function TimePage() {
 
   const formatDateHeader = () => {
     if (viewMode === 'week') {
-      const weekStart = startOfWeek(selectedDate, { locale: deCH });
-      const weekEnd = endOfWeek(selectedDate, { locale: deCH });
+      const weekStart = startOfWeek(selectedDate, { locale: de });
+      const weekEnd = endOfWeek(selectedDate, { locale: de });
       return `${format(weekStart, 'dd.MM.')} - ${format(weekEnd, 'dd.MM.yyyy')}`;
     }
     return swissFormat.date(selectedDate, 'EEEE, dd. MMMM yyyy');

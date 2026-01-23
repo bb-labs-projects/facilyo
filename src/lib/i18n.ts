@@ -1,20 +1,17 @@
 import { getRequestConfig } from 'next-intl/server';
 import { format, formatDistance, formatRelative, parseISO } from 'date-fns';
-import { de, deCH } from 'date-fns/locale';
+import { de } from 'date-fns/locale';
 
 // Default locale
 export const defaultLocale = 'de-CH';
 export const locales = ['de-CH', 'de-DE'] as const;
 export type Locale = (typeof locales)[number];
 
-// Get date-fns locale
-const dateFnsLocales = {
-  'de-CH': deCH,
-  'de-DE': de,
-};
+// date-fns uses 'de' for German (works for Swiss German formatting)
+const dateFnsLocale = de;
 
-export function getDateFnsLocale(locale: Locale = defaultLocale) {
-  return dateFnsLocales[locale] || deCH;
+export function getDateFnsLocale(_locale: Locale = defaultLocale) {
+  return dateFnsLocale;
 }
 
 // next-intl config
@@ -33,7 +30,7 @@ export const swissFormat = {
    */
   date(date: Date | string, formatStr: string = 'dd. MMMM yyyy'): string {
     const d = typeof date === 'string' ? parseISO(date) : date;
-    return format(d, formatStr, { locale: deCH });
+    return format(d, formatStr, { locale: de });
   },
 
   /**
@@ -41,7 +38,7 @@ export const swissFormat = {
    */
   dateShort(date: Date | string): string {
     const d = typeof date === 'string' ? parseISO(date) : date;
-    return format(d, 'dd.MM.yyyy', { locale: deCH });
+    return format(d, 'dd.MM.yyyy', { locale: de });
   },
 
   /**
@@ -49,7 +46,7 @@ export const swissFormat = {
    */
   time(date: Date | string): string {
     const d = typeof date === 'string' ? parseISO(date) : date;
-    return format(d, 'HH:mm', { locale: deCH });
+    return format(d, 'HH:mm', { locale: de });
   },
 
   /**
@@ -57,7 +54,7 @@ export const swissFormat = {
    */
   timeWithSeconds(date: Date | string): string {
     const d = typeof date === 'string' ? parseISO(date) : date;
-    return format(d, 'HH:mm:ss', { locale: deCH });
+    return format(d, 'HH:mm:ss', { locale: de });
   },
 
   /**
@@ -65,7 +62,7 @@ export const swissFormat = {
    */
   datetime(date: Date | string): string {
     const d = typeof date === 'string' ? parseISO(date) : date;
-    return format(d, 'dd.MM.yyyy HH:mm', { locale: deCH });
+    return format(d, 'dd.MM.yyyy HH:mm', { locale: de });
   },
 
   /**
@@ -73,7 +70,7 @@ export const swissFormat = {
    */
   relative(date: Date | string, baseDate: Date = new Date()): string {
     const d = typeof date === 'string' ? parseISO(date) : date;
-    return formatDistance(d, baseDate, { addSuffix: true, locale: deCH });
+    return formatDistance(d, baseDate, { addSuffix: true, locale: de });
   },
 
   /**
@@ -81,7 +78,7 @@ export const swissFormat = {
    */
   relativeWithDay(date: Date | string, baseDate: Date = new Date()): string {
     const d = typeof date === 'string' ? parseISO(date) : date;
-    return formatRelative(d, baseDate, { locale: deCH });
+    return formatRelative(d, baseDate, { locale: de });
   },
 
   /**
@@ -89,7 +86,7 @@ export const swissFormat = {
    */
   weekday(date: Date | string): string {
     const d = typeof date === 'string' ? parseISO(date) : date;
-    return format(d, 'EEEE', { locale: deCH });
+    return format(d, 'EEEE', { locale: de });
   },
 
   /**
@@ -97,7 +94,7 @@ export const swissFormat = {
    */
   weekdayShort(date: Date | string): string {
     const d = typeof date === 'string' ? parseISO(date) : date;
-    return format(d, 'EE', { locale: deCH });
+    return format(d, 'EE', { locale: de });
   },
 
   /**
