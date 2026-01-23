@@ -57,7 +57,7 @@ export default function HomePage() {
         .eq('user_id', profile!.id);
 
       if (error) throw error;
-      return data.map((d) => d.property) as Property[];
+      return (data as { property: Property }[]).map((d) => d.property);
     },
     enabled: !!profile?.id,
   });
