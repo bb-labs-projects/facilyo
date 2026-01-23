@@ -34,7 +34,7 @@ export default function TasksPage() {
 
       if (!assignments || assignments.length === 0) return [];
 
-      const propertyIds = assignments.map((a) => a.property_id);
+      const propertyIds = (assignments as { property_id: string }[]).map((a) => a.property_id);
 
       // Then fetch checklists for those properties
       const { data, error } = await supabase
