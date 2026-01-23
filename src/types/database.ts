@@ -441,6 +441,7 @@ export type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];
 export type PropertyInsert = Database['public']['Tables']['properties']['Insert'];
 export type WorkDayInsert = Database['public']['Tables']['work_days']['Insert'];
 export type TimeEntryInsert = Database['public']['Tables']['time_entries']['Insert'];
+export type ChecklistTemplateInsert = Database['public']['Tables']['checklist_templates']['Insert'];
 export type IssueInsert = Database['public']['Tables']['issues']['Insert'];
 export type AufgabeInsert = Database['public']['Tables']['aufgaben']['Insert'];
 export type ChecklistItemCompletionInsert = Database['public']['Tables']['checklist_item_completions']['Insert'];
@@ -450,6 +451,7 @@ export type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
 export type PropertyUpdate = Database['public']['Tables']['properties']['Update'];
 export type WorkDayUpdate = Database['public']['Tables']['work_days']['Update'];
 export type TimeEntryUpdate = Database['public']['Tables']['time_entries']['Update'];
+export type ChecklistTemplateUpdate = Database['public']['Tables']['checklist_templates']['Update'];
 export type IssueUpdate = Database['public']['Tables']['issues']['Update'];
 export type AufgabeUpdate = Database['public']['Tables']['aufgaben']['Update'];
 

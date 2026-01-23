@@ -41,6 +41,7 @@ import type {
   Property,
   ChecklistItem,
   ChecklistItemType,
+  Json,
 } from '@/types/database';
 
 interface ChecklistTemplateWithProperty extends ChecklistTemplate {
@@ -119,7 +120,7 @@ export default function AdminChecklistsPage() {
         .insert({
           name: data.name,
           property_id: data.property_id,
-          items: data.items as unknown as Record<string, unknown>[],
+          items: data.items as unknown as Json,
           is_active: data.is_active,
         })
         .select()
@@ -147,7 +148,7 @@ export default function AdminChecklistsPage() {
         .update({
           name: data.name,
           property_id: data.property_id,
-          items: data.items as unknown as Record<string, unknown>[],
+          items: data.items as unknown as Json,
           is_active: data.is_active,
         })
         .eq('id', id)
