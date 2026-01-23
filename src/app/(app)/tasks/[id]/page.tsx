@@ -289,7 +289,7 @@ export default function AufgabeDetailPage() {
             <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
             <div>
               <p className="text-sm text-muted-foreground">Erstellt</p>
-              <p className="font-medium">{swissFormat.dateTime(aufgabe.created_at)}</p>
+              <p className="font-medium">{swissFormat.datetime(aufgabe.created_at)}</p>
               {aufgabe.creator && (
                 <p className="text-sm text-muted-foreground">
                   von {aufgabe.creator.first_name} {aufgabe.creator.last_name}
@@ -318,7 +318,7 @@ export default function AufgabeDetailPage() {
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-success-700">
               <CheckCircle className="h-5 w-5" />
-              <span className="font-medium">Erledigt am {swissFormat.dateTime(aufgabe.completed_at)}</span>
+              <span className="font-medium">Erledigt am {swissFormat.datetime(aufgabe.completed_at)}</span>
             </div>
           </CardContent>
         </Card>
