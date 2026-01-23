@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { TimeEntry, WorkDay, Property } from '@/types/database';
+import type { TimeEntry, WorkDay, Property, WorkDayInsert, TimeEntryInsert } from '@/types/database';
 import { getClient } from '@/lib/supabase/client';
 
 interface TimerState {
@@ -67,13 +67,15 @@ export const useTimerStore = create<TimerStore>()(
         const today = new Date().toISOString().split('T')[0];
         const now = new Date().toISOString();
 
+        const workDayData: WorkDayInsert = {
+          user_id: user.id,
+          date: today,
+          start_time: now,
+        };
+
         const { data, error } = await supabase
           .from('work_days')
-          .insert({
-            user_id: user.id,
-            date: today,
-            start_time: now,
-          })
+          .insert(workDayData)
           .select()
           .single();
 
@@ -129,18 +131,20 @@ export const useTimerStore = create<TimerStore>()(
 
         const now = new Date().toISOString();
 
+        const entryData: TimeEntryInsert = {
+          work_day_id: workDay.id,
+          user_id: user.id,
+          property_id: propertyId,
+          start_time: now,
+          status: 'active',
+          start_latitude: coords?.lat ?? null,
+          start_longitude: coords?.lng ?? null,
+          pause_duration: 0,
+        };
+
         const { data: entry, error } = await supabase
           .from('time_entries')
-          .insert({
-            work_day_id: workDay.id,
-            user_id: user.id,
-            property_id: propertyId,
-            start_time: now,
-            status: 'active',
-            start_latitude: coords?.lat ?? null,
-            start_longitude: coords?.lng ?? null,
-            pause_duration: 0,
-          })
+          .insert(entryData)
           .select()
           .single();
 
