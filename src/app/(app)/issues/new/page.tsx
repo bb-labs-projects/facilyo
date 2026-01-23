@@ -38,8 +38,8 @@ export default function NewIssuePage() {
     mutationFn: async (data: IssueFormData) => {
       const supabase = getClient();
 
-      const { data: issue, error } = await supabase
-        .from('issues')
+      const { data: issue, error } = await (supabase
+        .from('issues') as any)
         .insert({
           property_id: data.propertyId,
           reported_by: profile!.id,
@@ -50,7 +50,7 @@ export default function NewIssuePage() {
           photo_urls: data.photoUrls || [],
           latitude: coords?.lat ?? null,
           longitude: coords?.lng ?? null,
-        } as any)
+        })
         .select()
         .single();
 

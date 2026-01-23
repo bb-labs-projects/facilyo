@@ -129,8 +129,8 @@ export const useTimerStore = create<TimerStore>()(
 
         const now = new Date().toISOString();
 
-        const { data: entry, error } = await supabase
-          .from('time_entries')
+        const { data: entry, error } = await (supabase
+          .from('time_entries') as any)
           .insert({
             work_day_id: workDay.id,
             user_id: user.id,
@@ -140,7 +140,7 @@ export const useTimerStore = create<TimerStore>()(
             start_latitude: coords?.lat ?? null,
             start_longitude: coords?.lng ?? null,
             pause_duration: 0,
-          } as any)
+          })
           .select()
           .single();
 
@@ -207,8 +207,8 @@ export const useTimerStore = create<TimerStore>()(
 
         const now = new Date().toISOString();
 
-        const { data, error } = await supabase
-          .from('time_entries')
+        const { data, error } = await (supabase
+          .from('time_entries') as any)
           .update({
             end_time: now,
             status: 'completed',
@@ -216,7 +216,7 @@ export const useTimerStore = create<TimerStore>()(
             end_latitude: coords?.lat ?? null,
             end_longitude: coords?.lng ?? null,
             notes: notes ?? activeEntry.notes,
-          } as any)
+          })
           .eq('id', activeEntry.id)
           .select()
           .single();
