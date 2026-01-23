@@ -62,7 +62,7 @@ export default function IssuesPage() {
     queryFn: async () => {
       const supabase = getClient();
 
-      let query = supabase
+      let query = (supabase as any)
         .from('issues')
         .select(`
           *,
@@ -98,7 +98,7 @@ export default function IssuesPage() {
   const convertMutation = useMutation({
     mutationFn: async (meldungId: string) => {
       const supabase = getClient();
-      const { data, error } = await supabase.rpc('convert_meldung_to_aufgabe', {
+      const { data, error } = await (supabase as any).rpc('convert_meldung_to_aufgabe', {
         p_meldung_id: meldungId,
         p_user_id: profile!.id,
       });
