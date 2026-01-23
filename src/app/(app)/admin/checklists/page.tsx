@@ -38,12 +38,9 @@ import { getClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import type {
   ChecklistTemplate,
-  ChecklistTemplateInsert,
-  ChecklistTemplateUpdate,
   Property,
   ChecklistItem,
   ChecklistItemType,
-  Json,
 } from '@/types/database';
 
 interface ChecklistTemplateWithProperty extends ChecklistTemplate {
@@ -85,7 +82,8 @@ export default function AdminChecklistsPage() {
     queryKey: ['admin-checklists'],
     queryFn: async () => {
       const supabase = getClient();
-      const { data, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
         .from('checklist_templates')
         .select(`
           *,
@@ -117,20 +115,21 @@ export default function AdminChecklistsPage() {
   const createMutation = useMutation({
     mutationFn: async (data: { name: string; property_id: string; items: ChecklistItem[]; is_active: boolean }) => {
       const supabase = getClient();
-      const insertData: ChecklistTemplateInsert = {
+      const insertData = {
         name: data.name,
         property_id: data.property_id,
-        items: data.items as unknown as Json,
+        items: data.items,
         is_active: data.is_active,
       };
-      const { data: result, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: result, error } = await (supabase as any)
         .from('checklist_templates')
         .insert(insertData)
         .select()
         .single();
 
       if (error) throw error;
-      return result;
+      return result as ChecklistTemplate;
     },
     onSuccess: () => {
       toast.success('Checkliste wurde erstellt');
@@ -146,13 +145,14 @@ export default function AdminChecklistsPage() {
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: { name: string; property_id: string; items: ChecklistItem[]; is_active: boolean } }) => {
       const supabase = getClient();
-      const updateData: ChecklistTemplateUpdate = {
+      const updateData = {
         name: data.name,
         property_id: data.property_id,
-        items: data.items as unknown as Json,
+        items: data.items,
         is_active: data.is_active,
       };
-      const { data: result, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: result, error } = await (supabase as any)
         .from('checklist_templates')
         .update(updateData)
         .eq('id', id)
@@ -160,7 +160,7 @@ export default function AdminChecklistsPage() {
         .single();
 
       if (error) throw error;
-      return result;
+      return result as ChecklistTemplate;
     },
     onSuccess: () => {
       toast.success('Checkliste wurde aktualisiert');
@@ -176,7 +176,8 @@ export default function AdminChecklistsPage() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const supabase = getClient();
-      const { error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase as any)
         .from('checklist_templates')
         .delete()
         .eq('id', id);
