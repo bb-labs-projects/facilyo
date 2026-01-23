@@ -18,7 +18,7 @@ import {
 import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
-import type { IssueWithRelations, IssueStatus, IssuePriority } from '@/types/database';
+import type { Issue, IssueWithRelations, IssueStatus, IssuePriority } from '@/types/database';
 
 const statusOptions: { value: IssueStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'Alle' },
@@ -76,7 +76,7 @@ export default function IssuesPage() {
     enabled: !!profile?.id,
   });
 
-  const handleIssueClick = (issue: IssueWithRelations) => {
+  const handleIssueClick = (issue: Issue | IssueWithRelations) => {
     router.push(`/issues/${issue.id}`);
   };
 
