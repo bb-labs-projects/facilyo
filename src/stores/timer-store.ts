@@ -67,13 +67,13 @@ export const useTimerStore = create<TimerStore>()(
         const today = new Date().toISOString().split('T')[0];
         const now = new Date().toISOString();
 
-        const { data, error } = await supabase
-          .from('work_days')
+        const { data, error } = await (supabase
+          .from('work_days') as any)
           .insert({
             user_id: user.id,
             date: today,
             start_time: now,
-          } as any)
+          })
           .select()
           .single();
 
@@ -94,9 +94,9 @@ export const useTimerStore = create<TimerStore>()(
           await get().stopTimer();
         }
 
-        const { error } = await supabase
-          .from('work_days')
-          .update({ end_time: new Date().toISOString() } as any)
+        const { error } = await (supabase
+          .from('work_days') as any)
+          .update({ end_time: new Date().toISOString() })
           .eq('id', workDay.id);
 
         if (error) throw error;
