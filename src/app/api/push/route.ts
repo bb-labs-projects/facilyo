@@ -29,9 +29,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Update user's push subscription
+    // @ts-expect-error - Supabase types mismatch
     const { error } = await supabase
       .from('profiles')
-      .update({ push_subscription: subscription } as any)
+      .update({ push_subscription: subscription })
       .eq('id', user.id);
 
     if (error) {
@@ -70,9 +71,10 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Remove user's push subscription
+    // @ts-expect-error - Supabase types mismatch
     const { error } = await supabase
       .from('profiles')
-      .update({ push_subscription: null } as any)
+      .update({ push_subscription: null })
       .eq('id', user.id);
 
     if (error) {
