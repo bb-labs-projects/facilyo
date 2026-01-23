@@ -8,7 +8,7 @@ import { AufgabeForm } from '@/components/aufgaben/aufgabe-form';
 import { useAuthStore } from '@/stores/auth-store';
 import { usePermissions } from '@/hooks/use-permissions';
 import { getClient } from '@/lib/supabase/client';
-import type { AufgabeInsert } from '@/types/database';
+import type { Aufgabe, AufgabeInsert } from '@/types/database';
 
 export default function NewAufgabePage() {
   const router = useRouter();
@@ -19,14 +19,14 @@ export default function NewAufgabePage() {
   const createMutation = useMutation({
     mutationFn: async (data: AufgabeInsert) => {
       const supabase = getClient();
-      const { data: result, error } = await supabase
+      const { data: result, error } = await (supabase as any)
         .from('aufgaben')
         .insert(data)
         .select()
         .single();
 
       if (error) throw error;
-      return result;
+      return result as Aufgabe;
     },
     onSuccess: (data) => {
       toast.success('Aufgabe wurde erstellt');
