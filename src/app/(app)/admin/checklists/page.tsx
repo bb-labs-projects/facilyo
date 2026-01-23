@@ -38,6 +38,8 @@ import { getClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import type {
   ChecklistTemplate,
+  ChecklistTemplateInsert,
+  ChecklistTemplateUpdate,
   Property,
   ChecklistItem,
   ChecklistItemType,
@@ -115,14 +117,15 @@ export default function AdminChecklistsPage() {
   const createMutation = useMutation({
     mutationFn: async (data: { name: string; property_id: string; items: ChecklistItem[]; is_active: boolean }) => {
       const supabase = getClient();
+      const insertData: ChecklistTemplateInsert = {
+        name: data.name,
+        property_id: data.property_id,
+        items: data.items as unknown as Json,
+        is_active: data.is_active,
+      };
       const { data: result, error } = await supabase
         .from('checklist_templates')
-        .insert({
-          name: data.name,
-          property_id: data.property_id,
-          items: data.items as unknown as Json,
-          is_active: data.is_active,
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -143,14 +146,15 @@ export default function AdminChecklistsPage() {
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: { name: string; property_id: string; items: ChecklistItem[]; is_active: boolean } }) => {
       const supabase = getClient();
+      const updateData: ChecklistTemplateUpdate = {
+        name: data.name,
+        property_id: data.property_id,
+        items: data.items as unknown as Json,
+        is_active: data.is_active,
+      };
       const { data: result, error } = await supabase
         .from('checklist_templates')
-        .update({
-          name: data.name,
-          property_id: data.property_id,
-          items: data.items as unknown as Json,
-          is_active: data.is_active,
-        })
+        .update(updateData)
         .eq('id', id)
         .select()
         .single();
