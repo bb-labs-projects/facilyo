@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Users, Plus, Mail, Shield, Building2, ChevronRight, Search } from 'lucide-react';
@@ -44,12 +44,6 @@ export default function AdminUsersPage() {
   const [selectedUser, setSelectedUser] = useState<UserWithAssignments | null>(null);
   const [showRoleDialog, setShowRoleDialog] = useState(false);
   const [showAssignmentsSheet, setShowAssignmentsSheet] = useState(false);
-
-  // Redirect if no permission
-  if (!permissions.canManageEmployees) {
-    router.push('/admin');
-    return null;
-  }
 
   // Fetch all users
   const { data: users = [], isLoading } = useQuery({
@@ -136,6 +130,13 @@ export default function AdminUsersPage() {
     },
   });
 
+  // Redirect if no permission
+  useEffect(() => {
+    if (!permissions.canManageEmployees) {
+      router.push('/admin');
+    }
+  }, [permissions.canManageEmployees, router]);
+
   // Filter users by search
   const filteredUsers = users.filter((user) => {
     if (!searchQuery) return true;
@@ -151,6 +152,10 @@ export default function AdminUsersPage() {
 
   const getUserAssignedPropertyIds = (user: UserWithAssignments) =>
     user.property_assignments?.map((a) => a.property_id) || [];
+
+  if (!permissions.canManageEmployees) {
+    return null;
+  }
 
   return (
     <PageContainer

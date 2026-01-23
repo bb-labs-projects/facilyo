@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Building2, Plus, MapPin, Edit, Trash2, Search } from 'lucide-react';
@@ -55,12 +55,6 @@ export default function AdminPropertiesPage() {
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
   const [geofenceRadius, setGeofenceRadius] = useState('100');
-
-  // Redirect if no permission
-  if (!permissions.canManageProperties) {
-    router.push('/admin');
-    return null;
-  }
 
   // Fetch properties
   const { data: properties = [], isLoading } = useQuery({
@@ -146,6 +140,13 @@ export default function AdminPropertiesPage() {
     },
   });
 
+  // Redirect if no permission
+  useEffect(() => {
+    if (!permissions.canManageProperties) {
+      router.push('/admin');
+    }
+  }, [permissions.canManageProperties, router]);
+
   const resetForm = () => {
     setName('');
     setAddress('');
@@ -205,6 +206,10 @@ export default function AdminPropertiesPage() {
   });
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
+
+  if (!permissions.canManageProperties) {
+    return null;
+  }
 
   return (
     <PageContainer
@@ -427,7 +432,7 @@ export default function AdminPropertiesPage() {
           <DialogHeader>
             <DialogTitle>Liegenschaft löschen</DialogTitle>
             <DialogDescription>
-              Sind Sie sicher, dass Sie "{deletingProperty?.name}" löschen möchten?
+              Sind Sie sicher, dass Sie &quot;{deletingProperty?.name}&quot; löschen möchten?
               Alle zugehörigen Daten (Zeiteinträge, Meldungen, Checklisten) werden ebenfalls gelöscht.
             </DialogDescription>
           </DialogHeader>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -76,12 +76,6 @@ export default function AdminChecklistsPage() {
   const [itemLabel, setItemLabel] = useState('');
   const [itemType, setItemType] = useState<ChecklistItemType>('checkbox');
   const [itemRequired, setItemRequired] = useState(false);
-
-  // Redirect if no permission
-  if (!permissions.canManageChecklists) {
-    router.push('/admin');
-    return null;
-  }
 
   // Fetch templates
   const { data: templates = [], isLoading } = useQuery({
@@ -195,6 +189,13 @@ export default function AdminChecklistsPage() {
     },
   });
 
+  // Redirect if no permission
+  useEffect(() => {
+    if (!permissions.canManageChecklists) {
+      router.push('/admin');
+    }
+  }, [permissions.canManageChecklists, router]);
+
   const resetForm = () => {
     setName('');
     setPropertyId('');
@@ -297,6 +298,10 @@ export default function AdminChecklistsPage() {
   }, {} as Record<string, { property: Property; templates: ChecklistTemplateWithProperty[] }>);
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
+
+  if (!permissions.canManageChecklists) {
+    return null;
+  }
 
   return (
     <PageContainer
@@ -639,7 +644,7 @@ export default function AdminChecklistsPage() {
           <DialogHeader>
             <DialogTitle>Checkliste löschen</DialogTitle>
             <DialogDescription>
-              Sind Sie sicher, dass Sie "{deletingTemplate?.name}" löschen möchten?
+              Sind Sie sicher, dass Sie &quot;{deletingTemplate?.name}&quot; löschen möchten?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
