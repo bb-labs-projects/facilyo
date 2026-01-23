@@ -301,7 +301,7 @@ export const useTimerStore = create<TimerStore>()(
     }),
     {
       name: 'facility-track-timer',
-      partialState: (state) => ({
+      partialize: (state) => ({
         workDay: state.workDay,
         activeEntry: state.activeEntry,
         activeProperty: state.activeProperty,
