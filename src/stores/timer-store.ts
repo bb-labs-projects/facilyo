@@ -316,7 +316,7 @@ export const useTimerStore = create<TimerStore>()(
 // Selectors
 export const selectIsWorkDayActive = (state: TimerStore) => !!state.workDay;
 export const selectIsTimerActive = (state: TimerStore) => !!state.activeEntry;
-export const selectTimerStatus = (state: TimerStore) => {
+export const selectTimerStatus = (state: TimerStore): 'active' | 'paused' | 'inactive' => {
   if (!state.activeEntry) return 'inactive';
   if (state.isPaused) return 'paused';
   return 'active';
