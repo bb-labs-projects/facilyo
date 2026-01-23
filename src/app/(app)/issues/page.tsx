@@ -182,7 +182,7 @@ export default function IssuesPage() {
         />
       }
     >
-      <PullToRefresh onRefresh={refetch}>
+      <PullToRefresh onRefresh={async () => { await refetch(); }}>
         {/* Active filters display */}
         {activeFilters > 0 && (
           <div className="flex gap-2 mb-4 flex-wrap">

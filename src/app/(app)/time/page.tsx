@@ -126,7 +126,7 @@ export default function TimePage() {
         />
       }
     >
-      <PullToRefresh onRefresh={refetch}>
+      <PullToRefresh onRefresh={async () => { await refetch(); }}>
         {/* Date navigation */}
         <div className="flex items-center justify-between mb-4">
           <Button variant="ghost" size="icon" onClick={handlePrevious}>

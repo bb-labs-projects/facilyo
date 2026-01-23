@@ -70,7 +70,7 @@ export default function TasksPage() {
     <PageContainer
       header={<Header title="Aufgaben" />}
     >
-      <PullToRefresh onRefresh={refetch}>
+      <PullToRefresh onRefresh={async () => { await refetch(); }}>
         {Object.keys(checklistsByProperty).length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <ClipboardList className="h-12 w-12 mx-auto mb-4 opacity-50" />
