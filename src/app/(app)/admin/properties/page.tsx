@@ -61,7 +61,7 @@ export default function AdminPropertiesPage() {
     queryKey: ['admin-properties'],
     queryFn: async () => {
       const supabase = getClient();
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('properties')
         .select('*')
         .order('name');
@@ -75,14 +75,14 @@ export default function AdminPropertiesPage() {
   const createMutation = useMutation({
     mutationFn: async (data: PropertyInsert) => {
       const supabase = getClient();
-      const { data: result, error } = await supabase
+      const { data: result, error } = await (supabase as any)
         .from('properties')
         .insert(data)
         .select()
         .single();
 
       if (error) throw error;
-      return result;
+      return result as Property;
     },
     onSuccess: () => {
       toast.success('Liegenschaft wurde erstellt');
@@ -98,7 +98,7 @@ export default function AdminPropertiesPage() {
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: PropertyUpdate }) => {
       const supabase = getClient();
-      const { data: result, error } = await supabase
+      const { data: result, error } = await (supabase as any)
         .from('properties')
         .update(data)
         .eq('id', id)
@@ -106,7 +106,7 @@ export default function AdminPropertiesPage() {
         .single();
 
       if (error) throw error;
-      return result;
+      return result as Property;
     },
     onSuccess: () => {
       toast.success('Liegenschaft wurde aktualisiert');
@@ -122,7 +122,7 @@ export default function AdminPropertiesPage() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const supabase = getClient();
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('properties')
         .delete()
         .eq('id', id);

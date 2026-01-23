@@ -50,7 +50,7 @@ export default function AdminUsersPage() {
     queryKey: ['admin-users'],
     queryFn: async () => {
       const supabase = getClient();
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('profiles')
         .select(`
           *,
@@ -71,7 +71,7 @@ export default function AdminUsersPage() {
     queryKey: ['all-properties'],
     queryFn: async () => {
       const supabase = getClient();
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('properties')
         .select('*')
         .order('name');
@@ -85,7 +85,7 @@ export default function AdminUsersPage() {
   const updateRoleMutation = useMutation({
     mutationFn: async ({ userId, role }: { userId: string; role: UserRole }) => {
       const supabase = getClient();
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('profiles')
         .update({ role })
         .eq('id', userId);
@@ -108,12 +108,12 @@ export default function AdminUsersPage() {
     mutationFn: async ({ userId, propertyId, assign }: { userId: string; propertyId: string; assign: boolean }) => {
       const supabase = getClient();
       if (assign) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('property_assignments')
           .insert({ user_id: userId, property_id: propertyId });
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('property_assignments')
           .delete()
           .eq('user_id', userId)
