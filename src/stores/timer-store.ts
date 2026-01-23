@@ -270,8 +270,8 @@ export const useTimerStore = create<TimerStore>()(
           set({ workDay });
 
           // Check for active time entry
-          const { data: entry } = await supabase
-            .from('time_entries')
+          const { data: entry } = await (supabase
+            .from('time_entries') as any)
             .select()
             .eq('work_day_id', workDay.id)
             .eq('status', 'active')
@@ -279,8 +279,8 @@ export const useTimerStore = create<TimerStore>()(
 
           if (entry) {
             // Fetch property
-            const { data: property } = await supabase
-              .from('properties')
+            const { data: property } = await (supabase
+              .from('properties') as any)
               .select()
               .eq('id', entry.property_id)
               .single();
