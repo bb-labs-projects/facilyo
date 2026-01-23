@@ -12,25 +12,23 @@ import {
   ChevronRight,
   Bell,
   Info,
+  Settings,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth-store';
+import { usePermissions } from '@/hooks/use-permissions';
 import { getClient } from '@/lib/supabase/client';
 import { getInitials, cn } from '@/lib/utils';
 import type { Property } from '@/types/database';
-
-const roleLabels = {
-  admin: 'Administrator',
-  manager: 'Manager',
-  worker: 'Mitarbeiter',
-};
+import { roleLabels } from '@/lib/permissions';
 
 export default function ProfilePage() {
   const router = useRouter();
   const { profile, logout } = useAuthStore();
+  const permissions = usePermissions();
 
   // Fetch assigned properties
   const { data: properties = [] } = useQuery({
@@ -166,6 +164,24 @@ export default function ProfilePage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Admin section (for privileged users) */}
+      {permissions.canAccessAdminPanel && (
+        <Card className="mb-4">
+          <CardContent className="p-0">
+            <button
+              onClick={() => router.push('/admin')}
+              className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <Settings className="h-5 w-5 text-primary-600" />
+                <span className="font-medium text-primary-600">Verwaltung</span>
+              </div>
+              <ChevronRight className="h-5 w-5 text-primary-600" />
+            </button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Settings */}
       <Card className="mb-4">

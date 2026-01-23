@@ -21,7 +21,7 @@ const navItems: NavItem[] = [
   { href: '/', label: 'Start', icon: Home },
   { href: '/time', label: 'Zeiten', icon: Clock },
   { href: '/tasks', label: 'Aufgaben', icon: ClipboardList },
-  { href: '/issues', label: 'Probleme', icon: AlertTriangle },
+  { href: '/issues', label: 'Meldungen', icon: AlertTriangle },
   { href: '/profile', label: 'Profil', icon: User },
 ];
 

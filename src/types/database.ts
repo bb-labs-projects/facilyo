@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export type UserRole = 'admin' | 'manager' | 'worker';
+export type UserRole = 'admin' | 'owner' | 'manager' | 'employee';
 export type PropertyType = 'residential' | 'commercial' | 'industrial' | 'mixed';
 export type TimeEntryStatus = 'active' | 'paused' | 'completed';
 export type IssuePriority = 'low' | 'medium' | 'high' | 'urgent';
@@ -271,6 +271,9 @@ export interface Database {
           latitude: number | null;
           longitude: number | null;
           resolved_at: string | null;
+          converted_to_task: boolean;
+          converted_at: string | null;
+          converted_by: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -288,6 +291,9 @@ export interface Database {
           latitude?: number | null;
           longitude?: number | null;
           resolved_at?: string | null;
+          converted_to_task?: boolean;
+          converted_at?: string | null;
+          converted_by?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -305,8 +311,99 @@ export interface Database {
           latitude?: number | null;
           longitude?: number | null;
           resolved_at?: string | null;
+          converted_to_task?: boolean;
+          converted_at?: string | null;
+          converted_by?: string | null;
           created_at?: string;
           updated_at?: string;
+        };
+      };
+      aufgaben: {
+        Row: {
+          id: string;
+          property_id: string;
+          source_meldung_id: string | null;
+          created_by: string;
+          assigned_to: string | null;
+          title: string;
+          description: string | null;
+          priority: IssuePriority;
+          status: IssueStatus;
+          due_date: string | null;
+          completed_at: string | null;
+          completed_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          property_id: string;
+          source_meldung_id?: string | null;
+          created_by: string;
+          assigned_to?: string | null;
+          title: string;
+          description?: string | null;
+          priority?: IssuePriority;
+          status?: IssueStatus;
+          due_date?: string | null;
+          completed_at?: string | null;
+          completed_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          property_id?: string;
+          source_meldung_id?: string | null;
+          created_by?: string;
+          assigned_to?: string | null;
+          title?: string;
+          description?: string | null;
+          priority?: IssuePriority;
+          status?: IssueStatus;
+          due_date?: string | null;
+          completed_at?: string | null;
+          completed_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      checklist_item_completions: {
+        Row: {
+          id: string;
+          checklist_instance_id: string;
+          item_id: string;
+          value_type: 'checkbox' | 'number' | 'text' | 'photo';
+          boolean_value: boolean | null;
+          numeric_value: number | null;
+          text_value: string | null;
+          completed_by: string | null;
+          completed_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          checklist_instance_id: string;
+          item_id: string;
+          value_type: 'checkbox' | 'number' | 'text' | 'photo';
+          boolean_value?: boolean | null;
+          numeric_value?: number | null;
+          text_value?: string | null;
+          completed_by?: string | null;
+          completed_at?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          checklist_instance_id?: string;
+          item_id?: string;
+          value_type?: 'checkbox' | 'number' | 'text' | 'photo';
+          boolean_value?: boolean | null;
+          numeric_value?: number | null;
+          text_value?: string | null;
+          completed_by?: string | null;
+          completed_at?: string;
+          created_at?: string;
         };
       };
     };
@@ -336,6 +433,8 @@ export type TimeEntry = Database['public']['Tables']['time_entries']['Row'];
 export type ChecklistTemplate = Database['public']['Tables']['checklist_templates']['Row'];
 export type ChecklistInstance = Database['public']['Tables']['checklist_instances']['Row'];
 export type Issue = Database['public']['Tables']['issues']['Row'];
+export type Aufgabe = Database['public']['Tables']['aufgaben']['Row'];
+export type ChecklistItemCompletion = Database['public']['Tables']['checklist_item_completions']['Row'];
 
 // Insert types
 export type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];
@@ -343,6 +442,8 @@ export type PropertyInsert = Database['public']['Tables']['properties']['Insert'
 export type WorkDayInsert = Database['public']['Tables']['work_days']['Insert'];
 export type TimeEntryInsert = Database['public']['Tables']['time_entries']['Insert'];
 export type IssueInsert = Database['public']['Tables']['issues']['Insert'];
+export type AufgabeInsert = Database['public']['Tables']['aufgaben']['Insert'];
+export type ChecklistItemCompletionInsert = Database['public']['Tables']['checklist_item_completions']['Insert'];
 
 // Update types
 export type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
@@ -350,6 +451,7 @@ export type PropertyUpdate = Database['public']['Tables']['properties']['Update'
 export type WorkDayUpdate = Database['public']['Tables']['work_days']['Update'];
 export type TimeEntryUpdate = Database['public']['Tables']['time_entries']['Update'];
 export type IssueUpdate = Database['public']['Tables']['issues']['Update'];
+export type AufgabeUpdate = Database['public']['Tables']['aufgaben']['Update'];
 
 // Checklist item structure
 export interface ChecklistItem {
@@ -373,4 +475,11 @@ export interface IssueWithRelations extends Issue {
 
 export interface WorkDayWithEntries extends WorkDay {
   time_entries: TimeEntryWithProperty[];
+}
+
+export interface AufgabeWithRelations extends Aufgabe {
+  property: Property;
+  creator: Profile;
+  assignee: Profile | null;
+  source_meldung: Issue | null;
 }
