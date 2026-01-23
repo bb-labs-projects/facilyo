@@ -168,7 +168,7 @@ export const useAuthStore = create<AuthStore>()(
     }),
     {
       name: 'facility-track-auth',
-      partialState: (state) => ({
+      partialize: (state) => ({
         // Only persist minimal data
         isAuthenticated: state.isAuthenticated,
       }),
