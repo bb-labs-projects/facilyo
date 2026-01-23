@@ -258,8 +258,8 @@ export const useTimerStore = create<TimerStore>()(
         const today = new Date().toISOString().split('T')[0];
 
         // Check for active work day
-        const { data: workDay } = await supabase
-          .from('work_days')
+        const { data: workDay } = await (supabase
+          .from('work_days') as any)
           .select()
           .eq('user_id', user.id)
           .eq('date', today)
