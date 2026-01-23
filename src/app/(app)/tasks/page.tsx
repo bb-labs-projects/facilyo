@@ -89,7 +89,7 @@ export default function TasksPage() {
 
                 <div className="space-y-2">
                   {checklists.map((checklist) => {
-                    const items = (checklist.items as ChecklistItem[]) || [];
+                    const items = (checklist.items as unknown as ChecklistItem[]) || [];
                     const itemCount = items.length;
 
                     return (
