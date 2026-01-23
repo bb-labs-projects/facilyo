@@ -96,7 +96,7 @@ export const useTimerStore = create<TimerStore>()(
 
         const { error } = await supabase
           .from('work_days')
-          .update({ end_time: new Date().toISOString() })
+          .update({ end_time: new Date().toISOString() } as any)
           .eq('id', workDay.id);
 
         if (error) throw error;
@@ -216,7 +216,7 @@ export const useTimerStore = create<TimerStore>()(
             end_latitude: coords?.lat ?? null,
             end_longitude: coords?.lng ?? null,
             notes: notes ?? activeEntry.notes,
-          })
+          } as any)
           .eq('id', activeEntry.id)
           .select()
           .single();
