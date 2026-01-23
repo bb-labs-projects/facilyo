@@ -31,7 +31,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { getClient } from '@/lib/supabase/client';
 import { swissFormat } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
-import type { AufgabeWithRelations, AufgabeUpdate } from '@/types/database';
+import type { Aufgabe, AufgabeWithRelations, AufgabeUpdate } from '@/types/database';
 
 const priorityConfig = {
   low: { label: 'Niedrig', class: 'bg-muted text-muted-foreground' },
@@ -63,7 +63,7 @@ export default function AufgabeDetailPage() {
     queryKey: ['aufgabe', aufgabeId],
     queryFn: async () => {
       const supabase = getClient();
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('aufgaben')
         .select(`
           *,
@@ -85,7 +85,7 @@ export default function AufgabeDetailPage() {
   const updateMutation = useMutation({
     mutationFn: async (data: AufgabeUpdate) => {
       const supabase = getClient();
-      const { data: result, error } = await supabase
+      const { data: result, error } = await (supabase as any)
         .from('aufgaben')
         .update(data)
         .eq('id', aufgabeId)
@@ -93,7 +93,7 @@ export default function AufgabeDetailPage() {
         .single();
 
       if (error) throw error;
-      return result;
+      return result as Aufgabe;
     },
     onSuccess: () => {
       toast.success('Aufgabe wurde aktualisiert');
@@ -110,7 +110,7 @@ export default function AufgabeDetailPage() {
   const completeMutation = useMutation({
     mutationFn: async () => {
       const supabase = getClient();
-      const { data: result, error } = await supabase
+      const { data: result, error } = await (supabase as any)
         .from('aufgaben')
         .update({
           status: 'resolved',
@@ -122,7 +122,7 @@ export default function AufgabeDetailPage() {
         .single();
 
       if (error) throw error;
-      return result;
+      return result as Aufgabe;
     },
     onSuccess: () => {
       toast.success('Aufgabe als erledigt markiert');
@@ -138,7 +138,7 @@ export default function AufgabeDetailPage() {
   const deleteMutation = useMutation({
     mutationFn: async () => {
       const supabase = getClient();
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('aufgaben')
         .delete()
         .eq('id', aufgabeId);
