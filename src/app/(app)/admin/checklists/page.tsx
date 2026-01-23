@@ -82,7 +82,6 @@ export default function AdminChecklistsPage() {
     queryKey: ['admin-checklists'],
     queryFn: async () => {
       const supabase = getClient();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any)
         .from('checklist_templates')
         .select(`
@@ -121,7 +120,6 @@ export default function AdminChecklistsPage() {
         items: data.items,
         is_active: data.is_active,
       };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: result, error } = await (supabase as any)
         .from('checklist_templates')
         .insert(insertData)
@@ -151,7 +149,6 @@ export default function AdminChecklistsPage() {
         items: data.items,
         is_active: data.is_active,
       };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: result, error } = await (supabase as any)
         .from('checklist_templates')
         .update(updateData)
@@ -176,7 +173,6 @@ export default function AdminChecklistsPage() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const supabase = getClient();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await (supabase as any)
         .from('checklist_templates')
         .delete()
