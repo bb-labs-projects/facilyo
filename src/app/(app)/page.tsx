@@ -30,7 +30,7 @@ export default function HomePage() {
     isWorkDayActive,
     timerStatus,
     formattedTime,
-    formattedWorkDayDuration,
+    elapsedSeconds,
     startWorkDay,
     endWorkDay,
     startTimer,
@@ -79,6 +79,31 @@ export default function HomePage() {
     enabled: !!workDay?.id,
     refetchInterval: isTimerActive ? 30000 : false, // Refresh every 30s when timer active
   });
+
+  // Calculate actual worked time (sum of completed entries + active entry)
+  const calculateActualWorkedTime = () => {
+    let totalSeconds = 0;
+
+    // Sum completed entries
+    for (const entry of todayEntries) {
+      if (entry.end_time) {
+        const start = new Date(entry.start_time).getTime();
+        const end = new Date(entry.end_time).getTime();
+        const duration = Math.floor((end - start) / 1000) - (entry.pause_duration || 0);
+        totalSeconds += Math.max(0, duration);
+      }
+    }
+
+    // Add active entry time
+    if (activeEntry && !activeEntry.end_time) {
+      totalSeconds += elapsedSeconds;
+    }
+
+    return totalSeconds;
+  };
+
+  const actualWorkedTime = calculateActualWorkedTime();
+  const formattedActualWorkedTime = swissFormat.duration(actualWorkedTime);
 
   // Set selected property from active entry
   useEffect(() => {
@@ -249,10 +274,10 @@ export default function HomePage() {
             <CardContent className="py-4">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-muted-foreground">
-                  Arbeitstag aktiv seit {workDay && swissFormat.time(workDay.start_time)}
+                  Gearbeitete Zeit heute
                 </div>
                 <div className="font-mono font-semibold">
-                  {formattedWorkDayDuration}
+                  {formattedActualWorkedTime}
                 </div>
               </div>
             </CardContent>
