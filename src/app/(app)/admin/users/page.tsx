@@ -217,7 +217,7 @@ export default function AdminUsersPage() {
         <Header
           title="Benutzerverwaltung"
           showBack
-          action={
+          rightElement={
             <Button
               size="sm"
               onClick={() => setShowCreateDialog(true)}
