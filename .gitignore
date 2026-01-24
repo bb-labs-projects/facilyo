@@ -43,3 +43,5 @@ next-env.d.ts
 # Supabase
 supabase/.branches
 supabase/.temp
+test-results/
+playwright-report/
