@@ -138,6 +138,15 @@ export default function HomePage() {
     }
   };
 
+  const handleTakeBreak = async () => {
+    try {
+      await endWorkDay();
+      toast.success('Pause gestartet - Geniessen Sie Ihre Pause!');
+    } catch (error) {
+      toast.error('Fehler beim Starten der Pause');
+    }
+  };
+
   // Timer handlers
   const handleStartTimer = async () => {
     if (!selectedProperty) {
@@ -308,11 +317,12 @@ export default function HomePage() {
             </div>
           )}
 
-          {/* End Work Day */}
+          {/* Work Day Controls */}
           <WorkDayControls
             isActive={true}
             onStart={handleStartWorkDay}
             onEnd={handleEndWorkDay}
+            onBreak={handleTakeBreak}
           />
         </>
       )}

@@ -1,7 +1,16 @@
 'use client';
 
-import { Play, Pause, Square, RotateCcw } from 'lucide-react';
+import { useState } from 'react';
+import { Play, Pause, Square, Coffee, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { cn, hapticFeedback } from '@/lib/utils';
 
 interface TimerControlsProps {
@@ -184,6 +193,7 @@ interface WorkDayControlsProps {
   isActive: boolean;
   onStart: () => void;
   onEnd: () => void;
+  onBreak?: () => void;
   isLoading?: boolean;
   disabled?: boolean;
   className?: string;
@@ -193,41 +203,97 @@ export function WorkDayControls({
   isActive,
   onStart,
   onEnd,
+  onBreak,
   isLoading = false,
   disabled = false,
   className,
 }: WorkDayControlsProps) {
+  const [showEndConfirmation, setShowEndConfirmation] = useState(false);
+
   const handleAction = (action: () => void) => {
     hapticFeedback('heavy');
     action();
   };
 
+  const handleEndWorkDay = () => {
+    setShowEndConfirmation(false);
+    onEnd();
+  };
+
   return (
-    <div className={cn('flex justify-center', className)}>
-      {isActive ? (
-        <Button
-          size="touch"
-          variant="outline"
-          onClick={() => handleAction(onEnd)}
-          isLoading={isLoading}
-          disabled={disabled}
-          className="w-full border-error-300 text-error-600 hover:bg-error-50"
-          leftIcon={<Square className="h-5 w-5" />}
-        >
-          Arbeitstag beenden
-        </Button>
-      ) : (
-        <Button
-          size="touch"
-          onClick={() => handleAction(onStart)}
-          isLoading={isLoading}
-          disabled={disabled}
-          className="w-full"
-          leftIcon={<Play className="h-5 w-5" />}
-        >
-          Arbeitstag starten
-        </Button>
-      )}
-    </div>
+    <>
+      <div className={cn('flex justify-center', className)}>
+        {isActive ? (
+          <div className="w-full space-y-3">
+            {/* Break button */}
+            {onBreak && (
+              <Button
+                size="touch"
+                variant="outline"
+                onClick={() => handleAction(onBreak)}
+                isLoading={isLoading}
+                disabled={disabled}
+                className="w-full"
+                leftIcon={<Coffee className="h-5 w-5" />}
+              >
+                Pause machen
+              </Button>
+            )}
+            {/* End work day button */}
+            <Button
+              size="touch"
+              variant="outline"
+              onClick={() => {
+                hapticFeedback('heavy');
+                setShowEndConfirmation(true);
+              }}
+              isLoading={isLoading}
+              disabled={disabled}
+              className="w-full border-error-300 text-error-600 hover:bg-error-50"
+              leftIcon={<LogOut className="h-5 w-5" />}
+            >
+              Arbeitstag beenden
+            </Button>
+          </div>
+        ) : (
+          <Button
+            size="touch"
+            onClick={() => handleAction(onStart)}
+            isLoading={isLoading}
+            disabled={disabled}
+            className="w-full"
+            leftIcon={<Play className="h-5 w-5" />}
+          >
+            Arbeitstag starten
+          </Button>
+        )}
+      </div>
+
+      {/* End work day confirmation dialog */}
+      <Dialog open={showEndConfirmation} onOpenChange={setShowEndConfirmation}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Arbeitstag beenden?</DialogTitle>
+            <DialogDescription>
+              Möchten Sie Ihren Arbeitstag wirklich beenden? Sie können ihn später wieder starten, falls Sie eine Pause machen möchten.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowEndConfirmation(false)}
+            >
+              Abbrechen
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleEndWorkDay}
+            >
+              Beenden
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
