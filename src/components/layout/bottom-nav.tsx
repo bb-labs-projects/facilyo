@@ -7,14 +7,17 @@ import {
   Clock,
   ClipboardList,
   AlertTriangle,
+  Activity,
   User,
 } from 'lucide-react';
 import { cn, hapticFeedback } from '@/lib/utils';
+import { usePermissions } from '@/hooks/use-permissions';
 
 interface NavItem {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  requireAdmin?: boolean;
 }
 
 const navItems: NavItem[] = [
@@ -22,11 +25,20 @@ const navItems: NavItem[] = [
   { href: '/time', label: 'Zeiten', icon: Clock },
   { href: '/tasks', label: 'Aufgaben', icon: ClipboardList },
   { href: '/issues', label: 'Meldungen', icon: AlertTriangle },
+  { href: '/admin/activity', label: 'Aktivitäten', icon: Activity, requireAdmin: true },
   { href: '/profile', label: 'Profil', icon: User },
 ];
 
 export function BottomNav() {
   const pathname = usePathname();
+  const permissions = usePermissions();
+
+  const filteredNavItems = navItems.filter((item) => {
+    if (item.requireAdmin) {
+      return permissions.canAccessAdminPanel;
+    }
+    return true;
+  });
 
   const isActive = (href: string) => {
     if (href === '/') {
@@ -42,7 +54,7 @@ export function BottomNav() {
   return (
     <nav className="bottom-nav" role="navigation" aria-label="Hauptnavigation">
       <div className="flex items-stretch">
-        {navItems.map((item) => {
+        {filteredNavItems.map((item) => {
           const active = isActive(item.href);
           const Icon = item.icon;
 
