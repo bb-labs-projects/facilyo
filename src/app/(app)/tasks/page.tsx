@@ -265,12 +265,11 @@ export default function TasksPage() {
       <Card className="mt-6 bg-primary-50 border-primary-200">
         <CardContent className="p-4">
           <h3 className="font-medium text-primary-900 mb-1">
-            Wie funktionieren Checklisten?
+            Checklisten bearbeiten
           </h3>
           <p className="text-sm text-primary-700">
-            Checklisten werden automatisch angezeigt, wenn Sie die Zeiterfassung
-            bei einer Liegenschaft starten. Arbeiten Sie die Punkte während
-            Ihrer Arbeit ab.
+            Starten Sie einen Timer auf der Startseite, um die Checklisten-Punkte
+            während der Arbeit abzuhaken.
           </p>
         </CardContent>
       </Card>

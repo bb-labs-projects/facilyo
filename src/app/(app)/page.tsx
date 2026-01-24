@@ -11,6 +11,7 @@ import { TimerControls, WorkDayControls } from '@/components/time-tracking/contr
 import { PropertySelector, PropertyDisplay } from '@/components/time-tracking/property-selector';
 import { TimeEntryList } from '@/components/time-tracking/work-day-card';
 import { PropertyTimeSummary } from '@/components/time-tracking/property-time-summary';
+import { ActiveChecklists } from '@/components/time-tracking/active-checklists';
 import { useTimeTracking } from '@/hooks/use-time-tracking';
 import { useGeolocation } from '@/hooks/use-geolocation';
 import { useAuthStore } from '@/stores/auth-store';
@@ -289,6 +290,15 @@ export default function HomePage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Active Checklists */}
+          {isTimerActive && activeProperty && activeEntry && (
+            <ActiveChecklists
+              propertyId={activeProperty.id}
+              timeEntryId={activeEntry.id}
+              className="mb-6"
+            />
+          )}
 
           {/* Work Day Summary */}
           <Card className="mb-6">
