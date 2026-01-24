@@ -13,6 +13,12 @@ import {
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
 import { PullToRefresh } from '@/components/layout/pull-to-refresh';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { useAuthStore } from '@/stores/auth-store';
 import { usePermissions } from '@/hooks/use-permissions';
 import { getClient } from '@/lib/supabase/client';
@@ -52,6 +58,7 @@ export default function TasksPage() {
   const profile = useAuthStore((state) => state.profile);
   const permissions = usePermissions();
   const [activeTab, setActiveTab] = useState<TabType>('aufgaben');
+  const [selectedChecklist, setSelectedChecklist] = useState<ChecklistWithProperty | null>(null);
 
   // Fetch aufgaben
   const { data: aufgaben = [], refetch: refetchAufgaben } = useQuery({
@@ -232,6 +239,7 @@ export default function TasksPage() {
                       key={checklist.id}
                       interactive
                       className="cursor-pointer"
+                      onClick={() => setSelectedChecklist(checklist)}
                     >
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
@@ -312,6 +320,42 @@ export default function TasksPage() {
         {/* Tab content */}
         {activeTab === 'aufgaben' ? renderAufgabenTab() : renderChecklistenTab()}
       </PullToRefresh>
+
+      {/* Checklist detail sheet */}
+      <Sheet open={!!selectedChecklist} onOpenChange={() => setSelectedChecklist(null)}>
+        <SheetContent side="bottom" className="h-[70vh]">
+          <SheetHeader>
+            <SheetTitle>{selectedChecklist?.name}</SheetTitle>
+            <p className="text-sm text-muted-foreground">
+              {selectedChecklist?.property?.name}
+            </p>
+          </SheetHeader>
+
+          <div className="mt-4 space-y-2 overflow-y-auto max-h-[calc(70vh-120px)]">
+            {selectedChecklist &&
+              ((selectedChecklist.items as unknown as ChecklistItem[]) || []).map((item, index) => (
+                <div
+                  key={index}
+                  className="p-3 rounded-lg border bg-card"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center flex-shrink-0 text-sm font-medium">
+                      {index + 1}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium">{item.title}</p>
+                      {item.description && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {item.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </SheetContent>
+      </Sheet>
     </PageContainer>
   );
 }
