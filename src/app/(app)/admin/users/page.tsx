@@ -135,7 +135,7 @@ export default function AdminUsersPage() {
     },
   });
 
-  // Create user mutation
+  // Create user invitation mutation
   const createUserMutation = useMutation({
     mutationFn: async ({ email, firstName, lastName, role }: {
       email: string;
@@ -144,11 +144,10 @@ export default function AdminUsersPage() {
       role: UserRole;
     }) => {
       const supabase = getClient();
-      // Create a profile with a temporary UUID - it will be updated when user signs up
+      // Create an invitation - when user signs up with this email, they get these settings
       const { error } = await (supabase as any)
-        .from('profiles')
+        .from('user_invitations')
         .insert({
-          id: crypto.randomUUID(),
           email,
           first_name: firstName,
           last_name: lastName,
@@ -158,8 +157,9 @@ export default function AdminUsersPage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('Benutzer wurde erstellt. Der Benutzer muss sich mit dieser E-Mail registrieren.');
+      toast.success('Einladung erstellt. Der Benutzer kann sich jetzt mit dieser E-Mail registrieren.');
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      queryClient.invalidateQueries({ queryKey: ['user-invitations'] });
       setShowCreateDialog(false);
       setNewUserEmail('');
       setNewUserFirstName('');
