@@ -101,12 +101,6 @@ export default function AdminActivityPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedChecklist, setSelectedChecklist] = useState<ChecklistInstanceWithRelations | null>(null);
 
-  // Redirect if no permission
-  if (!permissions.canAccessAdminPanel) {
-    router.push('/');
-    return null;
-  }
-
   // Fetch all properties for filter
   const { data: properties = [] } = useQuery({
     queryKey: ['all-properties'],
@@ -201,6 +195,12 @@ export default function AdminActivityPage() {
   };
 
   const isLoading = activeTab === 'aufgaben' ? isLoadingAufgaben : isLoadingChecklists;
+
+  // Redirect if no permission
+  if (!permissions.canAccessAdminPanel) {
+    router.push('/');
+    return null;
+  }
 
   return (
     <PageContainer
