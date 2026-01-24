@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ClipboardList, ChevronDown, ChevronUp, Check, Camera } from 'lucide-react';
+import { ClipboardList, ChevronDown, ChevronUp, Check, Camera, Save } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,6 +32,8 @@ interface ActiveChecklistsProps {
 export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveChecklistsProps) {
   const queryClient = useQueryClient();
   const [expandedChecklist, setExpandedChecklist] = useState<string | null>(null);
+  // Local state for unsaved changes per checklist
+  const [localChanges, setLocalChanges] = useState<Record<string, Record<string, unknown>>>({});
 
   // Fetch checklists for the property
   const { data: checklists = [] } = useQuery({
@@ -67,6 +69,26 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
     enabled: !!timeEntryId,
   });
 
+  // Initialize local changes from instances when they load
+  useEffect(() => {
+    if (instances.length > 0) {
+      const initialChanges: Record<string, Record<string, unknown>> = {};
+      instances.forEach((instance) => {
+        initialChanges[instance.template_id] = instance.completed_items || {};
+      });
+      setLocalChanges((prev) => {
+        // Only set if not already set (to preserve unsaved changes)
+        const merged = { ...initialChanges };
+        Object.keys(prev).forEach((key) => {
+          if (prev[key] && Object.keys(prev[key]).length > 0) {
+            merged[key] = prev[key];
+          }
+        });
+        return merged;
+      });
+    }
+  }, [instances]);
+
   // Create or update checklist instance
   const upsertInstanceMutation = useMutation({
     mutationFn: async ({
@@ -98,7 +120,9 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
         if (error) throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      hapticFeedback('medium');
+      toast.success('Checkliste gespeichert');
       queryClient.invalidateQueries({ queryKey: ['checklist-instances', timeEntryId] });
     },
     onError: (error: Error) => {
@@ -106,20 +130,40 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
     },
   });
 
-  const getCompletedItems = (templateId: string): Record<string, unknown> => {
+  const getSavedItems = (templateId: string): Record<string, unknown> => {
     const instance = instances.find((i) => i.template_id === templateId);
     return instance?.completed_items || {};
   };
 
+  const getLocalItems = (templateId: string): Record<string, unknown> => {
+    return localChanges[templateId] || getSavedItems(templateId);
+  };
+
   const handleItemChange = (templateId: string, itemId: string, value: unknown) => {
-    const currentCompleted = getCompletedItems(templateId);
-    const newCompleted = { ...currentCompleted, [itemId]: value };
-    upsertInstanceMutation.mutate({ templateId, completedItems: newCompleted });
+    setLocalChanges((prev) => ({
+      ...prev,
+      [templateId]: {
+        ...(prev[templateId] || getSavedItems(templateId)),
+        [itemId]: value,
+      },
+    }));
+  };
+
+  const handleSave = (templateId: string) => {
+    const items = getLocalItems(templateId);
+    upsertInstanceMutation.mutate({ templateId, completedItems: items });
+  };
+
+  const hasUnsavedChanges = (templateId: string): boolean => {
+    const local = localChanges[templateId];
+    if (!local) return false;
+    const saved = getSavedItems(templateId);
+    return JSON.stringify(local) !== JSON.stringify(saved);
   };
 
   const getCompletionProgress = (checklist: ChecklistTemplate): { completed: number; total: number } => {
     const items = (checklist.items as unknown as ChecklistItem[]) || [];
-    const completedItems = getCompletedItems(checklist.id);
+    const completedItems = getLocalItems(checklist.id);
 
     const completed = items.filter((item) => {
       const value = completedItems[item.id];
@@ -148,7 +192,8 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
         const items = (checklist.items as unknown as ChecklistItem[]) || [];
         const isExpanded = expandedChecklist === checklist.id;
         const progress = getCompletionProgress(checklist);
-        const completedItems = getCompletedItems(checklist.id);
+        const localItems = getLocalItems(checklist.id);
+        const hasChanges = hasUnsavedChanges(checklist.id);
 
         return (
           <Card key={checklist.id} className="overflow-hidden">
@@ -165,7 +210,10 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    {progress.completed === progress.total && progress.total > 0 && (
+                    {hasChanges && (
+                      <span className="badge badge-warning text-xs">Nicht gespeichert</span>
+                    )}
+                    {!hasChanges && progress.completed === progress.total && progress.total > 0 && (
                       <span className="badge badge-success text-xs">Fertig</span>
                     )}
                     {isExpanded ? (
@@ -199,10 +247,20 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
                       <ChecklistItemInput
                         key={item.id}
                         item={item}
-                        value={completedItems[item.id]}
+                        value={localItems[item.id]}
                         onChange={(value) => handleItemChange(checklist.id, item.id, value)}
                       />
                     ))}
+
+                    {/* Save button */}
+                    <Button
+                      onClick={() => handleSave(checklist.id)}
+                      disabled={upsertInstanceMutation.isPending}
+                      className="w-full mt-4"
+                    >
+                      <Save className="h-4 w-4 mr-2" />
+                      {upsertInstanceMutation.isPending ? 'Wird gespeichert...' : 'Speichern'}
+                    </Button>
                   </CardContent>
                 </motion.div>
               )}

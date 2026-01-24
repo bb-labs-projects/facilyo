@@ -69,6 +69,8 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
       return data as AufgabeWithRelations[];
     },
     enabled: !!propertyId,
+    refetchOnWindowFocus: true,
+    refetchOnMount: 'always',
   });
 
   // Mark aufgabe as resolved
