@@ -335,7 +335,7 @@ export default function TasksPage() {
             {selectedChecklist &&
               ((selectedChecklist.items as unknown as ChecklistItem[]) || []).map((item, index) => (
                 <div
-                  key={index}
+                  key={item.id}
                   className="p-3 rounded-lg border bg-card"
                 >
                   <div className="flex items-start gap-3">
@@ -343,12 +343,11 @@ export default function TasksPage() {
                       {index + 1}
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium">{item.title}</p>
-                      {item.description && (
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {item.description}
-                        </p>
-                      )}
+                      <p className="font-medium">{item.label}</p>
+                      <p className="text-xs text-muted-foreground mt-1 capitalize">
+                        {item.type === 'checkbox' ? 'Checkbox' : item.type === 'text' ? 'Text' : item.type === 'number' ? 'Zahl' : 'Foto'}
+                        {item.required && ' • Pflichtfeld'}
+                      </p>
                     </div>
                   </div>
                 </div>
