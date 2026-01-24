@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Users, Building2, ClipboardList, ChevronRight, Settings } from 'lucide-react';
+import { Users, Building2, ClipboardList, ChevronRight, Settings, Activity } from 'lucide-react';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -33,6 +33,12 @@ const adminMenuItems: AdminMenuItem[] = [
     label: 'Checklisten-Vorlagen',
     description: 'Checklisten für Liegenschaften erstellen',
     icon: ClipboardList,
+  },
+  {
+    href: '/admin/activity',
+    label: 'Aktivitäten',
+    description: 'Erledigte Aufgaben und Checklisten einsehen',
+    icon: Activity,
   },
 ];
 
