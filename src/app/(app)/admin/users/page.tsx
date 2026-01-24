@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Users, Plus, Mail, Shield, Building2, ChevronRight, Search } from 'lucide-react';
+import { Users, Plus, Mail, Shield, Building2, ChevronRight, Search, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
@@ -44,6 +44,11 @@ export default function AdminUsersPage() {
   const [selectedUser, setSelectedUser] = useState<UserWithAssignments | null>(null);
   const [showRoleDialog, setShowRoleDialog] = useState(false);
   const [showAssignmentsSheet, setShowAssignmentsSheet] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserFirstName, setNewUserFirstName] = useState('');
+  const [newUserLastName, setNewUserLastName] = useState('');
+  const [newUserRole, setNewUserRole] = useState<UserRole>('employee');
 
   // Fetch all users
   const { data: users = [], isLoading } = useQuery({
@@ -130,6 +135,42 @@ export default function AdminUsersPage() {
     },
   });
 
+  // Create user mutation
+  const createUserMutation = useMutation({
+    mutationFn: async ({ email, firstName, lastName, role }: {
+      email: string;
+      firstName: string;
+      lastName: string;
+      role: UserRole;
+    }) => {
+      const supabase = getClient();
+      // Create a profile with a temporary UUID - it will be updated when user signs up
+      const { error } = await (supabase as any)
+        .from('profiles')
+        .insert({
+          id: crypto.randomUUID(),
+          email,
+          first_name: firstName,
+          last_name: lastName,
+          role,
+        });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Benutzer wurde erstellt. Der Benutzer muss sich mit dieser E-Mail registrieren.');
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      setShowCreateDialog(false);
+      setNewUserEmail('');
+      setNewUserFirstName('');
+      setNewUserLastName('');
+      setNewUserRole('employee');
+    },
+    onError: (error: Error) => {
+      toast.error(`Fehler: ${error.message}`);
+    },
+  });
+
   // Redirect if no permission
   useEffect(() => {
     if (!permissions.canManageEmployees) {
@@ -157,9 +198,37 @@ export default function AdminUsersPage() {
     return null;
   }
 
+  const handleCreateUser = () => {
+    if (!newUserEmail.trim()) {
+      toast.error('E-Mail ist erforderlich');
+      return;
+    }
+    createUserMutation.mutate({
+      email: newUserEmail.trim(),
+      firstName: newUserFirstName.trim(),
+      lastName: newUserLastName.trim(),
+      role: newUserRole,
+    });
+  };
+
   return (
     <PageContainer
-      header={<Header title="Benutzerverwaltung" showBack />}
+      header={
+        <Header
+          title="Benutzerverwaltung"
+          showBack
+          action={
+            <Button
+              size="sm"
+              onClick={() => setShowCreateDialog(true)}
+              className="gap-1"
+            >
+              <UserPlus className="h-4 w-4" />
+              <span className="hidden sm:inline">Erstellen</span>
+            </Button>
+          }
+        />
+      }
     >
       {/* Search */}
       <div className="relative mb-4">
@@ -358,6 +427,72 @@ export default function AdminUsersPage() {
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* Create user dialog */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Benutzer erstellen</DialogTitle>
+            <DialogDescription>
+              Erstellen Sie ein neues Benutzerprofil. Der Benutzer muss sich anschließend mit dieser E-Mail-Adresse registrieren.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <Input
+              label="E-Mail *"
+              type="email"
+              placeholder="benutzer@beispiel.de"
+              value={newUserEmail}
+              onChange={(e) => setNewUserEmail(e.target.value)}
+            />
+
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Vorname"
+                placeholder="Max"
+                value={newUserFirstName}
+                onChange={(e) => setNewUserFirstName(e.target.value)}
+              />
+              <Input
+                label="Nachname"
+                placeholder="Mustermann"
+                value={newUserLastName}
+                onChange={(e) => setNewUserLastName(e.target.value)}
+              />
+            </div>
+
+            <div className="w-full">
+              <label className="mb-2 block text-sm font-medium text-foreground">
+                Rolle
+              </label>
+              <select
+                value={newUserRole}
+                onChange={(e) => setNewUserRole(e.target.value as UserRole)}
+                className={cn(
+                  'flex h-12 w-full rounded-lg border border-input bg-background px-4 py-3 text-base',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+                )}
+              >
+                {assignableRoles.map((role) => (
+                  <option key={role} value={role}>
+                    {roleLabels[role]}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+              Abbrechen
+            </Button>
+            <Button onClick={handleCreateUser} disabled={createUserMutation.isPending}>
+              {createUserMutation.isPending ? 'Wird erstellt...' : 'Erstellen'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageContainer>
   );
 }
