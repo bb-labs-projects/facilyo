@@ -67,6 +67,30 @@ export const useTimerStore = create<TimerStore>()(
         const today = new Date().toISOString().split('T')[0];
         const now = new Date().toISOString();
 
+        // Check if there's already a work day for today (active or ended)
+        const { data: existingWorkDay } = await (supabase
+          .from('work_days') as any)
+          .select()
+          .eq('user_id', user.id)
+          .eq('date', today)
+          .single();
+
+        if (existingWorkDay) {
+          // Re-open the existing work day (e.g., after lunch break)
+          const { data, error } = await (supabase
+            .from('work_days') as any)
+            .update({ end_time: null })
+            .eq('id', existingWorkDay.id)
+            .select()
+            .single();
+
+          if (error) throw error;
+
+          set({ workDay: data });
+          return data;
+        }
+
+        // Create new work day
         const { data, error } = await (supabase
           .from('work_days') as any)
           .insert({
