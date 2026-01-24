@@ -12,6 +12,7 @@ import { PropertySelector, PropertyDisplay } from '@/components/time-tracking/pr
 import { TimeEntryList } from '@/components/time-tracking/work-day-card';
 import { PropertyTimeSummary } from '@/components/time-tracking/property-time-summary';
 import { ActiveChecklists } from '@/components/time-tracking/active-checklists';
+import { ActiveAufgaben } from '@/components/time-tracking/active-aufgaben';
 import { useTimeTracking } from '@/hooks/use-time-tracking';
 import { useGeolocation } from '@/hooks/use-geolocation';
 import { useAuthStore } from '@/stores/auth-store';
@@ -290,6 +291,14 @@ export default function HomePage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Active Aufgaben */}
+          {isTimerActive && activeProperty && (
+            <ActiveAufgaben
+              propertyId={activeProperty.id}
+              className="mb-6"
+            />
+          )}
 
           {/* Active Checklists */}
           {isTimerActive && activeProperty && activeEntry && (
