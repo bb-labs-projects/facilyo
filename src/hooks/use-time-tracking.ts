@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useCallback } from 'react';
-import { useTimerStore, selectIsTimerActive, selectTimerStatus } from '@/stores/timer-store';
+import { useTimerStore, selectIsTimerActive, selectTimerStatus, selectIsOnBreak } from '@/stores/timer-store';
 import { swissFormat } from '@/lib/i18n';
 
 export function useTimeTracking() {
@@ -17,6 +17,7 @@ export function useTimeTracking() {
     elapsedSeconds,
     startWorkDay,
     endWorkDay,
+    takeBreak,
     startTimer,
     pauseTimer,
     resumeTimer,
@@ -27,6 +28,7 @@ export function useTimeTracking() {
 
   const isTimerActive = useTimerStore(selectIsTimerActive);
   const timerStatus = useTimerStore(selectTimerStatus);
+  const isOnBreak = useTimerStore(selectIsOnBreak);
 
   // Calculate elapsed seconds
   const calculateElapsed = useCallback(() => {
@@ -104,6 +106,7 @@ export function useTimeTracking() {
     isTimerActive,
     timerStatus,
     isWorkDayActive: !!workDay,
+    isOnBreak,
 
     // Formatted values
     formattedTime,
@@ -113,6 +116,7 @@ export function useTimeTracking() {
     // Actions
     startWorkDay,
     endWorkDay,
+    takeBreak,
     startTimer,
     pauseTimer,
     resumeTimer,

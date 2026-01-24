@@ -29,11 +29,13 @@ export default function HomePage() {
     isPaused,
     isTimerActive,
     isWorkDayActive,
+    isOnBreak,
     timerStatus,
     formattedTime,
     elapsedSeconds,
     startWorkDay,
     endWorkDay,
+    takeBreak,
     startTimer,
     pauseTimer,
     resumeTimer,
@@ -140,7 +142,7 @@ export default function HomePage() {
 
   const handleTakeBreak = async () => {
     try {
-      await endWorkDay();
+      await takeBreak();
       toast.success('Pause gestartet - Geniessen Sie Ihre Pause!');
     } catch (error) {
       toast.error('Fehler beim Starten der Pause');
@@ -225,6 +227,7 @@ export default function HomePage() {
             </p>
             <WorkDayControls
               isActive={false}
+              isOnBreak={isOnBreak}
               onStart={handleStartWorkDay}
               onEnd={handleEndWorkDay}
             />
@@ -320,6 +323,7 @@ export default function HomePage() {
           {/* Work Day Controls */}
           <WorkDayControls
             isActive={true}
+            isOnBreak={isOnBreak}
             onStart={handleStartWorkDay}
             onEnd={handleEndWorkDay}
             onBreak={handleTakeBreak}

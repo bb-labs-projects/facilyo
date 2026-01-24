@@ -7,7 +7,18 @@
       "Bash(\"C:/Program Files/nodejs/npm.cmd\" --version)",
       "Bash(\"C:/Program Files/nodejs/npx.cmd\" add-skill vercel-labs/agent-skills)",
       "Bash(git clone:*)",
-      "Bash(git rev-parse:*)"
+      "Bash(git rev-parse:*)",
+      "Bash(git push)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(npx supabase:*)",
+      "Bash(npx playwright test)",
+      "Bash(npm init:*)",
+      "Bash(npm install:*)",
+      "Bash(npx playwright:*)",
+      "Bash(dir:*)",
+      "Bash(node scripts/generate-icons.js:*)",
+      "Bash(node -e:*)"
     ]
   }
 }

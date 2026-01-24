@@ -191,6 +191,7 @@ export function CircularControls({
 // Work day control buttons
 interface WorkDayControlsProps {
   isActive: boolean;
+  isOnBreak?: boolean;
   onStart: () => void;
   onEnd: () => void;
   onBreak?: () => void;
@@ -201,6 +202,7 @@ interface WorkDayControlsProps {
 
 export function WorkDayControls({
   isActive,
+  isOnBreak = false,
   onStart,
   onEnd,
   onBreak,
@@ -264,7 +266,7 @@ export function WorkDayControls({
             className="w-full"
             leftIcon={<Play className="h-5 w-5" />}
           >
-            Arbeitstag starten
+            {isOnBreak ? 'Pause beenden' : 'Arbeitstag starten'}
           </Button>
         )}
       </div>

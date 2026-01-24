@@ -15,6 +15,8 @@ interface TimerState {
   isPaused: boolean;
   pauseStart: Date | null;
   totalPauseDuration: number; // in seconds
+  // Break state (work day paused for lunch, etc.)
+  isOnBreak: boolean;
   // Calculated values (not persisted)
   elapsedSeconds: number;
 }
@@ -23,6 +25,7 @@ interface TimerActions {
   // Work day actions
   startWorkDay: () => Promise<WorkDay>;
   endWorkDay: () => Promise<void>;
+  takeBreak: () => Promise<void>;
   setWorkDay: (workDay: WorkDay | null) => void;
   // Time entry actions
   startTimer: (propertyId: string, coords?: { lat: number; lng: number }) => Promise<TimeEntry>;
@@ -33,6 +36,7 @@ interface TimerActions {
   setActiveEntry: (entry: TimeEntry | null) => void;
   setActiveProperty: (property: Property | null) => void;
   setElapsedSeconds: (seconds: number) => void;
+  setIsOnBreak: (isOnBreak: boolean) => void;
   // Initialization
   initializeFromServer: () => Promise<void>;
   reset: () => void;
@@ -47,6 +51,7 @@ const initialState: TimerState = {
   isPaused: false,
   pauseStart: null,
   totalPauseDuration: 0,
+  isOnBreak: false,
   elapsedSeconds: 0,
 };
 
@@ -103,7 +108,7 @@ export const useTimerStore = create<TimerStore>()(
 
         if (error) throw error;
 
-        set({ workDay: data });
+        set({ workDay: data, isOnBreak: false });
         return data;
       },
 
@@ -132,12 +137,47 @@ export const useTimerStore = create<TimerStore>()(
           isPaused: false,
           pauseStart: null,
           totalPauseDuration: 0,
+          isOnBreak: false,
+          elapsedSeconds: 0,
+        });
+      },
+
+      takeBreak: async () => {
+        const supabase = getClient();
+        const { workDay, activeEntry } = get();
+
+        if (!workDay) throw new Error('No active work day');
+
+        // Stop any active timer first
+        if (activeEntry) {
+          await get().stopTimer();
+        }
+
+        const { error } = await (supabase
+          .from('work_days') as any)
+          .update({ end_time: new Date().toISOString() })
+          .eq('id', workDay.id);
+
+        if (error) throw error;
+
+        set({
+          workDay: null,
+          activeEntry: null,
+          activeProperty: null,
+          isPaused: false,
+          pauseStart: null,
+          totalPauseDuration: 0,
+          isOnBreak: true,
           elapsedSeconds: 0,
         });
       },
 
       setWorkDay: (workDay) => {
         set({ workDay });
+      },
+
+      setIsOnBreak: (isOnBreak) => {
+        set({ isOnBreak });
       },
 
       // Time entry actions
@@ -332,6 +372,7 @@ export const useTimerStore = create<TimerStore>()(
         isPaused: state.isPaused,
         pauseStart: state.pauseStart,
         totalPauseDuration: state.totalPauseDuration,
+        isOnBreak: state.isOnBreak,
       }),
     }
   )
@@ -340,6 +381,7 @@ export const useTimerStore = create<TimerStore>()(
 // Selectors
 export const selectIsWorkDayActive = (state: TimerStore) => !!state.workDay;
 export const selectIsTimerActive = (state: TimerStore) => !!state.activeEntry;
+export const selectIsOnBreak = (state: TimerStore) => state.isOnBreak;
 export const selectTimerStatus = (state: TimerStore): 'active' | 'paused' | 'inactive' => {
   if (!state.activeEntry) return 'inactive';
   if (state.isPaused) return 'paused';
