@@ -16,6 +16,7 @@ interface AuthState {
 
 interface AuthActions {
   login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   setUser: (user: User | null) => void;
@@ -61,6 +62,38 @@ export const useAuthStore = create<AuthStore>()(
 
           // Fetch profile after login
           await get().refreshProfile();
+        } catch (error) {
+          set({ isLoading: false });
+          throw error;
+        }
+      },
+
+      signup: async (email: string, password: string) => {
+        const supabase = getClient();
+        set({ isLoading: true, error: null });
+
+        try {
+          const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+          });
+
+          if (error) {
+            set({ error: error.message, isLoading: false });
+            throw error;
+          }
+
+          // If email confirmation is required, user won't be immediately signed in
+          if (data.user && data.session) {
+            set({
+              user: data.user,
+              isAuthenticated: true,
+              isLoading: false,
+            });
+            await get().refreshProfile();
+          } else {
+            set({ isLoading: false });
+          }
         } catch (error) {
           set({ isLoading: false });
           throw error;

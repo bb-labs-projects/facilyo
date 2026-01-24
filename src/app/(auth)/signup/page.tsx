@@ -5,17 +5,28 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { LogIn, Eye, EyeOff, Building2 } from 'lucide-react';
+import { UserPlus, Eye, EyeOff, Building2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useAuthStore } from '@/stores/auth-store';
-import { loginSchema, type LoginFormData } from '@/lib/validations';
 
-export default function LoginPage() {
+const signupSchema = z.object({
+  email: z.string().email('Ungültige E-Mail-Adresse'),
+  password: z.string().min(6, 'Passwort muss mindestens 6 Zeichen haben'),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'Passwörter stimmen nicht überein',
+  path: ['confirmPassword'],
+});
+
+type SignupFormData = z.infer<typeof signupSchema>;
+
+export default function SignupPage() {
   const router = useRouter();
-  const login = useAuthStore((state) => state.login);
+  const signup = useAuthStore((state) => state.signup);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -23,24 +34,26 @@ export default function LoginPage() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
+  } = useForm<SignupFormData>({
+    resolver: zodResolver(signupSchema),
     defaultValues: {
       email: '',
       password: '',
-      rememberMe: false,
+      confirmPassword: '',
     },
   });
 
-  const onSubmit = async (data: LoginFormData) => {
+  const onSubmit = async (data: SignupFormData) => {
     setIsLoading(true);
     try {
-      await login(data.email, data.password);
-      toast.success('Erfolgreich angemeldet');
+      await signup(data.email, data.password);
+      toast.success('Konto erfolgreich erstellt', {
+        description: 'Sie können sich jetzt anmelden.',
+      });
       router.push('/');
-    } catch (error) {
-      toast.error('Anmeldung fehlgeschlagen', {
-        description: 'Bitte überprüfen Sie Ihre Eingaben.',
+    } catch (error: any) {
+      toast.error('Registrierung fehlgeschlagen', {
+        description: error.message || 'Bitte versuchen Sie es erneut.',
       });
     } finally {
       setIsLoading(false);
@@ -58,12 +71,12 @@ export default function LoginPage() {
         <p className="text-sm text-muted-foreground">Zeit- & Problemerfassung</p>
       </div>
 
-      {/* Login card */}
+      {/* Signup card */}
       <Card>
         <CardHeader className="text-center">
-          <CardTitle>Anmelden</CardTitle>
+          <CardTitle>Registrieren</CardTitle>
           <CardDescription>
-            Melden Sie sich mit Ihrer E-Mail und Passwort an
+            Erstellen Sie ein neues Konto
           </CardDescription>
         </CardHeader>
 
@@ -82,7 +95,7 @@ export default function LoginPage() {
               label="Passwort"
               type={showPassword ? 'text' : 'password'}
               placeholder="••••••••"
-              autoComplete="current-password"
+              autoComplete="new-password"
               error={errors.password?.message}
               rightElement={
                 <button
@@ -101,37 +114,31 @@ export default function LoginPage() {
               {...register('password')}
             />
 
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="rememberMe"
-                className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                {...register('rememberMe')}
-              />
-              <label
-                htmlFor="rememberMe"
-                className="ml-2 text-sm text-muted-foreground"
-              >
-                Angemeldet bleiben
-              </label>
-            </div>
+            <Input
+              label="Passwort bestätigen"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="••••••••"
+              autoComplete="new-password"
+              error={errors.confirmPassword?.message}
+              {...register('confirmPassword')}
+            />
 
             <Button
               type="submit"
               size="touch"
               className="w-full"
               isLoading={isLoading}
-              loadingText="Wird angemeldet..."
-              leftIcon={<LogIn className="h-5 w-5" />}
+              loadingText="Wird erstellt..."
+              leftIcon={<UserPlus className="h-5 w-5" />}
             >
-              Anmelden
+              Registrieren
             </Button>
           </form>
 
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Noch kein Konto?{' '}
-            <Link href="/signup" className="text-primary-600 hover:underline">
-              Registrieren
+            Bereits ein Konto?{' '}
+            <Link href="/login" className="text-primary-600 hover:underline">
+              Anmelden
             </Link>
           </p>
         </CardContent>
