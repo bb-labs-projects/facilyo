@@ -59,8 +59,24 @@ export default function ProfilePage() {
   if (!profile) {
     return (
       <PageContainer header={<Header title="Profil" />}>
-        <div className="text-center py-12 text-muted-foreground">
-          Profil wird geladen...
+        <div className="text-center py-12 space-y-4">
+          <p className="text-muted-foreground">Profil konnte nicht geladen werden</p>
+          <Button
+            variant="outline"
+            onClick={async () => {
+              const { refreshProfile } = useAuthStore.getState();
+              await refreshProfile();
+            }}
+          >
+            Erneut versuchen
+          </Button>
+          <Button
+            variant="ghost"
+            className="text-error-600"
+            onClick={handleLogout}
+          >
+            Abmelden
+          </Button>
         </div>
       </PageContainer>
     );
