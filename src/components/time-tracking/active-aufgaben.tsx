@@ -87,7 +87,7 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
       if (error) throw error;
     },
     onSuccess: () => {
-      hapticFeedback('success');
+      hapticFeedback('medium');
       toast.success('Aufgabe wurde als erledigt markiert');
       queryClient.invalidateQueries({ queryKey: ['property-aufgaben', propertyId] });
       queryClient.invalidateQueries({ queryKey: ['aufgaben'] });
