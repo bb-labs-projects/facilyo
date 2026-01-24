@@ -15,7 +15,7 @@ export function canManageProperties(role: UserRole): boolean {
 }
 
 export function canManageEmployees(role: UserRole): boolean {
-  return ['owner', 'manager'].includes(role);
+  return ['admin', 'owner', 'manager'].includes(role);
 }
 
 export function canManageChecklists(role: UserRole): boolean {
@@ -39,7 +39,7 @@ export function canViewAllUsers(role: UserRole): boolean {
 }
 
 export function canUpdateUserRoles(role: UserRole): boolean {
-  return ['owner', 'manager'].includes(role);
+  return ['admin', 'owner', 'manager'].includes(role);
 }
 
 export function canAccessAdminPanel(role: UserRole): boolean {
