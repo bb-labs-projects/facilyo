@@ -133,91 +133,85 @@ export default function IssuesPage() {
         <Header
           title="Meldungen"
           rightElement={
-            <div className="flex gap-2">
-              <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="relative">
-                    <Filter className="h-5 w-5" />
-                    {activeFilters > 0 && (
-                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary-600 text-white text-xs rounded-full flex items-center justify-center">
-                        {activeFilters}
-                      </span>
-                    )}
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="bottom">
-                  <SheetHeader>
-                    <SheetTitle>Filter</SheetTitle>
-                  </SheetHeader>
+            <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative">
+                  <Filter className="h-5 w-5" />
+                  {activeFilters > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary-600 text-white text-xs rounded-full flex items-center justify-center">
+                      {activeFilters}
+                    </span>
+                  )}
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="bottom">
+                <SheetHeader>
+                  <SheetTitle>Filter</SheetTitle>
+                </SheetHeader>
 
-                  <div className="mt-4 space-y-6">
-                    {/* Status filter */}
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">
-                        Status
-                      </label>
-                      <div className="flex flex-wrap gap-2">
-                        {statusOptions.map((option) => (
-                          <button
-                            key={option.value}
-                            onClick={() => setStatusFilter(option.value)}
-                            className={cn(
-                              'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
-                              statusFilter === option.value
-                                ? 'bg-primary-600 text-white'
-                                : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                            )}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
+                <div className="mt-4 space-y-6">
+                  {/* Status filter */}
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      Status
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {statusOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => setStatusFilter(option.value)}
+                          className={cn(
+                            'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
+                            statusFilter === option.value
+                              ? 'bg-primary-600 text-white'
+                              : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                          )}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
                     </div>
-
-                    {/* Priority filter */}
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">
-                        Priorität
-                      </label>
-                      <div className="flex flex-wrap gap-2">
-                        {priorityOptions.map((option) => (
-                          <button
-                            key={option.value}
-                            onClick={() => setPriorityFilter(option.value)}
-                            className={cn(
-                              'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
-                              priorityFilter === option.value
-                                ? 'bg-primary-600 text-white'
-                                : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                            )}
-                          >
-                            {option.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Clear filters */}
-                    {activeFilters > 0 && (
-                      <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={() => {
-                          setStatusFilter('all');
-                          setPriorityFilter('all');
-                        }}
-                      >
-                        Filter zurücksetzen
-                      </Button>
-                    )}
                   </div>
-                </SheetContent>
-              </Sheet>
 
-              <Button size="icon" onClick={handleNewIssue}>
-                <Plus className="h-5 w-5" />
-              </Button>
-            </div>
+                  {/* Priority filter */}
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      Priorität
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {priorityOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => setPriorityFilter(option.value)}
+                          className={cn(
+                            'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
+                            priorityFilter === option.value
+                              ? 'bg-primary-600 text-white'
+                              : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                          )}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Clear filters */}
+                  {activeFilters > 0 && (
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        setStatusFilter('all');
+                        setPriorityFilter('all');
+                      }}
+                    >
+                      Filter zurücksetzen
+                    </Button>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
           }
         />
       }

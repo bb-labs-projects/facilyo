@@ -7,13 +7,11 @@ import {
   ClipboardList,
   ListTodo,
   ChevronRight,
-  Plus,
   Calendar,
   User,
 } from 'lucide-react';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { PullToRefresh } from '@/components/layout/pull-to-refresh';
 import { useAuthStore } from '@/stores/auth-store';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -145,7 +143,7 @@ export default function TasksPage() {
           <p>Keine offenen Aufgaben</p>
           {permissions.canManageAufgaben && (
             <p className="text-sm mt-1">
-              Erstellen Sie eine neue Aufgabe oder wandeln Sie eine Meldung um
+              Wandeln Sie eine Meldung in eine Aufgabe um
             </p>
           )}
         </div>
@@ -274,16 +272,7 @@ export default function TasksPage() {
   return (
     <PageContainer
       header={
-        <Header
-          title="Aufgaben"
-          rightElement={
-            permissions.canManageAufgaben && (
-              <Button size="icon" onClick={() => router.push('/tasks/new')}>
-                <Plus className="h-5 w-5" />
-              </Button>
-            )
-          }
-        />
+        <Header title="Aufgaben" />
       }
     >
       <PullToRefresh onRefresh={handleRefresh}>
