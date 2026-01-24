@@ -72,6 +72,7 @@ export default function LoginPage() {
             <Input
               label="E-Mail"
               type="email"
+              inputMode="email"
               placeholder="name@firma.ch"
               autoComplete="email"
               error={errors.email?.message}
@@ -101,20 +102,22 @@ export default function LoginPage() {
               {...register('password')}
             />
 
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="rememberMe"
-                className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                {...register('rememberMe')}
-              />
-              <label
-                htmlFor="rememberMe"
-                className="ml-2 text-sm text-muted-foreground"
-              >
+            <label
+              htmlFor="rememberMe"
+              className="flex items-center min-h-[44px] cursor-pointer"
+            >
+              <span className="flex items-center justify-center min-h-[44px] min-w-[44px] -ml-2.5">
+                <input
+                  type="checkbox"
+                  id="rememberMe"
+                  className="h-6 w-6 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  {...register('rememberMe')}
+                />
+              </span>
+              <span className="text-sm text-muted-foreground">
                 Angemeldet bleiben
-              </label>
-            </div>
+              </span>
+            </label>
 
             <Button
               type="submit"

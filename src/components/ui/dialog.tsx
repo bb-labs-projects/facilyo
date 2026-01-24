@@ -49,6 +49,7 @@ const DialogContent = React.forwardRef<
         'rounded-xl sm:rounded-lg',
         className
       )}
+      style={{ overscrollBehavior: 'contain' }}
       {...props}
     >
       {children}

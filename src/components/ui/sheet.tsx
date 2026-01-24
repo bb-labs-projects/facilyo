@@ -62,6 +62,7 @@ const SheetContent = React.forwardRef<
         side === 'top' && 'pt-safe',
         className
       )}
+      style={{ overscrollBehavior: 'contain' }}
       {...props}
     >
       {/* Drag handle for bottom sheet */}

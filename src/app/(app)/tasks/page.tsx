@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import {
@@ -129,18 +129,20 @@ export default function TasksPage() {
     await Promise.all([refetchAufgaben(), refetchChecklists()]);
   };
 
-  // Group checklists by property
-  const checklistsByProperty = checklists.reduce((acc, checklist) => {
-    const propertyId = checklist.property_id;
-    if (!acc[propertyId]) {
-      acc[propertyId] = {
-        property: checklist.property,
-        checklists: [],
-      };
-    }
-    acc[propertyId].checklists.push(checklist);
-    return acc;
-  }, {} as Record<string, { property: Property; checklists: ChecklistWithProperty[] }>);
+  // Group checklists by property (memoized)
+  const checklistsByProperty = useMemo(() =>
+    checklists.reduce((acc, checklist) => {
+      const propertyId = checklist.property_id;
+      if (!acc[propertyId]) {
+        acc[propertyId] = {
+          property: checklist.property,
+          checklists: [],
+        };
+      }
+      acc[propertyId].checklists.push(checklist);
+      return acc;
+    }, {} as Record<string, { property: Property; checklists: ChecklistWithProperty[] }>)
+  , [checklists]);
 
   const renderAufgabenTab = () => (
     <>

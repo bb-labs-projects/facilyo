@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ClipboardList, ChevronDown, ChevronUp, Check, Camera, Save } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -130,16 +130,16 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
     },
   });
 
-  const getSavedItems = (templateId: string): Record<string, unknown> => {
+  const getSavedItems = useCallback((templateId: string): Record<string, unknown> => {
     const instance = instances.find((i) => i.template_id === templateId);
     return instance?.completed_items || {};
-  };
+  }, [instances]);
 
-  const getLocalItems = (templateId: string): Record<string, unknown> => {
+  const getLocalItems = useCallback((templateId: string): Record<string, unknown> => {
     return localChanges[templateId] || getSavedItems(templateId);
-  };
+  }, [localChanges, getSavedItems]);
 
-  const handleItemChange = (templateId: string, itemId: string, value: unknown) => {
+  const handleItemChange = useCallback((templateId: string, itemId: string, value: unknown) => {
     setLocalChanges((prev) => ({
       ...prev,
       [templateId]: {
@@ -147,19 +147,19 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
         [itemId]: value,
       },
     }));
-  };
+  }, [getSavedItems]);
 
-  const handleSave = (templateId: string) => {
+  const handleSave = useCallback((templateId: string) => {
     const items = getLocalItems(templateId);
     upsertInstanceMutation.mutate({ templateId, completedItems: items });
-  };
+  }, [getLocalItems, upsertInstanceMutation]);
 
-  const hasUnsavedChanges = (templateId: string): boolean => {
+  const hasUnsavedChanges = useCallback((templateId: string): boolean => {
     const local = localChanges[templateId];
     if (!local) return false;
     const saved = getSavedItems(templateId);
     return JSON.stringify(local) !== JSON.stringify(saved);
-  };
+  }, [localChanges, getSavedItems]);
 
   const getCompletionProgress = (checklist: ChecklistTemplate): { completed: number; total: number } => {
     const items = (checklist.items as unknown as ChecklistItem[]) || [];
@@ -341,27 +341,29 @@ function CheckboxItem({
     <button
       type="button"
       onClick={handleClick}
-      className="flex items-center gap-3 w-full text-left p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+      className="flex items-center gap-3 w-full text-left p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors min-h-[44px]"
     >
-      <div
-        className={cn(
-          'flex-shrink-0 w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all',
-          checked
-            ? 'bg-primary-600 border-primary-600'
-            : 'border-muted-foreground/50'
-        )}
-      >
-        <AnimatePresence>
-          {checked && (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0 }}
-            >
-              <Check className="h-4 w-4 text-white" />
-            </motion.div>
+      <div className="flex items-center justify-center min-h-[44px] min-w-[44px] -ml-1.5">
+        <div
+          className={cn(
+            'w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all',
+            checked
+              ? 'bg-primary-600 border-primary-600'
+              : 'border-muted-foreground/50'
           )}
-        </AnimatePresence>
+        >
+          <AnimatePresence>
+            {checked && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0 }}
+              >
+                <Check className="h-4 w-4 text-white" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
       <span className={cn('text-sm', checked && 'text-muted-foreground line-through')}>
         {label}
@@ -416,6 +418,7 @@ function NumberItem({
       </label>
       <Input
         type="number"
+        inputMode="decimal"
         value={value ?? ''}
         onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
         placeholder="0"

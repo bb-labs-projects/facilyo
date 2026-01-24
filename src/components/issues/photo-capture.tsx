@@ -134,6 +134,9 @@ export function PhotoCapture({
                 src={url}
                 alt={`Foto ${index + 1}`}
                 className="w-full h-full object-cover"
+                width={120}
+                height={120}
+                loading="lazy"
               />
               <button
                 type="button"
@@ -244,6 +247,9 @@ export function PhotoPreview({
             src={url}
             alt={`Foto ${index + 1}`}
             className="w-full h-full object-cover"
+            width={32}
+            height={32}
+            loading="lazy"
           />
         </div>
       ))}

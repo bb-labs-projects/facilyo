@@ -105,10 +105,12 @@ export default function IssuesPage() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success('Meldung wurde in Aufgabe umgewandelt');
-      queryClient.invalidateQueries({ queryKey: ['meldungen'] });
-      queryClient.invalidateQueries({ queryKey: ['aufgaben'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['meldungen'] }),
+        queryClient.invalidateQueries({ queryKey: ['aufgaben'] })
+      ]);
       setConvertingMeldung(null);
     },
     onError: (error: Error) => {

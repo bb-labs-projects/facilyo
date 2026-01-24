@@ -81,7 +81,8 @@ export function ChecklistItem({
     >
       {dragHandleProps && (
         <button
-          className="mt-1 text-muted-foreground hover:text-foreground touch-none"
+          aria-label="Element verschieben"
+          className="mt-1 text-muted-foreground hover:text-foreground touch-none min-h-[44px] min-w-[44px] flex items-center justify-center p-3 -m-3"
           {...dragHandleProps}
         >
           <GripVertical className="h-5 w-5" />
@@ -188,6 +189,7 @@ function NumberInput({ value, onChange, label, required }: NumberInputProps) {
       </label>
       <Input
         type="number"
+        inputMode="decimal"
         value={value ?? ''}
         onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
         placeholder="0"
@@ -216,8 +218,11 @@ function PhotoInput({ value, onChange, label, required }: PhotoInputProps) {
         <div className="relative">
           <img
             src={value}
-            alt="Captured"
+            alt={`Foto für ${label}`}
             className="w-full h-32 object-cover rounded-lg"
+            width={320}
+            height={128}
+            loading="lazy"
           />
           <button
             onClick={() => onChange('')}

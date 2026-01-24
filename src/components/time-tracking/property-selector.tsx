@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { MapPin, Building2, Search, Navigation, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -55,33 +55,36 @@ export function PropertySelector({
     }
   }, [autoSelectNearest, userCoords, selectedProperty, properties, onSelect]);
 
-  // Filter properties by search
-  const filteredProperties = properties.filter((p) =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.address.toLowerCase().includes(search.toLowerCase()) ||
-    p.city.toLowerCase().includes(search.toLowerCase())
-  );
+  // Filter properties by search (memoized)
+  const filteredProperties = useMemo(() =>
+    properties.filter((p) =>
+      p.name.toLowerCase().includes(search.toLowerCase()) ||
+      p.address.toLowerCase().includes(search.toLowerCase()) ||
+      p.city.toLowerCase().includes(search.toLowerCase())
+    ), [properties, search]);
 
-  // Sort by distance if user coords available
-  const sortedProperties = userCoords
-    ? [...filteredProperties].sort((a, b) => {
-        if (!a.latitude || !a.longitude) return 1;
-        if (!b.latitude || !b.longitude) return -1;
-        const distA = calculateDistance(
-          userCoords.lat,
-          userCoords.lng,
-          a.latitude,
-          a.longitude
-        );
-        const distB = calculateDistance(
-          userCoords.lat,
-          userCoords.lng,
-          b.latitude,
-          b.longitude
-        );
-        return distA - distB;
-      })
-    : filteredProperties;
+  // Sort by distance if user coords available (memoized)
+  const sortedProperties = useMemo(() =>
+    userCoords
+      ? [...filteredProperties].sort((a, b) => {
+          if (!a.latitude || !a.longitude) return 1;
+          if (!b.latitude || !b.longitude) return -1;
+          const distA = calculateDistance(
+            userCoords.lat,
+            userCoords.lng,
+            a.latitude,
+            a.longitude
+          );
+          const distB = calculateDistance(
+            userCoords.lat,
+            userCoords.lng,
+            b.latitude,
+            b.longitude
+          );
+          return distA - distB;
+        })
+      : filteredProperties
+  , [filteredProperties, userCoords]);
 
   const handleSelect = (property: Property) => {
     onSelect(property);

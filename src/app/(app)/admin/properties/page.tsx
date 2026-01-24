@@ -373,6 +373,7 @@ export default function AdminPropertiesPage() {
                 <label className="text-sm font-medium">Breitengrad</label>
                 <Input
                   type="number"
+                  inputMode="decimal"
                   step="any"
                   value={latitude}
                   onChange={(e) => setLatitude(e.target.value)}
@@ -383,6 +384,7 @@ export default function AdminPropertiesPage() {
                 <label className="text-sm font-medium">Längengrad</label>
                 <Input
                   type="number"
+                  inputMode="decimal"
                   step="any"
                   value={longitude}
                   onChange={(e) => setLongitude(e.target.value)}
@@ -395,6 +397,7 @@ export default function AdminPropertiesPage() {
               <label className="text-sm font-medium">Geofence-Radius (Meter)</label>
               <Input
                 type="number"
+                inputMode="decimal"
                 value={geofenceRadius}
                 onChange={(e) => setGeofenceRadius(e.target.value)}
                 placeholder="100"
