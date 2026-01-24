@@ -6,6 +6,7 @@ import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
 import { WorkDayCard, TimeEntryList } from '@/components/time-tracking/work-day-card';
+import { WorkDayDetailSheet } from '@/components/time-tracking/work-day-detail-sheet';
 import { PropertyTimeSummary } from '@/components/time-tracking/property-time-summary';
 import { PullToRefresh } from '@/components/layout/pull-to-refresh';
 import { useAuthStore } from '@/stores/auth-store';
@@ -19,6 +20,7 @@ export default function TimePage() {
   const profile = useAuthStore((state) => state.profile);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
+  const [selectedWorkDay, setSelectedWorkDay] = useState<WorkDayWithEntries | null>(null);
 
   // Fetch work days
   const { data: workDays = [], refetch } = useQuery({
@@ -81,15 +83,12 @@ export default function TimePage() {
 
   const isToday = isSameDay(selectedDate, new Date());
 
-  // Calculate totals
+  // Calculate totals from work day spans (includes travel time)
   const totalSeconds = workDays.reduce((acc, day) => {
-    return acc + day.time_entries.reduce((entryAcc, entry) => {
-      if (!entry.end_time) return entryAcc;
-      const start = new Date(entry.start_time).getTime();
-      const end = new Date(entry.end_time).getTime();
-      const duration = Math.floor((end - start) / 1000);
-      return entryAcc + duration - (entry.pause_duration || 0);
-    }, 0);
+    const dayDuration = day.end_time
+      ? Math.floor((new Date(day.end_time).getTime() - new Date(day.start_time).getTime()) / 1000)
+      : Math.floor((Date.now() - new Date(day.start_time).getTime()) / 1000);
+    return acc + dayDuration;
   }, 0);
 
   const formatDateHeader = () => {
@@ -175,6 +174,7 @@ export default function TimePage() {
                   workDay={day}
                   entries={day.time_entries}
                   isActive={!day.end_time}
+                  onClick={() => setSelectedWorkDay(day)}
                   className="mb-2"
                 />
                 {day.time_entries.length > 0 && (
@@ -194,6 +194,14 @@ export default function TimePage() {
           </div>
         )}
       </PullToRefresh>
+
+      {/* Work Day Detail Sheet */}
+      <WorkDayDetailSheet
+        workDay={selectedWorkDay}
+        open={!!selectedWorkDay}
+        onOpenChange={(open) => !open && setSelectedWorkDay(null)}
+        onEntryUpdated={() => refetch()}
+      />
     </PageContainer>
   );
 }

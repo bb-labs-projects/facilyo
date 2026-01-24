@@ -21,14 +21,10 @@ export function WorkDayCard({
   onClick,
   className,
 }: WorkDayCardProps) {
-  // Calculate total work time
-  const totalSeconds = entries.reduce((acc, entry) => {
-    if (!entry.end_time) return acc;
-    const start = new Date(entry.start_time).getTime();
-    const end = new Date(entry.end_time).getTime();
-    const duration = Math.floor((end - start) / 1000);
-    return acc + duration - (entry.pause_duration || 0);
-  }, 0);
+  // Calculate total work time from work day span (includes travel time)
+  const totalSeconds = workDay.end_time
+    ? Math.floor((new Date(workDay.end_time).getTime() - new Date(workDay.start_time).getTime()) / 1000)
+    : Math.floor((Date.now() - new Date(workDay.start_time).getTime()) / 1000);
 
   // Count unique properties
   const uniqueProperties = new Set(entries.map((e) => e.property_id)).size;
