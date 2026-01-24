@@ -25,7 +25,7 @@ import { Input, Textarea } from '@/components/ui/input';
 import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
 import { swissFormat } from '@/lib/i18n';
-import type { TimeEntryWithProperty, TimeEntryUpdate, Property } from '@/types/database';
+import type { TimeEntryWithProperty, Property } from '@/types/database';
 
 interface TimeEntryEditSheetProps {
   entry: TimeEntryWithProperty | null;
@@ -109,17 +109,15 @@ export function TimeEntryEditSheet({
       const newStartTime = `${entryDate}T${startTime}:00`;
       const newEndTime = endTime ? `${entryDate}T${endTime}:00` : null;
 
-      const updateData: TimeEntryUpdate = {
-        property_id: propertyId,
-        start_time: newStartTime,
-        end_time: newEndTime,
-        pause_duration: (parseInt(pauseMinutes) || 0) * 60,
-        notes: notes || null,
-      };
-
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('time_entries')
-        .update(updateData)
+        .update({
+          property_id: propertyId,
+          start_time: newStartTime,
+          end_time: newEndTime,
+          pause_duration: (parseInt(pauseMinutes) || 0) * 60,
+          notes: notes || null,
+        })
         .eq('id', entry.id);
 
       if (error) throw error;
@@ -141,7 +139,7 @@ export function TimeEntryEditSheet({
       if (!entry) return;
 
       const supabase = getClient();
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('time_entries')
         .delete()
         .eq('id', entry.id);
