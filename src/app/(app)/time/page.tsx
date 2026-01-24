@@ -6,6 +6,7 @@ import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
 import { WorkDayCard, TimeEntryList } from '@/components/time-tracking/work-day-card';
+import { PropertyTimeSummary } from '@/components/time-tracking/property-time-summary';
 import { PullToRefresh } from '@/components/layout/pull-to-refresh';
 import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
@@ -177,10 +178,16 @@ export default function TimePage() {
                   className="mb-2"
                 />
                 {day.time_entries.length > 0 && (
-                  <TimeEntryList
-                    entries={day.time_entries}
-                    className="ml-4"
-                  />
+                  <>
+                    <PropertyTimeSummary
+                      entries={day.time_entries}
+                      className="mb-2 ml-4"
+                    />
+                    <TimeEntryList
+                      entries={day.time_entries}
+                      className="ml-4"
+                    />
+                  </>
                 )}
               </div>
             ))}

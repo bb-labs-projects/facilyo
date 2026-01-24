@@ -10,6 +10,7 @@ import { TimerDisplay } from '@/components/time-tracking/timer-display';
 import { TimerControls, WorkDayControls } from '@/components/time-tracking/control-buttons';
 import { PropertySelector, PropertyDisplay } from '@/components/time-tracking/property-selector';
 import { TimeEntryList } from '@/components/time-tracking/work-day-card';
+import { PropertyTimeSummary } from '@/components/time-tracking/property-time-summary';
 import { useTimeTracking } from '@/hooks/use-time-tracking';
 import { useGeolocation } from '@/hooks/use-geolocation';
 import { useAuthStore } from '@/stores/auth-store';
@@ -80,30 +81,34 @@ export default function HomePage() {
     refetchInterval: isTimerActive ? 30000 : false, // Refresh every 30s when timer active
   });
 
-  // Calculate actual worked time (sum of completed entries + active entry)
-  const calculateActualWorkedTime = () => {
-    let totalSeconds = 0;
+  // Calculate total working hours from work day duration (includes travel time)
+  const [workDaySeconds, setWorkDaySeconds] = useState(0);
 
-    // Sum completed entries
-    for (const entry of todayEntries) {
-      if (entry.end_time) {
-        const start = new Date(entry.start_time).getTime();
-        const end = new Date(entry.end_time).getTime();
-        const duration = Math.floor((end - start) / 1000) - (entry.pause_duration || 0);
-        totalSeconds += Math.max(0, duration);
-      }
+  useEffect(() => {
+    if (!workDay?.start_time) {
+      setWorkDaySeconds(0);
+      return;
     }
 
-    // Add active entry time
-    if (activeEntry && !activeEntry.end_time) {
-      totalSeconds += elapsedSeconds;
+    const calculateWorkDayDuration = () => {
+      const start = new Date(workDay.start_time).getTime();
+      const end = workDay.end_time ? new Date(workDay.end_time).getTime() : Date.now();
+      return Math.floor((end - start) / 1000);
+    };
+
+    // Set initial value
+    setWorkDaySeconds(calculateWorkDayDuration());
+
+    // Update every second if work day is active (no end_time)
+    if (!workDay.end_time) {
+      const interval = setInterval(() => {
+        setWorkDaySeconds(calculateWorkDayDuration());
+      }, 1000);
+      return () => clearInterval(interval);
     }
+  }, [workDay?.start_time, workDay?.end_time]);
 
-    return totalSeconds;
-  };
-
-  const actualWorkedTime = calculateActualWorkedTime();
-  const formattedActualWorkedTime = swissFormat.duration(actualWorkedTime);
+  const formattedWorkDayDuration = swissFormat.duration(workDaySeconds);
 
   // Set selected property from active entry
   useEffect(() => {
@@ -159,6 +164,7 @@ export default function HomePage() {
   const handleStopTimer = async () => {
     try {
       await stopTimer(coords || undefined);
+      setSelectedProperty(null); // Clear selection so auto-select can trigger for next property
       toast.success('Zeit wurde erfasst');
     } catch (error) {
       toast.error('Fehler beim Beenden des Timers');
@@ -235,6 +241,7 @@ export default function HomePage() {
                   userCoords={coords}
                   isLoadingLocation={isLoadingLocation}
                   onRequestLocation={handleRequestLocation}
+                  autoSelectNearest={true}
                   className="mb-6"
                 />
               )}
@@ -277,11 +284,16 @@ export default function HomePage() {
                   Gearbeitete Zeit heute
                 </div>
                 <div className="font-mono font-semibold">
-                  {formattedActualWorkedTime}
+                  {formattedWorkDayDuration}
                 </div>
               </div>
             </CardContent>
           </Card>
+
+          {/* Property Time Summary */}
+          {todayEntries.length > 0 && (
+            <PropertyTimeSummary entries={todayEntries} className="mb-6" />
+          )}
 
           {/* Today's Entries */}
           {todayEntries.length > 0 && (

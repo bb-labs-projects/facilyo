@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MapPin, Building2, Search, Navigation, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,7 @@ interface PropertySelectorProps {
   userCoords?: { lat: number; lng: number } | null;
   isLoadingLocation?: boolean;
   onRequestLocation?: () => void;
+  autoSelectNearest?: boolean;
   className?: string;
 }
 
@@ -32,10 +33,27 @@ export function PropertySelector({
   userCoords,
   isLoadingLocation = false,
   onRequestLocation,
+  autoSelectNearest = false,
   className,
 }: PropertySelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
+
+  // Auto-select nearest property when coords become available
+  useEffect(() => {
+    if (autoSelectNearest && userCoords && !selectedProperty && properties.length > 0) {
+      const nearest = [...properties]
+        .filter((p) => p.latitude && p.longitude)
+        .sort((a, b) => {
+          const distA = calculateDistance(userCoords.lat, userCoords.lng, a.latitude!, a.longitude!);
+          const distB = calculateDistance(userCoords.lat, userCoords.lng, b.latitude!, b.longitude!);
+          return distA - distB;
+        })[0];
+      if (nearest) {
+        onSelect(nearest);
+      }
+    }
+  }, [autoSelectNearest, userCoords, selectedProperty, properties, onSelect]);
 
   // Filter properties by search
   const filteredProperties = properties.filter((p) =>
