@@ -90,23 +90,25 @@ export default function HomePage() {
       return;
     }
 
+    const startTime = new Date(workDay.start_time).getTime();
+    const endTime = workDay.end_time ? new Date(workDay.end_time).getTime() : null;
+
     const calculateWorkDayDuration = () => {
-      const start = new Date(workDay.start_time).getTime();
-      const end = workDay.end_time ? new Date(workDay.end_time).getTime() : Date.now();
-      return Math.floor((end - start) / 1000);
+      const end = endTime ?? Date.now();
+      return Math.floor((end - startTime) / 1000);
     };
 
     // Set initial value
     setWorkDaySeconds(calculateWorkDayDuration());
 
     // Update every second if work day is active (no end_time)
-    if (!workDay.end_time) {
+    if (!endTime) {
       const interval = setInterval(() => {
         setWorkDaySeconds(calculateWorkDayDuration());
       }, 1000);
       return () => clearInterval(interval);
     }
-  }, [workDay?.start_time, workDay?.end_time]);
+  }, [workDay]);
 
   const formattedWorkDayDuration = swissFormat.duration(workDaySeconds);
 
