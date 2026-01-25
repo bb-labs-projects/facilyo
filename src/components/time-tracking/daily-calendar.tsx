@@ -20,7 +20,7 @@ interface DailyCalendarProps {
 const START_HOUR = 5;
 const END_HOUR = 24;
 const HOURS = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
-const HOUR_HEIGHT = 60; // pixels per hour
+const HOUR_HEIGHT = 90; // pixels per hour
 const MIN_ENTRY_HEIGHT = 22; // minimum height for readable text (single line)
 
 // Entry type colors matching the design

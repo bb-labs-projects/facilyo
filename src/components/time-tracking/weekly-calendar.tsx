@@ -19,7 +19,7 @@ interface WeeklyCalendarProps {
 const START_HOUR = 5;
 const END_HOUR = 24;
 const HOURS = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
-const HOUR_HEIGHT = 50; // pixels per hour
+const HOUR_HEIGHT = 75; // pixels per hour
 const MIN_ENTRY_HEIGHT = 18; // minimum height for readable text
 
 // Entry type colors matching the design
