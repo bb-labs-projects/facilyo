@@ -244,14 +244,16 @@ export function WeeklyCalendar({ entries, selectedDate, className, onEntryUpdate
                     const endTime = entry.end_time
                       ? format(parseISO(entry.end_time), 'HH:mm')
                       : 'Aktiv';
+                    const isCompact = dims.height < 40;
 
                     return (
                       <button
                         key={entry.id}
                         onClick={() => handleEntryClick(entry)}
                         className={cn(
-                          'absolute left-1 right-1 rounded-md border p-1 overflow-hidden',
+                          'absolute left-1 right-1 rounded-md border overflow-hidden',
                           'text-left transition-all hover:shadow-md cursor-pointer',
+                          isCompact ? 'px-1 py-0.5' : 'p-1',
                           colors.bg,
                           colors.border,
                           colors.text
@@ -261,18 +263,19 @@ export function WeeklyCalendar({ entries, selectedDate, className, onEntryUpdate
                           height: dims.height,
                         }}
                       >
-                        <div className="flex items-center gap-1 text-xs font-medium truncate">
+                        {/* Single line layout - always fit on one line */}
+                        <div className="flex items-center gap-1 text-xs font-medium h-full whitespace-nowrap">
                           {getEntryIcon(entry.entry_type || 'property')}
-                          <span className="truncate">
+                          <span className="truncate flex-1 min-w-0">
                             {entry.property?.name || getEntryTypeLabel(entry.entry_type || 'property')}
                           </span>
-                          <Pencil className="h-2.5 w-2.5 ml-auto opacity-50 shrink-0" />
+                          {!isCompact && (
+                            <span className="text-[10px] opacity-75 shrink-0">
+                              {startTime}
+                            </span>
+                          )}
+                          <Pencil className="h-2.5 w-2.5 opacity-50 shrink-0" />
                         </div>
-                        {dims.height > 40 && (
-                          <div className="text-[10px] opacity-75 mt-0.5">
-                            {startTime}-{endTime}
-                          </div>
-                        )}
                       </button>
                     );
                   })}

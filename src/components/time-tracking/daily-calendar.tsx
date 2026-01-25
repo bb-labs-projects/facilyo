@@ -215,14 +215,18 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
               const isLargeEntry = dims.height >= 100;
               const isMediumEntry = dims.height >= 70;
 
+              // Determine layout based on height
+              const isCompact = dims.height < 70;
+
               return (
                 <button
                   key={entry.id}
                   onClick={() => handleEntryClick(entry)}
                   className={cn(
-                    'absolute left-2 right-2 rounded-lg border-2 p-3 overflow-hidden',
+                    'absolute left-2 right-2 rounded-lg border-2 overflow-hidden',
                     'text-left transition-all hover:shadow-lg hover:scale-[1.01] cursor-pointer',
                     'active:scale-[0.99]',
+                    isCompact ? 'px-2 py-1' : 'p-3',
                     colors.bg,
                     colors.border
                   )}
@@ -231,54 +235,77 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
                     height: dims.height,
                   }}
                 >
-                  {/* Header row */}
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <div className={cn('flex items-center gap-2 font-semibold truncate', colors.text)}>
+                  {isCompact ? (
+                    // Compact single-line layout
+                    <div className={cn('flex items-center gap-2 h-full', colors.text)}>
                       {getEntryIcon(entry.entry_type || 'property')}
-                      <span className="truncate">
+                      <span className="font-semibold truncate flex-1">
                         {entry.property?.name || getEntryTypeLabel(entry.entry_type || 'property')}
                       </span>
-                    </div>
-                    <Pencil className={cn('h-3.5 w-3.5 opacity-50', colors.text)} />
-                  </div>
-
-                  {/* Time and duration */}
-                  <div className={cn('flex items-center gap-3 text-sm', colors.text, 'opacity-80')}>
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5" />
-                      <span className="font-mono">{startTime} - {endTime}</span>
-                    </div>
-                    <div className="font-medium">
-                      {swissFormat.durationHuman(duration)}
-                    </div>
-                  </div>
-
-                  {/* Property address - only show for property entries with enough space */}
-                  {isMediumEntry && entry.property && entry.entry_type === 'property' && (
-                    <div className={cn('flex items-start gap-1.5 mt-2 text-xs', colors.text, 'opacity-70')}>
-                      <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                      <span className="line-clamp-2">
-                        {entry.property.address}, {entry.property.postal_code} {entry.property.city}
+                      <span className="text-xs font-mono opacity-80 shrink-0">
+                        {startTime}-{endTime}
                       </span>
+                      {!entry.end_time && (
+                        <span className="flex h-2 w-2 shrink-0">
+                          <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-green-400 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                        </span>
+                      )}
+                      <Pencil className={cn('h-3 w-3 opacity-50 shrink-0', colors.text)} />
                     </div>
-                  )}
+                  ) : (
+                    // Full layout for larger entries
+                    <>
+                      {/* Header row */}
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <div className={cn('flex items-center gap-2 font-semibold truncate', colors.text)}>
+                          {getEntryIcon(entry.entry_type || 'property')}
+                          <span className="truncate">
+                            {entry.property?.name || getEntryTypeLabel(entry.entry_type || 'property')}
+                          </span>
+                        </div>
+                        <Pencil className={cn('h-3.5 w-3.5 opacity-50 shrink-0', colors.text)} />
+                      </div>
 
-                  {/* Notes - only show for large entries */}
-                  {isLargeEntry && entry.notes && (
-                    <div className={cn('flex items-start gap-1.5 mt-2 text-xs', colors.text, 'opacity-70')}>
-                      <FileText className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                      <span className="line-clamp-2">{entry.notes}</span>
-                    </div>
-                  )}
+                      {/* Time and duration */}
+                      <div className={cn('flex items-center gap-3 text-sm', colors.text, 'opacity-80')}>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3.5 w-3.5" />
+                          <span className="font-mono">{startTime} - {endTime}</span>
+                        </div>
+                        <div className="font-medium">
+                          {swissFormat.durationHuman(duration)}
+                        </div>
+                      </div>
 
-                  {/* Active indicator */}
-                  {!entry.end_time && (
-                    <div className="absolute top-2 right-2">
-                      <span className="flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
-                      </span>
-                    </div>
+                      {/* Property address - only show for property entries with enough space */}
+                      {isMediumEntry && entry.property && entry.entry_type === 'property' && (
+                        <div className={cn('flex items-start gap-1.5 mt-2 text-xs', colors.text, 'opacity-70')}>
+                          <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                          <span className="line-clamp-2">
+                            {entry.property.address}, {entry.property.postal_code} {entry.property.city}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Notes - only show for large entries */}
+                      {isLargeEntry && entry.notes && (
+                        <div className={cn('flex items-start gap-1.5 mt-2 text-xs', colors.text, 'opacity-70')}>
+                          <FileText className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                          <span className="line-clamp-2">{entry.notes}</span>
+                        </div>
+                      )}
+
+                      {/* Active indicator */}
+                      {!entry.end_time && (
+                        <div className="absolute top-2 right-2">
+                          <span className="flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                          </span>
+                        </div>
+                      )}
+                    </>
                   )}
                 </button>
               );
