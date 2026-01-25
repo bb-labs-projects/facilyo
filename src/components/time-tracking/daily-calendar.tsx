@@ -247,7 +247,7 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
                         {entry.property?.name || getEntryTypeLabel(entry.entry_type || 'property')}
                       </span>
                       <span className="font-mono opacity-70 shrink-0 text-[10px]">
-                        {startTime}
+                        {startTime}-{endTime}
                       </span>
                     </div>
                   ) : isCompact ? (
