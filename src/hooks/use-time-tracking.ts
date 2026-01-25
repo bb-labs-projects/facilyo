@@ -1,7 +1,15 @@
 'use client';
 
 import { useEffect, useRef, useCallback } from 'react';
-import { useTimerStore, selectIsTimerActive, selectTimerStatus, selectIsOnBreak } from '@/stores/timer-store';
+import {
+  useTimerStore,
+  selectIsTimerActive,
+  selectTimerStatus,
+  selectIsOnBreak,
+  selectIsTraveling,
+  selectIsWorkingOnProperty,
+  selectCurrentEntryType,
+} from '@/stores/timer-store';
 import { swissFormat } from '@/lib/i18n';
 
 export function useTimeTracking() {
@@ -11,17 +19,15 @@ export function useTimeTracking() {
     workDay,
     activeEntry,
     activeProperty,
-    isPaused,
-    pauseStart,
-    totalPauseDuration,
+    currentEntryType,
     elapsedSeconds,
     startWorkDay,
     endWorkDay,
-    takeBreak,
-    startTimer,
-    pauseTimer,
-    resumeTimer,
-    stopTimer,
+    startTravelTime,
+    startPropertyWork,
+    stopPropertyWork,
+    startBreak,
+    endBreak,
     setElapsedSeconds,
     initializeFromServer,
   } = useTimerStore();
@@ -29,6 +35,9 @@ export function useTimeTracking() {
   const isTimerActive = useTimerStore(selectIsTimerActive);
   const timerStatus = useTimerStore(selectTimerStatus);
   const isOnBreak = useTimerStore(selectIsOnBreak);
+  const isTraveling = useTimerStore(selectIsTraveling);
+  const isWorkingOnProperty = useTimerStore(selectIsWorkingOnProperty);
+  const entryType = useTimerStore(selectCurrentEntryType);
 
   // Calculate elapsed seconds
   const calculateElapsed = useCallback(() => {
@@ -36,25 +45,14 @@ export function useTimeTracking() {
 
     const startTime = new Date(activeEntry.start_time).getTime();
     const now = new Date().getTime();
-    let elapsed = Math.floor((now - startTime) / 1000);
-
-    // Subtract total pause duration
-    elapsed -= totalPauseDuration;
-
-    // Subtract current pause if paused
-    if (isPaused && pauseStart) {
-      const currentPause = Math.floor(
-        (now - new Date(pauseStart).getTime()) / 1000
-      );
-      elapsed -= currentPause;
-    }
+    const elapsed = Math.floor((now - startTime) / 1000);
 
     return Math.max(0, elapsed);
-  }, [activeEntry, totalPauseDuration, isPaused, pauseStart]);
+  }, [activeEntry]);
 
-  // Update elapsed time every second when timer is active
+  // Update elapsed time every second when any entry is active
   useEffect(() => {
-    if (isTimerActive && !isPaused) {
+    if (isTimerActive) {
       timerRef.current = setInterval(() => {
         setElapsedSeconds(calculateElapsed());
       }, 1000);
@@ -73,7 +71,7 @@ export function useTimeTracking() {
         clearInterval(timerRef.current);
       }
     };
-  }, [isTimerActive, isPaused, calculateElapsed, setElapsedSeconds]);
+  }, [isTimerActive, calculateElapsed, setElapsedSeconds]);
 
   // Initialize from server on mount
   useEffect(() => {
@@ -96,31 +94,50 @@ export function useTimeTracking() {
 
   const formattedWorkDayDuration = swissFormat.duration(workDayDuration());
 
+  // Get status label in German
+  const getStatusLabel = useCallback(() => {
+    if (!currentEntryType) return null;
+    switch (currentEntryType) {
+      case 'travel':
+        return 'Fahrzeit';
+      case 'property':
+        return activeProperty?.name || 'Liegenschaft';
+      case 'break':
+        return 'Pause';
+      default:
+        return null;
+    }
+  }, [currentEntryType, activeProperty]);
+
   return {
     // State
     workDay,
     activeEntry,
     activeProperty,
-    isPaused,
     elapsedSeconds,
     isTimerActive,
     timerStatus,
     isWorkDayActive: !!workDay,
+    // Entry type states
+    currentEntryType,
     isOnBreak,
+    isTraveling,
+    isWorkingOnProperty,
 
     // Formatted values
     formattedTime,
     humanReadableTime,
     formattedWorkDayDuration,
+    statusLabel: getStatusLabel(),
 
     // Actions
     startWorkDay,
     endWorkDay,
-    takeBreak,
-    startTimer,
-    pauseTimer,
-    resumeTimer,
-    stopTimer,
+    startTravelTime,
+    startPropertyWork,
+    stopPropertyWork,
+    startBreak,
+    endBreak,
 
     // Utilities
     calculateElapsed,

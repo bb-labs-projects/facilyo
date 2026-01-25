@@ -2,21 +2,21 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { TimeEntry, WorkDay, Property } from '@/types/database';
+import type { TimeEntry, WorkDay, Property, TimeEntryType } from '@/types/database';
 import { getClient } from '@/lib/supabase/client';
 
 interface TimerState {
   // Active work day
   workDay: WorkDay | null;
-  // Active time entry
+  // Current tracking mode
+  currentEntryType: TimeEntryType | null;
+  // Previous entry type (for resuming after break)
+  previousEntryType: TimeEntryType | null;
+  // Previous property (for resuming property work after break)
+  previousPropertyId: string | null;
+  // Active time entry (travel, property, or break)
   activeEntry: TimeEntry | null;
   activeProperty: Property | null;
-  // Timer state
-  isPaused: boolean;
-  pauseStart: Date | null;
-  totalPauseDuration: number; // in seconds
-  // Break state (work day paused for lunch, etc.)
-  isOnBreak: boolean;
   // Calculated values (not persisted)
   elapsedSeconds: number;
 }
@@ -25,18 +25,20 @@ interface TimerActions {
   // Work day actions
   startWorkDay: () => Promise<WorkDay>;
   endWorkDay: () => Promise<void>;
-  takeBreak: () => Promise<void>;
   setWorkDay: (workDay: WorkDay | null) => void;
-  // Time entry actions
-  startTimer: (propertyId: string, coords?: { lat: number; lng: number }) => Promise<TimeEntry>;
-  pauseTimer: () => void;
-  resumeTimer: () => void;
-  stopTimer: (coords?: { lat: number; lng: number }, notes?: string) => Promise<TimeEntry>;
+  // Entry type actions
+  startTravelTime: () => Promise<TimeEntry>;
+  startPropertyWork: (propertyId: string, coords?: { lat: number; lng: number }) => Promise<TimeEntry>;
+  stopPropertyWork: (coords?: { lat: number; lng: number }) => Promise<void>;
+  startBreak: () => Promise<TimeEntry>;
+  endBreak: () => Promise<void>;
+  // Internal helpers
+  stopCurrentEntry: (coords?: { lat: number; lng: number }) => Promise<TimeEntry | null>;
   // State management
   setActiveEntry: (entry: TimeEntry | null) => void;
   setActiveProperty: (property: Property | null) => void;
   setElapsedSeconds: (seconds: number) => void;
-  setIsOnBreak: (isOnBreak: boolean) => void;
+  setCurrentEntryType: (type: TimeEntryType | null) => void;
   // Initialization
   initializeFromServer: () => Promise<void>;
   reset: () => void;
@@ -46,12 +48,11 @@ type TimerStore = TimerState & TimerActions;
 
 const initialState: TimerState = {
   workDay: null,
+  currentEntryType: null,
+  previousEntryType: null,
+  previousPropertyId: null,
   activeEntry: null,
   activeProperty: null,
-  isPaused: false,
-  pauseStart: null,
-  totalPauseDuration: 0,
-  isOnBreak: false,
   elapsedSeconds: 0,
 };
 
@@ -60,7 +61,7 @@ export const useTimerStore = create<TimerStore>()(
     (set, get) => ({
       ...initialState,
 
-      // Work day actions
+      // Start work day - automatically starts travel time
       startWorkDay: async () => {
         const supabase = getClient();
         const {
@@ -72,7 +73,7 @@ export const useTimerStore = create<TimerStore>()(
         const today = new Date().toISOString().split('T')[0];
         const now = new Date().toISOString();
 
-        // Check if there's already a work day for today (active or ended)
+        // Check if there's already a finalized work day for today
         const { data: existingWorkDay } = await (supabase
           .from('work_days') as any)
           .select()
@@ -80,8 +81,12 @@ export const useTimerStore = create<TimerStore>()(
           .eq('date', today)
           .single();
 
-        if (existingWorkDay) {
-          // Re-open the existing work day (e.g., after lunch break)
+        if (existingWorkDay?.is_finalized) {
+          throw new Error('Der Arbeitstag wurde bereits endgültig beendet und kann nicht wieder gestartet werden.');
+        }
+
+        if (existingWorkDay && !existingWorkDay.is_finalized) {
+          // Re-open existing non-finalized work day
           const { data, error } = await (supabase
             .from('work_days') as any)
             .update({ end_time: null })
@@ -90,8 +95,10 @@ export const useTimerStore = create<TimerStore>()(
             .single();
 
           if (error) throw error;
-
           set({ workDay: data });
+
+          // Start travel time automatically
+          await get().startTravelTime();
           return data;
         }
 
@@ -102,72 +109,51 @@ export const useTimerStore = create<TimerStore>()(
             user_id: user.id,
             date: today,
             start_time: now,
+            is_finalized: false,
           })
           .select()
           .single();
 
         if (error) throw error;
 
-        set({ workDay: data, isOnBreak: false });
+        set({ workDay: data });
+
+        // Automatically start travel time when work day begins
+        await get().startTravelTime();
+
         return data;
       },
 
+      // End work day - finalized and cannot be restarted
       endWorkDay: async () => {
         const supabase = getClient();
         const { workDay, activeEntry } = get();
 
         if (!workDay) throw new Error('No active work day');
 
-        // Stop any active timer first
+        // Stop any active entry first
         if (activeEntry) {
-          await get().stopTimer();
+          await get().stopCurrentEntry();
         }
 
+        // Mark work day as ended AND finalized
         const { error } = await (supabase
           .from('work_days') as any)
-          .update({ end_time: new Date().toISOString() })
+          .update({
+            end_time: new Date().toISOString(),
+            is_finalized: true
+          })
           .eq('id', workDay.id);
 
         if (error) throw error;
 
         set({
           workDay: null,
+          currentEntryType: null,
+          previousEntryType: null,
+          previousPropertyId: null,
           activeEntry: null,
           activeProperty: null,
-          isPaused: false,
-          pauseStart: null,
-          totalPauseDuration: 0,
-          isOnBreak: false,
-          elapsedSeconds: 0,
-        });
-      },
-
-      takeBreak: async () => {
-        const supabase = getClient();
-        const { workDay, activeEntry } = get();
-
-        if (!workDay) throw new Error('No active work day');
-
-        // Stop any active timer first
-        if (activeEntry) {
-          await get().stopTimer();
-        }
-
-        const { error } = await (supabase
-          .from('work_days') as any)
-          .update({ end_time: new Date().toISOString() })
-          .eq('id', workDay.id);
-
-        if (error) throw error;
-
-        set({
-          workDay: null,
-          activeEntry: null,
-          activeProperty: null,
-          isPaused: false,
-          pauseStart: null,
-          totalPauseDuration: 0,
-          isOnBreak: true,
           elapsedSeconds: 0,
         });
       },
@@ -176,12 +162,8 @@ export const useTimerStore = create<TimerStore>()(
         set({ workDay });
       },
 
-      setIsOnBreak: (isOnBreak) => {
-        set({ isOnBreak });
-      },
-
-      // Time entry actions
-      startTimer: async (propertyId, coords) => {
+      // Start travel time entry
+      startTravelTime: async () => {
         const supabase = getClient();
         const { workDay } = get();
         const {
@@ -198,7 +180,52 @@ export const useTimerStore = create<TimerStore>()(
           .insert({
             work_day_id: workDay.id,
             user_id: user.id,
+            property_id: null,
+            entry_type: 'travel',
+            start_time: now,
+            status: 'active',
+            pause_duration: 0,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        set({
+          activeEntry: entry,
+          activeProperty: null,
+          currentEntryType: 'travel',
+          elapsedSeconds: 0,
+        });
+
+        return entry;
+      },
+
+      // Start working on a property (stops travel time first)
+      startPropertyWork: async (propertyId, coords) => {
+        const supabase = getClient();
+        const { workDay, activeEntry, currentEntryType } = get();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) throw new Error('Not authenticated');
+        if (!workDay) throw new Error('No active work day');
+
+        // Stop current entry (travel time) if active
+        if (activeEntry && currentEntryType === 'travel') {
+          await get().stopCurrentEntry(coords);
+        }
+
+        const now = new Date().toISOString();
+
+        const { data: entry, error } = await (supabase
+          .from('time_entries') as any)
+          .insert({
+            work_day_id: workDay.id,
+            user_id: user.id,
             property_id: propertyId,
+            entry_type: 'property',
             start_time: now,
             status: 'active',
             start_latitude: coords?.lat ?? null,
@@ -220,54 +247,111 @@ export const useTimerStore = create<TimerStore>()(
         set({
           activeEntry: entry,
           activeProperty: property,
-          isPaused: false,
-          pauseStart: null,
-          totalPauseDuration: 0,
+          currentEntryType: 'property',
           elapsedSeconds: 0,
         });
 
         return entry;
       },
 
-      pauseTimer: () => {
-        const { activeEntry, isPaused } = get();
-        if (!activeEntry || isPaused) return;
+      // Stop property work (automatically starts travel time)
+      stopPropertyWork: async (coords) => {
+        const { activeEntry, currentEntryType } = get();
 
-        set({
-          isPaused: true,
-          pauseStart: new Date(),
-        });
-      },
-
-      resumeTimer: () => {
-        const { activeEntry, isPaused, pauseStart, totalPauseDuration } = get();
-        if (!activeEntry || !isPaused || !pauseStart) return;
-
-        const pausedSeconds = Math.floor(
-          (new Date().getTime() - new Date(pauseStart).getTime()) / 1000
-        );
-
-        set({
-          isPaused: false,
-          pauseStart: null,
-          totalPauseDuration: totalPauseDuration + pausedSeconds,
-        });
-      },
-
-      stopTimer: async (coords, notes) => {
-        const supabase = getClient();
-        const { activeEntry, isPaused, pauseStart, totalPauseDuration } = get();
-
-        if (!activeEntry) throw new Error('No active timer');
-
-        // Calculate final pause duration
-        let finalPauseDuration = totalPauseDuration;
-        if (isPaused && pauseStart) {
-          const pausedSeconds = Math.floor(
-            (new Date().getTime() - new Date(pauseStart).getTime()) / 1000
-          );
-          finalPauseDuration += pausedSeconds;
+        if (!activeEntry || currentEntryType !== 'property') {
+          throw new Error('No active property work');
         }
+
+        // Stop the property entry
+        await get().stopCurrentEntry(coords);
+
+        // Automatically start travel time
+        await get().startTravelTime();
+      },
+
+      // Start break (remembers previous state)
+      startBreak: async () => {
+        const supabase = getClient();
+        const { workDay, activeEntry, currentEntryType, activeProperty } = get();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) throw new Error('Not authenticated');
+        if (!workDay) throw new Error('No active work day');
+
+        // Remember previous state for resuming after break
+        const prevType = currentEntryType;
+        const prevPropertyId = activeProperty?.id || null;
+
+        // Stop current entry if any
+        if (activeEntry) {
+          await get().stopCurrentEntry();
+        }
+
+        const now = new Date().toISOString();
+
+        const { data: entry, error } = await (supabase
+          .from('time_entries') as any)
+          .insert({
+            work_day_id: workDay.id,
+            user_id: user.id,
+            property_id: null,
+            entry_type: 'break',
+            start_time: now,
+            status: 'active',
+            pause_duration: 0,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        set({
+          activeEntry: entry,
+          activeProperty: null,
+          currentEntryType: 'break',
+          previousEntryType: prevType,
+          previousPropertyId: prevPropertyId,
+          elapsedSeconds: 0,
+        });
+
+        return entry;
+      },
+
+      // End break (resumes previous state)
+      endBreak: async () => {
+        const { activeEntry, currentEntryType, previousEntryType, previousPropertyId } = get();
+
+        if (!activeEntry || currentEntryType !== 'break') {
+          throw new Error('No active break');
+        }
+
+        // Stop the break entry
+        await get().stopCurrentEntry();
+
+        // Resume previous state
+        if (previousEntryType === 'property' && previousPropertyId) {
+          // Resume property work on the same property
+          await get().startPropertyWork(previousPropertyId);
+        } else {
+          // Default to travel time
+          await get().startTravelTime();
+        }
+
+        // Clear previous state
+        set({
+          previousEntryType: null,
+          previousPropertyId: null,
+        });
+      },
+
+      // Internal: stop current entry
+      stopCurrentEntry: async (coords) => {
+        const supabase = getClient();
+        const { activeEntry } = get();
+
+        if (!activeEntry) return null;
 
         const now = new Date().toISOString();
 
@@ -276,10 +360,8 @@ export const useTimerStore = create<TimerStore>()(
           .update({
             end_time: now,
             status: 'completed',
-            pause_duration: finalPauseDuration,
             end_latitude: coords?.lat ?? null,
             end_longitude: coords?.lng ?? null,
-            notes: notes ?? activeEntry.notes,
           })
           .eq('id', activeEntry.id)
           .select()
@@ -290,9 +372,7 @@ export const useTimerStore = create<TimerStore>()(
         set({
           activeEntry: null,
           activeProperty: null,
-          isPaused: false,
-          pauseStart: null,
-          totalPauseDuration: 0,
+          currentEntryType: null,
           elapsedSeconds: 0,
         });
 
@@ -311,6 +391,10 @@ export const useTimerStore = create<TimerStore>()(
         set({ elapsedSeconds: seconds });
       },
 
+      setCurrentEntryType: (type) => {
+        set({ currentEntryType: type });
+      },
+
       initializeFromServer: async () => {
         const supabase = getClient();
         const {
@@ -321,13 +405,14 @@ export const useTimerStore = create<TimerStore>()(
 
         const today = new Date().toISOString().split('T')[0];
 
-        // Check for active work day
+        // Check for active (non-finalized) work day
         const { data: workDay } = await (supabase
           .from('work_days') as any)
           .select()
           .eq('user_id', user.id)
           .eq('date', today)
           .is('end_time', null)
+          .eq('is_finalized', false)
           .single();
 
         if (workDay) {
@@ -342,18 +427,20 @@ export const useTimerStore = create<TimerStore>()(
             .single();
 
           if (entry) {
-            // Fetch property
-            const { data: property } = await (supabase
-              .from('properties') as any)
-              .select()
-              .eq('id', entry.property_id)
-              .single();
+            let property = null;
+            if (entry.property_id) {
+              const { data: prop } = await (supabase
+                .from('properties') as any)
+                .select()
+                .eq('id', entry.property_id)
+                .single();
+              property = prop;
+            }
 
             set({
               activeEntry: entry,
               activeProperty: property,
-              isPaused: false,
-              totalPauseDuration: entry.pause_duration || 0,
+              currentEntryType: entry.entry_type,
             });
           }
         }
@@ -369,10 +456,9 @@ export const useTimerStore = create<TimerStore>()(
         workDay: state.workDay,
         activeEntry: state.activeEntry,
         activeProperty: state.activeProperty,
-        isPaused: state.isPaused,
-        pauseStart: state.pauseStart,
-        totalPauseDuration: state.totalPauseDuration,
-        isOnBreak: state.isOnBreak,
+        currentEntryType: state.currentEntryType,
+        previousEntryType: state.previousEntryType,
+        previousPropertyId: state.previousPropertyId,
       }),
     }
   )
@@ -381,9 +467,11 @@ export const useTimerStore = create<TimerStore>()(
 // Selectors
 export const selectIsWorkDayActive = (state: TimerStore) => !!state.workDay;
 export const selectIsTimerActive = (state: TimerStore) => !!state.activeEntry;
-export const selectIsOnBreak = (state: TimerStore) => state.isOnBreak;
+export const selectCurrentEntryType = (state: TimerStore) => state.currentEntryType;
+export const selectIsOnBreak = (state: TimerStore) => state.currentEntryType === 'break';
+export const selectIsTraveling = (state: TimerStore) => state.currentEntryType === 'travel';
+export const selectIsWorkingOnProperty = (state: TimerStore) => state.currentEntryType === 'property';
 export const selectTimerStatus = (state: TimerStore): 'active' | 'paused' | 'inactive' => {
   if (!state.activeEntry) return 'inactive';
-  if (state.isPaused) return 'paused';
   return 'active';
 };

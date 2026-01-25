@@ -3,12 +3,18 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Clock, Building2, MapPin } from 'lucide-react';
+import { Clock, Building2, Car, Coffee } from 'lucide-react';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TimerDisplay } from '@/components/time-tracking/timer-display';
-import { TimerControls, WorkDayControls } from '@/components/time-tracking/control-buttons';
-import { PropertySelector, PropertyDisplay } from '@/components/time-tracking/property-selector';
+import {
+  StatusBadge,
+  TravelControls,
+  PropertyControls,
+  BreakControls,
+  WorkDayControls,
+} from '@/components/time-tracking/control-buttons';
+import { PropertySelector } from '@/components/time-tracking/property-selector';
 import { TimeEntryList } from '@/components/time-tracking/work-day-card';
 import { PropertyTimeSummary } from '@/components/time-tracking/property-time-summary';
 import { ActiveChecklists } from '@/components/time-tracking/active-checklists';
@@ -28,27 +34,25 @@ export default function HomePage() {
     workDay,
     activeEntry,
     activeProperty,
-    isPaused,
+    currentEntryType,
     isTimerActive,
     isWorkDayActive,
     isOnBreak,
-    timerStatus,
+    isTraveling,
+    isWorkingOnProperty,
     formattedTime,
-    elapsedSeconds,
     startWorkDay,
     endWorkDay,
-    takeBreak,
-    startTimer,
-    pauseTimer,
-    resumeTimer,
-    stopTimer,
+    startPropertyWork,
+    stopPropertyWork,
+    startBreak,
+    endBreak,
   } = useTimeTracking();
 
   const {
     coords,
     isLoading: isLoadingLocation,
     getCurrentPosition,
-    error: locationError,
   } = useGeolocation();
 
   // Fetch assigned properties
@@ -82,10 +86,10 @@ export default function HomePage() {
       return data as TimeEntryWithProperty[];
     },
     enabled: !!workDay?.id,
-    refetchInterval: isTimerActive ? 30000 : false, // Refresh every 30s when timer active
+    refetchInterval: isTimerActive ? 30000 : false,
   });
 
-  // Calculate total working hours from work day duration (includes travel time)
+  // Calculate total working hours from work day duration
   const [workDaySeconds, setWorkDaySeconds] = useState(0);
 
   useEffect(() => {
@@ -102,10 +106,8 @@ export default function HomePage() {
       return Math.floor((end - startTime) / 1000);
     };
 
-    // Set initial value
     setWorkDaySeconds(calculateWorkDayDuration());
 
-    // Update every second if work day is active (no end_time)
     if (!endTime) {
       const interval = setInterval(() => {
         setWorkDaySeconds(calculateWorkDayDuration());
@@ -123,13 +125,17 @@ export default function HomePage() {
     }
   }, [activeProperty]);
 
-  // Work day handlers
+  // Handlers
   const handleStartWorkDay = async () => {
     try {
       await startWorkDay();
-      toast.success('Arbeitstag wurde gestartet');
-    } catch (error) {
-      toast.error('Fehler beim Starten des Arbeitstags');
+      toast.success('Arbeitstag gestartet - Fahrzeit läuft');
+    } catch (error: any) {
+      if (error.message?.includes('endgültig beendet')) {
+        toast.error(error.message);
+      } else {
+        toast.error('Fehler beim Starten des Arbeitstags');
+      }
     }
   };
 
@@ -142,47 +148,45 @@ export default function HomePage() {
     }
   };
 
-  const handleTakeBreak = async () => {
-    try {
-      await takeBreak();
-      toast.success('Pause gestartet - Geniessen Sie Ihre Pause!');
-    } catch (error) {
-      toast.error('Fehler beim Starten der Pause');
-    }
-  };
-
-  // Timer handlers
-  const handleStartTimer = async () => {
+  const handleStartPropertyWork = async () => {
     if (!selectedProperty) {
       toast.error('Bitte wählen Sie eine Liegenschaft');
       return;
     }
 
     try {
-      await startTimer(selectedProperty.id, coords || undefined);
-      toast.success('Timer wurde gestartet');
+      await startPropertyWork(selectedProperty.id, coords || undefined);
+      toast.success(`Arbeit auf ${selectedProperty.name} gestartet`);
     } catch (error) {
-      toast.error('Fehler beim Starten des Timers');
+      toast.error('Fehler beim Starten der Arbeit');
     }
   };
 
-  const handlePauseTimer = () => {
-    pauseTimer();
-    toast.info('Timer pausiert');
-  };
-
-  const handleResumeTimer = () => {
-    resumeTimer();
-    toast.info('Timer fortgesetzt');
-  };
-
-  const handleStopTimer = async () => {
+  const handleStopPropertyWork = async () => {
     try {
-      await stopTimer(coords || undefined);
-      setSelectedProperty(null); // Clear selection so auto-select can trigger for next property
-      toast.success('Zeit wurde erfasst');
+      await stopPropertyWork(coords || undefined);
+      setSelectedProperty(null);
+      toast.success('Arbeit beendet - Fahrzeit läuft');
     } catch (error) {
-      toast.error('Fehler beim Beenden des Timers');
+      toast.error('Fehler beim Beenden der Arbeit');
+    }
+  };
+
+  const handleStartBreak = async () => {
+    try {
+      await startBreak();
+      toast.success('Pause gestartet');
+    } catch (error) {
+      toast.error('Fehler beim Starten der Pause');
+    }
+  };
+
+  const handleEndBreak = async () => {
+    try {
+      await endBreak();
+      toast.success('Pause beendet');
+    } catch (error) {
+      toast.error('Fehler beim Beenden der Pause');
     }
   };
 
@@ -201,6 +205,20 @@ export default function HomePage() {
     return 'Guten Abend';
   };
 
+  // Get status icon based on current entry type
+  const getStatusIcon = () => {
+    switch (currentEntryType) {
+      case 'travel':
+        return <Car className="h-5 w-5" />;
+      case 'property':
+        return <Building2 className="h-5 w-5" />;
+      case 'break':
+        return <Coffee className="h-5 w-5" />;
+      default:
+        return <Clock className="h-5 w-5" />;
+    }
+  };
+
   return (
     <PageContainer
       header={
@@ -214,7 +232,7 @@ export default function HomePage() {
         />
       }
     >
-      {/* Work Day Section */}
+      {/* Work Day Section - Not Started */}
       {!isWorkDayActive ? (
         <Card className="mb-6">
           <CardHeader>
@@ -229,7 +247,6 @@ export default function HomePage() {
             </p>
             <WorkDayControls
               isActive={false}
-              isOnBreak={isOnBreak}
               onStart={handleStartWorkDay}
               onEnd={handleEndWorkDay}
             />
@@ -240,68 +257,77 @@ export default function HomePage() {
           {/* Timer Card */}
           <Card className="mb-6">
             <CardContent className="pt-6">
+              {/* Status Badge */}
+              <div className="flex justify-center mb-4">
+                <StatusBadge
+                  entryType={currentEntryType}
+                  propertyName={activeProperty?.name}
+                />
+              </div>
+
               {/* Timer Display */}
               <TimerDisplay
                 time={formattedTime}
-                status={timerStatus}
-                propertyName={activeProperty?.name}
+                status={isTimerActive ? 'active' : 'inactive'}
+                propertyName={
+                  currentEntryType === 'property'
+                    ? activeProperty?.name
+                    : currentEntryType === 'travel'
+                    ? 'Fahrzeit'
+                    : currentEntryType === 'break'
+                    ? 'Pause'
+                    : undefined
+                }
                 className="mb-6"
               />
 
-              {/* Property Selector (only when timer is not active) */}
-              {!isTimerActive && (
-                <PropertySelector
-                  properties={properties}
-                  selectedProperty={selectedProperty}
-                  onSelect={setSelectedProperty}
-                  userCoords={coords}
-                  isLoadingLocation={isLoadingLocation}
-                  onRequestLocation={handleRequestLocation}
-                  autoSelectNearest={true}
-                  className="mb-6"
+              {/* Controls based on current mode */}
+              {isTraveling && (
+                <>
+                  {/* Property Selector when traveling */}
+                  <PropertySelector
+                    properties={properties}
+                    selectedProperty={selectedProperty}
+                    onSelect={setSelectedProperty}
+                    userCoords={coords}
+                    isLoadingLocation={isLoadingLocation}
+                    onRequestLocation={handleRequestLocation}
+                    autoSelectNearest={true}
+                    className="mb-6"
+                  />
+                  <TravelControls
+                    onStartProperty={handleStartPropertyWork}
+                    onStartBreak={handleStartBreak}
+                    onEndWorkDay={handleEndWorkDay}
+                    showPropertyButton={!!selectedProperty}
+                    disabled={!selectedProperty}
+                  />
+                </>
+              )}
+
+              {isWorkingOnProperty && (
+                <PropertyControls
+                  onStopProperty={handleStopPropertyWork}
+                  onStartBreak={handleStartBreak}
                 />
               )}
 
-              {/* Current Property (when timer is active) */}
-              {isTimerActive && activeProperty && (
-                <div className="flex items-center justify-center gap-2 mb-6 text-muted-foreground">
-                  <Building2 className="h-4 w-4" />
-                  <span>{activeProperty.name}</span>
-                </div>
-              )}
-
-              {/* Timer Controls */}
-              {isTimerActive ? (
-                <TimerControls
-                  status={timerStatus}
-                  onStart={handleStartTimer}
-                  onPause={handlePauseTimer}
-                  onResume={handleResumeTimer}
-                  onStop={handleStopTimer}
-                />
-              ) : (
-                <TimerControls
-                  status="inactive"
-                  onStart={handleStartTimer}
-                  onPause={handlePauseTimer}
-                  onResume={handleResumeTimer}
-                  onStop={handleStopTimer}
-                  disabled={!selectedProperty}
-                />
+              {isOnBreak && (
+                <BreakControls onEndBreak={handleEndBreak} />
               )}
             </CardContent>
           </Card>
 
-          {/* Active Aufgaben */}
-          {isTimerActive && activeProperty && (
+          {/* Active Aufgaben (only during property work) */}
+          {isWorkingOnProperty && activeProperty && (
             <ActiveAufgaben
               propertyId={activeProperty.id}
               className="mb-6"
             />
           )}
 
-          {/* Active Checklists */}
-          {isTimerActive && activeProperty && activeEntry && (
+          {/* Active Checklists (only during property work) */}
+          {isWorkingOnProperty && activeProperty && activeEntry && (
             <ActiveChecklists
               propertyId={activeProperty.id}
               timeEntryId={activeEntry.id}
@@ -342,10 +368,8 @@ export default function HomePage() {
           {/* Work Day Controls */}
           <WorkDayControls
             isActive={true}
-            isOnBreak={isOnBreak}
             onStart={handleStartWorkDay}
             onEnd={handleEndWorkDay}
-            onBreak={handleTakeBreak}
           />
         </>
       )}

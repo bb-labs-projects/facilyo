@@ -9,6 +9,7 @@ export type Json =
 export type UserRole = 'admin' | 'owner' | 'manager' | 'employee';
 export type PropertyType = 'residential' | 'commercial' | 'industrial' | 'mixed';
 export type TimeEntryStatus = 'active' | 'paused' | 'completed';
+export type TimeEntryType = 'property' | 'travel' | 'break';
 export type IssuePriority = 'low' | 'medium' | 'high' | 'urgent';
 export type IssueStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
 export type IssueCategory = 'damage' | 'cleaning' | 'safety' | 'maintenance' | 'other';
@@ -123,6 +124,7 @@ export interface Database {
           date: string;
           start_time: string;
           end_time: string | null;
+          is_finalized: boolean;
           notes: string | null;
           created_at: string;
           updated_at: string;
@@ -133,6 +135,7 @@ export interface Database {
           date: string;
           start_time: string;
           end_time?: string | null;
+          is_finalized?: boolean;
           notes?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -143,6 +146,7 @@ export interface Database {
           date?: string;
           start_time?: string;
           end_time?: string | null;
+          is_finalized?: boolean;
           notes?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -153,7 +157,8 @@ export interface Database {
           id: string;
           work_day_id: string;
           user_id: string;
-          property_id: string;
+          property_id: string | null;
+          entry_type: TimeEntryType;
           start_time: string;
           end_time: string | null;
           pause_duration: number;
@@ -170,7 +175,8 @@ export interface Database {
           id?: string;
           work_day_id: string;
           user_id: string;
-          property_id: string;
+          property_id?: string | null;
+          entry_type?: TimeEntryType;
           start_time: string;
           end_time?: string | null;
           pause_duration?: number;
@@ -187,7 +193,8 @@ export interface Database {
           id?: string;
           work_day_id?: string;
           user_id?: string;
-          property_id?: string;
+          property_id?: string | null;
+          entry_type?: TimeEntryType;
           start_time?: string;
           end_time?: string | null;
           pause_duration?: number;
@@ -417,6 +424,7 @@ export interface Database {
       user_role: UserRole;
       property_type: PropertyType;
       time_entry_status: TimeEntryStatus;
+      time_entry_type: TimeEntryType;
       issue_priority: IssuePriority;
       issue_status: IssueStatus;
       issue_category: IssueCategory;
@@ -466,7 +474,7 @@ export interface ChecklistItem {
 
 // Extended types with relations
 export interface TimeEntryWithProperty extends TimeEntry {
-  property: Property;
+  property: Property | null;
 }
 
 export interface IssueWithRelations extends Issue {

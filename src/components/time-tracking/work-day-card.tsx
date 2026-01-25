@@ -1,10 +1,41 @@
 'use client';
 
-import { Calendar, Clock, MapPin } from 'lucide-react';
+import { Calendar, Clock, MapPin, Car, Coffee, Building2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { swissFormat } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
-import type { WorkDay, TimeEntryWithProperty } from '@/types/database';
+import type { WorkDay, TimeEntryWithProperty, TimeEntryType } from '@/types/database';
+
+// Entry type display configuration
+const ENTRY_TYPE_CONFIG: Record<TimeEntryType, {
+  label: string;
+  icon: typeof Car;
+  bgColor: string;
+  borderColor: string;
+  textColor: string;
+}> = {
+  property: {
+    label: 'Liegenschaft',
+    icon: Building2,
+    bgColor: 'bg-blue-50',
+    borderColor: 'border-blue-200',
+    textColor: 'text-blue-700',
+  },
+  travel: {
+    label: 'Fahrzeit',
+    icon: Car,
+    bgColor: 'bg-amber-50',
+    borderColor: 'border-amber-200',
+    textColor: 'text-amber-700',
+  },
+  break: {
+    label: 'Pause',
+    icon: Coffee,
+    bgColor: 'bg-orange-50',
+    borderColor: 'border-orange-200',
+    textColor: 'text-orange-700',
+  },
+};
 
 interface WorkDayCardProps {
   workDay: WorkDay;
@@ -26,8 +57,12 @@ export function WorkDayCard({
     ? Math.floor((new Date(workDay.end_time).getTime() - new Date(workDay.start_time).getTime()) / 1000)
     : Math.floor((Date.now() - new Date(workDay.start_time).getTime()) / 1000);
 
-  // Count unique properties
-  const uniqueProperties = new Set(entries.map((e) => e.property_id)).size;
+  // Count unique properties (only from property entries)
+  const uniqueProperties = new Set(
+    entries
+      .filter(e => e.entry_type === 'property' && e.property_id)
+      .map(e => e.property_id)
+  ).size;
 
   return (
     <Card
@@ -57,12 +92,14 @@ export function WorkDayCard({
             <span>{swissFormat.durationHuman(totalSeconds)}</span>
           </div>
 
-          <div className="flex items-center gap-1">
-            <MapPin className="h-4 w-4" />
-            <span>
-              {uniqueProperties} {uniqueProperties === 1 ? 'Liegenschaft' : 'Liegenschaften'}
-            </span>
-          </div>
+          {uniqueProperties > 0 && (
+            <div className="flex items-center gap-1">
+              <MapPin className="h-4 w-4" />
+              <span>
+                {uniqueProperties} {uniqueProperties === 1 ? 'Liegenschaft' : 'Liegenschaften'}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Time range */}
@@ -90,6 +127,9 @@ export function TimeEntryCard({
 }: TimeEntryCardProps) {
   const isActive = entry.status === 'active';
   const isPaused = entry.status === 'paused';
+  const entryType = entry.entry_type || 'property';
+  const config = ENTRY_TYPE_CONFIG[entryType];
+  const Icon = config.icon;
 
   // Calculate duration
   const getDuration = () => {
@@ -101,21 +141,35 @@ export function TimeEntryCard({
     return duration - (entry.pause_duration || 0);
   };
 
+  // Get display name
+  const getDisplayName = () => {
+    if (entryType === 'property' && entry.property) {
+      return entry.property.name;
+    }
+    return config.label;
+  };
+
   return (
     <Card
       interactive={!!onClick}
       onClick={onClick}
       className={cn(
-        isActive && 'border-success-500 bg-success-50/50',
-        isPaused && 'border-warning-500 bg-warning-50/50',
+        'border-l-4',
+        config.bgColor,
+        config.borderColor,
+        isActive && 'ring-2 ring-success-300',
+        isPaused && 'ring-2 ring-warning-300',
         className
       )}
     >
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
-            <h3 className="font-medium truncate">{entry.property.name}</h3>
-            <p className="text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <Icon className={cn('h-4 w-4', config.textColor)} />
+              <h3 className="font-medium truncate">{getDisplayName()}</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1">
               {swissFormat.time(entry.start_time)}
               {entry.end_time && ` – ${swissFormat.time(entry.end_time)}`}
             </p>
@@ -137,6 +191,13 @@ export function TimeEntryCard({
             </span>
           </div>
         </div>
+
+        {/* Property address for property entries */}
+        {entryType === 'property' && entry.property && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            {entry.property.address}, {entry.property.city}
+          </p>
+        )}
 
         {/* Notes preview */}
         {entry.notes && (

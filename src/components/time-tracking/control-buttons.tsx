@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Play, Pause, Square, Coffee, LogOut } from 'lucide-react';
+import { Play, Square, Coffee, LogOut, Car, Building2, StopCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -12,7 +12,61 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { cn, hapticFeedback } from '@/lib/utils';
+import type { TimeEntryType } from '@/types/database';
 
+// Status badge for current tracking mode
+interface StatusBadgeProps {
+  entryType: TimeEntryType | null;
+  propertyName?: string;
+  className?: string;
+}
+
+export function StatusBadge({ entryType, propertyName, className }: StatusBadgeProps) {
+  if (!entryType) return null;
+
+  const config = {
+    travel: {
+      label: 'Fahrzeit',
+      icon: Car,
+      bgColor: 'bg-amber-100',
+      textColor: 'text-amber-800',
+      borderColor: 'border-amber-300',
+    },
+    property: {
+      label: propertyName || 'Liegenschaft',
+      icon: Building2,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-800',
+      borderColor: 'border-blue-300',
+    },
+    break: {
+      label: 'Pause',
+      icon: Coffee,
+      bgColor: 'bg-orange-100',
+      textColor: 'text-orange-800',
+      borderColor: 'border-orange-300',
+    },
+  };
+
+  const { label, icon: Icon, bgColor, textColor, borderColor } = config[entryType];
+
+  return (
+    <div
+      className={cn(
+        'inline-flex items-center gap-2 px-4 py-2 rounded-full border',
+        bgColor,
+        textColor,
+        borderColor,
+        className
+      )}
+    >
+      <Icon className="h-4 w-4" />
+      <span className="font-medium">{label}</span>
+    </div>
+  );
+}
+
+// Timer display with status (simplified for new workflow)
 interface TimerControlsProps {
   status: 'inactive' | 'active' | 'paused';
   onStart: () => void;
@@ -58,33 +112,6 @@ export function TimerControls({
 
   return (
     <div className={cn('flex items-center justify-center gap-4', className)}>
-      {/* Pause/Resume button */}
-      {status === 'active' ? (
-        <Button
-          size="touch"
-          variant="secondary"
-          onClick={() => handleAction(onPause)}
-          isLoading={isLoading}
-          disabled={disabled}
-          className="flex-1"
-          leftIcon={<Pause className="h-6 w-6" />}
-        >
-          Pause
-        </Button>
-      ) : (
-        <Button
-          size="touch"
-          variant="secondary"
-          onClick={() => handleAction(onResume)}
-          isLoading={isLoading}
-          disabled={disabled}
-          className="flex-1"
-          leftIcon={<Play className="h-6 w-6" />}
-        >
-          Fortsetzen
-        </Button>
-      )}
-
       {/* Stop button */}
       <Button
         size="touch"
@@ -96,6 +123,144 @@ export function TimerControls({
         leftIcon={<Square className="h-6 w-6" />}
       >
         Beenden
+      </Button>
+    </div>
+  );
+}
+
+// Travel mode controls
+interface TravelControlsProps {
+  onStartProperty: () => void;
+  onStartBreak: () => void;
+  onEndWorkDay: () => void;
+  isLoading?: boolean;
+  disabled?: boolean;
+  showPropertyButton?: boolean;
+  className?: string;
+}
+
+export function TravelControls({
+  onStartProperty,
+  onStartBreak,
+  onEndWorkDay,
+  isLoading = false,
+  disabled = false,
+  showPropertyButton = true,
+  className,
+}: TravelControlsProps) {
+  const handleAction = (action: () => void) => {
+    hapticFeedback('medium');
+    action();
+  };
+
+  return (
+    <div className={cn('space-y-3', className)}>
+      {showPropertyButton && (
+        <Button
+          size="touch"
+          onClick={() => handleAction(onStartProperty)}
+          isLoading={isLoading}
+          disabled={disabled}
+          className="w-full"
+          leftIcon={<Building2 className="h-5 w-5" />}
+        >
+          Liegenschaft starten
+        </Button>
+      )}
+      <Button
+        size="touch"
+        variant="secondary"
+        onClick={() => handleAction(onStartBreak)}
+        isLoading={isLoading}
+        disabled={disabled}
+        className="w-full"
+        leftIcon={<Coffee className="h-5 w-5" />}
+      >
+        Pause
+      </Button>
+    </div>
+  );
+}
+
+// Property work mode controls
+interface PropertyControlsProps {
+  onStopProperty: () => void;
+  onStartBreak: () => void;
+  isLoading?: boolean;
+  disabled?: boolean;
+  className?: string;
+}
+
+export function PropertyControls({
+  onStopProperty,
+  onStartBreak,
+  isLoading = false,
+  disabled = false,
+  className,
+}: PropertyControlsProps) {
+  const handleAction = (action: () => void) => {
+    hapticFeedback('medium');
+    action();
+  };
+
+  return (
+    <div className={cn('space-y-3', className)}>
+      <Button
+        size="touch"
+        variant="secondary"
+        onClick={() => handleAction(onStopProperty)}
+        isLoading={isLoading}
+        disabled={disabled}
+        className="w-full"
+        leftIcon={<StopCircle className="h-5 w-5" />}
+      >
+        Arbeit beenden
+      </Button>
+      <Button
+        size="touch"
+        variant="outline"
+        onClick={() => handleAction(onStartBreak)}
+        isLoading={isLoading}
+        disabled={disabled}
+        className="w-full"
+        leftIcon={<Coffee className="h-5 w-5" />}
+      >
+        Pause
+      </Button>
+    </div>
+  );
+}
+
+// Break mode controls
+interface BreakControlsProps {
+  onEndBreak: () => void;
+  isLoading?: boolean;
+  disabled?: boolean;
+  className?: string;
+}
+
+export function BreakControls({
+  onEndBreak,
+  isLoading = false,
+  disabled = false,
+  className,
+}: BreakControlsProps) {
+  const handleAction = (action: () => void) => {
+    hapticFeedback('heavy');
+    action();
+  };
+
+  return (
+    <div className={cn('flex justify-center', className)}>
+      <Button
+        size="touch"
+        onClick={() => handleAction(onEndBreak)}
+        isLoading={isLoading}
+        disabled={disabled}
+        className="w-full"
+        leftIcon={<Play className="h-5 w-5" />}
+      >
+        Pause beenden
       </Button>
     </div>
   );
@@ -155,23 +320,6 @@ export function CircularControls({
 
   return (
     <div className={cn('flex items-center justify-center gap-6', className)}>
-      {/* Pause/Resume */}
-      <button
-        onClick={() => handleAction(status === 'active' ? onPause : onResume)}
-        disabled={disabled || isLoading}
-        className={cn(
-          buttonClass,
-          'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-        )}
-        aria-label={status === 'active' ? 'Pausieren' : 'Fortsetzen'}
-      >
-        {status === 'active' ? (
-          <Pause className="h-8 w-8" />
-        ) : (
-          <Play className="h-8 w-8 ml-1" />
-        )}
-      </button>
-
       {/* Stop */}
       <button
         onClick={() => handleAction(onStop)}
@@ -227,20 +375,6 @@ export function WorkDayControls({
       <div className={cn('flex justify-center', className)}>
         {isActive ? (
           <div className="w-full space-y-3">
-            {/* Break button */}
-            {onBreak && (
-              <Button
-                size="touch"
-                variant="outline"
-                onClick={() => handleAction(onBreak)}
-                isLoading={isLoading}
-                disabled={disabled}
-                className="w-full"
-                leftIcon={<Coffee className="h-5 w-5" />}
-              >
-                Pause machen
-              </Button>
-            )}
             {/* End work day button */}
             <Button
               size="touch"
@@ -266,18 +400,23 @@ export function WorkDayControls({
             className="w-full"
             leftIcon={<Play className="h-5 w-5" />}
           >
-            {isOnBreak ? 'Pause beenden' : 'Arbeitstag starten'}
+            Arbeitstag starten
           </Button>
         )}
       </div>
 
-      {/* End work day confirmation dialog */}
+      {/* End work day confirmation dialog - UPDATED TEXT */}
       <Dialog open={showEndConfirmation} onOpenChange={setShowEndConfirmation}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Arbeitstag beenden?</DialogTitle>
-            <DialogDescription>
-              Möchten Sie Ihren Arbeitstag wirklich beenden? Sie können ihn später wieder starten, falls Sie eine Pause machen möchten.
+            <DialogDescription className="space-y-2">
+              <span className="block font-semibold text-error-600">
+                Der Arbeitstag wird endgültig beendet und kann NICHT mehr fortgesetzt werden.
+              </span>
+              <span className="block">
+                Alle aktiven Zeiten werden gespeichert.
+              </span>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -291,7 +430,7 @@ export function WorkDayControls({
               variant="destructive"
               onClick={handleEndWorkDay}
             >
-              Beenden
+              Endgültig beenden
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,5 +1,6 @@
 -- Fix: Add 'admin' role to profile update policy
 DROP POLICY IF EXISTS "Owners and managers can update profiles" ON profiles;
+DROP POLICY IF EXISTS "Privileged users can update profiles" ON profiles;
 CREATE POLICY "Privileged users can update profiles"
   ON profiles FOR UPDATE
   USING (
