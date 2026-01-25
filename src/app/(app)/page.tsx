@@ -72,7 +72,7 @@ export default function HomePage() {
   });
 
   // Fetch today's time entries
-  const { data: todayEntries = [] } = useQuery({
+  const { data: todayEntries = [], refetch: refetchEntries } = useQuery({
     queryKey: ['time-entries', workDay?.id],
     queryFn: async () => {
       const supabase = getClient();
@@ -195,6 +195,23 @@ export default function HomePage() {
       await getCurrentPosition();
     } catch (error) {
       toast.error('Standort konnte nicht ermittelt werden');
+    }
+  };
+
+  const handleDeleteEntry = async (entry: TimeEntryWithProperty) => {
+    try {
+      const supabase = getClient();
+      const { error } = await supabase
+        .from('time_entries')
+        .delete()
+        .eq('id', entry.id);
+
+      if (error) throw error;
+
+      toast.success('Zeiteintrag gelöscht');
+      refetchEntries();
+    } catch (error) {
+      toast.error('Fehler beim Löschen des Zeiteintrags');
     }
   };
 
@@ -361,6 +378,7 @@ export default function HomePage() {
               <TimeEntryList
                 entries={todayEntries}
                 emptyMessage="Noch keine Einträge heute"
+                onEntryDelete={handleDeleteEntry}
               />
             </div>
           )}

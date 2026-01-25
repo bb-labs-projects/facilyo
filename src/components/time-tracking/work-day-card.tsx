@@ -1,7 +1,17 @@
 'use client';
 
-import { Calendar, Clock, MapPin, Car, Coffee, Building2 } from 'lucide-react';
+import { useState } from 'react';
+import { Calendar, Clock, MapPin, Car, Coffee, Building2, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { swissFormat } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import type { WorkDay, TimeEntryWithProperty, TimeEntryType } from '@/types/database';
@@ -117,14 +127,17 @@ export function WorkDayCard({
 interface TimeEntryCardProps {
   entry: TimeEntryWithProperty;
   onClick?: () => void;
+  onDelete?: (entry: TimeEntryWithProperty) => void;
   className?: string;
 }
 
 export function TimeEntryCard({
   entry,
   onClick,
+  onDelete,
   className,
 }: TimeEntryCardProps) {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const isActive = entry.status === 'active';
   const isPaused = entry.status === 'paused';
   const entryType = entry.entry_type || 'property';
@@ -149,71 +162,122 @@ export function TimeEntryCard({
     return config.label;
   };
 
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = () => {
+    setShowDeleteConfirm(false);
+    onDelete?.(entry);
+  };
+
   return (
-    <Card
-      interactive={!!onClick}
-      onClick={onClick}
-      className={cn(
-        'border-l-4',
-        config.bgColor,
-        config.borderColor,
-        isActive && 'ring-2 ring-success-300',
-        isPaused && 'ring-2 ring-warning-300',
-        className
-      )}
-    >
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <Icon className={cn('h-4 w-4', config.textColor)} />
-              <h3 className="font-medium truncate">{getDisplayName()}</h3>
+    <>
+      <Card
+        interactive={!!onClick}
+        onClick={onClick}
+        className={cn(
+          'border-l-4',
+          config.bgColor,
+          config.borderColor,
+          isActive && 'ring-2 ring-success-300',
+          isPaused && 'ring-2 ring-warning-300',
+          className
+        )}
+      >
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <Icon className={cn('h-4 w-4', config.textColor)} />
+                <h3 className="font-medium truncate">{getDisplayName()}</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                {swissFormat.time(entry.start_time)}
+                {entry.end_time && ` – ${swissFormat.time(entry.end_time)}`}
+              </p>
             </div>
-            <p className="text-sm text-muted-foreground mt-1">
-              {swissFormat.time(entry.start_time)}
-              {entry.end_time && ` – ${swissFormat.time(entry.end_time)}`}
-            </p>
-          </div>
 
-          <div className="flex flex-col items-end">
-            <span className="font-mono text-lg font-semibold">
-              {swissFormat.duration(getDuration())}
-            </span>
-            <span
-              className={cn(
-                'badge mt-1',
-                isActive && 'badge-success',
-                isPaused && 'badge-warning',
-                entry.status === 'completed' && 'badge-info'
+            <div className="flex items-start gap-2">
+              <div className="flex flex-col items-end">
+                <span className="font-mono text-lg font-semibold">
+                  {swissFormat.duration(getDuration())}
+                </span>
+                <span
+                  className={cn(
+                    'badge mt-1',
+                    isActive && 'badge-success',
+                    isPaused && 'badge-warning',
+                    entry.status === 'completed' && 'badge-info'
+                  )}
+                >
+                  {isActive ? 'Aktiv' : isPaused ? 'Pausiert' : 'Beendet'}
+                </span>
+              </div>
+              {onDelete && !isActive && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleDeleteClick}
+                  className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               )}
-            >
-              {isActive ? 'Aktiv' : isPaused ? 'Pausiert' : 'Beendet'}
-            </span>
+            </div>
           </div>
-        </div>
 
-        {/* Property address for property entries */}
-        {entryType === 'property' && entry.property && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            {entry.property.address}, {entry.property.city}
-          </p>
-        )}
+          {/* Property address for property entries */}
+          {entryType === 'property' && entry.property && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              {entry.property.address}, {entry.property.city}
+            </p>
+          )}
 
-        {/* Notes preview */}
-        {entry.notes && (
-          <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
-            {entry.notes}
-          </p>
-        )}
+          {/* Notes preview */}
+          {entry.notes && (
+            <p className="mt-2 text-sm text-muted-foreground line-clamp-2">
+              {entry.notes}
+            </p>
+          )}
 
-        {/* Pause duration if any */}
-        {entry.pause_duration > 0 && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            Pause: {swissFormat.durationHuman(entry.pause_duration)}
-          </p>
-        )}
-      </CardContent>
-    </Card>
+          {/* Pause duration if any */}
+          {entry.pause_duration > 0 && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Pause: {swissFormat.durationHuman(entry.pause_duration)}
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Zeiteintrag löschen</DialogTitle>
+            <DialogDescription>
+              Möchten Sie diesen Zeiteintrag wirklich löschen?
+              <br />
+              <span className="font-medium text-foreground">
+                {getDisplayName()} ({swissFormat.time(entry.start_time)}
+                {entry.end_time && ` – ${swissFormat.time(entry.end_time)}`})
+              </span>
+              <br />
+              Diese Aktion kann nicht rückgängig gemacht werden.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
+              Abbrechen
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete}>
+              Löschen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -221,6 +285,7 @@ export function TimeEntryCard({
 interface TimeEntryListProps {
   entries: TimeEntryWithProperty[];
   onEntryClick?: (entry: TimeEntryWithProperty) => void;
+  onEntryDelete?: (entry: TimeEntryWithProperty) => void;
   emptyMessage?: string;
   className?: string;
 }
@@ -228,6 +293,7 @@ interface TimeEntryListProps {
 export function TimeEntryList({
   entries,
   onEntryClick,
+  onEntryDelete,
   emptyMessage = 'Keine Einträge vorhanden',
   className,
 }: TimeEntryListProps) {
@@ -246,6 +312,7 @@ export function TimeEntryList({
           key={entry.id}
           entry={entry}
           onClick={onEntryClick ? () => onEntryClick(entry) : undefined}
+          onDelete={onEntryDelete}
         />
       ))}
     </div>
