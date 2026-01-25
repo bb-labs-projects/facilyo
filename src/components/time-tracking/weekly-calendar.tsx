@@ -20,6 +20,7 @@ const START_HOUR = 5;
 const END_HOUR = 24;
 const HOURS = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
 const HOUR_HEIGHT = 50; // pixels per hour
+const MIN_ENTRY_HEIGHT = 18; // minimum height for readable text
 
 // Entry type colors matching the design
 const ENTRY_COLORS: Record<TimeEntryType, { bg: string; border: string; text: string }> = {
@@ -117,7 +118,7 @@ export function WeeklyCalendar({ entries, selectedDate, className, onEntryUpdate
     return hours;
   }, [entriesByDay]);
 
-  // Calculate entry dimensions
+  // Calculate entry dimensions - height matches actual duration
   const calculateEntryDimensions = (entry: TimeEntryWithProperty): CalendarEntry => {
     const startDate = new Date(entry.start_time);
     const endDate = entry.end_time ? new Date(entry.end_time) : new Date();
@@ -127,7 +128,9 @@ export function WeeklyCalendar({ entries, selectedDate, className, onEntryUpdate
     const endHour = Math.min(endDate.getHours() + endDate.getMinutes() / 60, END_HOUR);
 
     const top = (startHour - START_HOUR) * HOUR_HEIGHT;
-    const height = Math.max((endHour - startHour) * HOUR_HEIGHT, 25); // Minimum 25px height
+    // Use actual time-based height with small minimum for readability
+    const calculatedHeight = (endHour - startHour) * HOUR_HEIGHT;
+    const height = Math.max(calculatedHeight, MIN_ENTRY_HEIGHT);
 
     return { ...entry, top, height };
   };
@@ -241,19 +244,17 @@ export function WeeklyCalendar({ entries, selectedDate, className, onEntryUpdate
                     const dims = calculateEntryDimensions(entry);
                     const colors = ENTRY_COLORS[entry.entry_type || 'property'];
                     const startTime = format(parseISO(entry.start_time), 'HH:mm');
-                    const endTime = entry.end_time
-                      ? format(parseISO(entry.end_time), 'HH:mm')
-                      : 'Aktiv';
-                    const isCompact = dims.height < 40;
+                    const isTiny = dims.height < 25;
 
                     return (
                       <button
                         key={entry.id}
                         onClick={() => handleEntryClick(entry)}
                         className={cn(
-                          'absolute left-1 right-1 rounded-md border overflow-hidden',
+                          'absolute left-0.5 right-0.5 rounded overflow-hidden',
                           'text-left transition-all hover:shadow-md cursor-pointer',
-                          isCompact ? 'px-1 py-0.5' : 'p-1',
+                          'border',
+                          isTiny ? 'px-0.5' : 'px-1 py-0.5',
                           colors.bg,
                           colors.border,
                           colors.text
@@ -264,17 +265,19 @@ export function WeeklyCalendar({ entries, selectedDate, className, onEntryUpdate
                         }}
                       >
                         {/* Single line layout - always fit on one line */}
-                        <div className="flex items-center gap-1 text-xs font-medium h-full whitespace-nowrap">
-                          {getEntryIcon(entry.entry_type || 'property')}
-                          <span className="truncate flex-1 min-w-0">
+                        <div className={cn(
+                          'flex items-center gap-0.5 h-full whitespace-nowrap',
+                          isTiny ? 'text-[10px]' : 'text-xs'
+                        )}>
+                          {!isTiny && getEntryIcon(entry.entry_type || 'property')}
+                          <span className="truncate flex-1 min-w-0 font-medium">
                             {entry.property?.name || getEntryTypeLabel(entry.entry_type || 'property')}
                           </span>
-                          {!isCompact && (
+                          {!isTiny && (
                             <span className="text-[10px] opacity-75 shrink-0">
                               {startTime}
                             </span>
                           )}
-                          <Pencil className="h-2.5 w-2.5 opacity-50 shrink-0" />
                         </div>
                       </button>
                     );

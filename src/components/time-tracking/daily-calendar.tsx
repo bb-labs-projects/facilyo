@@ -21,6 +21,7 @@ const START_HOUR = 5;
 const END_HOUR = 24;
 const HOURS = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
 const HOUR_HEIGHT = 60; // pixels per hour
+const MIN_ENTRY_HEIGHT = 22; // minimum height for readable text (single line)
 
 // Entry type colors matching the design
 const ENTRY_COLORS: Record<TimeEntryType, { bg: string; border: string; text: string; icon: string }> = {
@@ -53,7 +54,7 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
   const [selectedEntry, setSelectedEntry] = useState<TimeEntryWithProperty | null>(null);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
 
-  // Calculate entry dimensions
+  // Calculate entry dimensions - height matches actual duration
   const calculateEntryDimensions = (entry: TimeEntryWithProperty): CalendarEntry => {
     const startDate = new Date(entry.start_time);
     const endDate = entry.end_time ? new Date(entry.end_time) : new Date();
@@ -63,7 +64,9 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
     const endHour = Math.min(endDate.getHours() + endDate.getMinutes() / 60, END_HOUR);
 
     const top = (startHour - START_HOUR) * HOUR_HEIGHT;
-    const height = Math.max((endHour - startHour) * HOUR_HEIGHT, 50); // Minimum 50px height
+    // Use actual time-based height with small minimum for readability
+    const calculatedHeight = (endHour - startHour) * HOUR_HEIGHT;
+    const height = Math.max(calculatedHeight, MIN_ENTRY_HEIGHT);
 
     return { ...entry, top, height };
   };
@@ -212,21 +215,22 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
                 ? format(parseISO(entry.end_time), 'HH:mm')
                 : 'Aktiv';
               const duration = calculateDuration(entry);
-              const isLargeEntry = dims.height >= 100;
-              const isMediumEntry = dims.height >= 70;
 
               // Determine layout based on height
-              const isCompact = dims.height < 70;
+              const isTiny = dims.height < 30;
+              const isCompact = dims.height < 60;
+              const isMediumEntry = dims.height >= 80;
+              const isLargeEntry = dims.height >= 110;
 
               return (
                 <button
                   key={entry.id}
                   onClick={() => handleEntryClick(entry)}
                   className={cn(
-                    'absolute left-2 right-2 rounded-lg border-2 overflow-hidden',
-                    'text-left transition-all hover:shadow-lg hover:scale-[1.01] cursor-pointer',
+                    'absolute left-2 right-2 rounded-lg border overflow-hidden',
+                    'text-left transition-all hover:shadow-md cursor-pointer',
                     'active:scale-[0.99]',
-                    isCompact ? 'px-2 py-1' : 'p-3',
+                    isTiny ? 'px-1.5 py-0 border' : isCompact ? 'px-2 py-0.5 border' : 'p-2 border-2',
                     colors.bg,
                     colors.border
                   )}
@@ -235,9 +239,20 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
                     height: dims.height,
                   }}
                 >
-                  {isCompact ? (
+                  {isTiny ? (
+                    // Tiny single-line layout (minimal)
+                    <div className={cn('flex items-center gap-1 h-full text-xs', colors.text)}>
+                      {getEntryIcon(entry.entry_type || 'property')}
+                      <span className="font-medium truncate flex-1">
+                        {entry.property?.name || getEntryTypeLabel(entry.entry_type || 'property')}
+                      </span>
+                      <span className="font-mono opacity-70 shrink-0 text-[10px]">
+                        {startTime}
+                      </span>
+                    </div>
+                  ) : isCompact ? (
                     // Compact single-line layout
-                    <div className={cn('flex items-center gap-2 h-full', colors.text)}>
+                    <div className={cn('flex items-center gap-1.5 h-full text-sm', colors.text)}>
                       {getEntryIcon(entry.entry_type || 'property')}
                       <span className="font-semibold truncate flex-1">
                         {entry.property?.name || getEntryTypeLabel(entry.entry_type || 'property')}
@@ -257,7 +272,7 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
                     // Full layout for larger entries
                     <>
                       {/* Header row */}
-                      <div className="flex items-center justify-between gap-2 mb-1">
+                      <div className="flex items-center justify-between gap-2 mb-0.5">
                         <div className={cn('flex items-center gap-2 font-semibold truncate', colors.text)}>
                           {getEntryIcon(entry.entry_type || 'property')}
                           <span className="truncate">
@@ -268,9 +283,9 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
                       </div>
 
                       {/* Time and duration */}
-                      <div className={cn('flex items-center gap-3 text-sm', colors.text, 'opacity-80')}>
+                      <div className={cn('flex items-center gap-2 text-xs', colors.text, 'opacity-80')}>
                         <div className="flex items-center gap-1">
-                          <Clock className="h-3.5 w-3.5" />
+                          <Clock className="h-3 w-3" />
                           <span className="font-mono">{startTime} - {endTime}</span>
                         </div>
                         <div className="font-medium">
@@ -280,9 +295,9 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
 
                       {/* Property address - only show for property entries with enough space */}
                       {isMediumEntry && entry.property && entry.entry_type === 'property' && (
-                        <div className={cn('flex items-start gap-1.5 mt-2 text-xs', colors.text, 'opacity-70')}>
-                          <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                          <span className="line-clamp-2">
+                        <div className={cn('flex items-start gap-1.5 mt-1 text-xs', colors.text, 'opacity-70')}>
+                          <MapPin className="h-3 w-3 mt-0.5 shrink-0" />
+                          <span className="line-clamp-1">
                             {entry.property.address}, {entry.property.postal_code} {entry.property.city}
                           </span>
                         </div>
@@ -290,15 +305,15 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
 
                       {/* Notes - only show for large entries */}
                       {isLargeEntry && entry.notes && (
-                        <div className={cn('flex items-start gap-1.5 mt-2 text-xs', colors.text, 'opacity-70')}>
-                          <FileText className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                        <div className={cn('flex items-start gap-1.5 mt-1 text-xs', colors.text, 'opacity-70')}>
+                          <FileText className="h-3 w-3 mt-0.5 shrink-0" />
                           <span className="line-clamp-2">{entry.notes}</span>
                         </div>
                       )}
 
                       {/* Active indicator */}
                       {!entry.end_time && (
-                        <div className="absolute top-2 right-2">
+                        <div className="absolute top-1.5 right-1.5">
                           <span className="flex h-2 w-2">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
                             <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
