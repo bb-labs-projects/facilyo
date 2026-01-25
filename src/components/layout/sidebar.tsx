@@ -34,8 +34,6 @@ const mainNavItems: NavItem[] = [
 const adminNavItems: NavItem[] = [
   { href: '/admin/activity', label: 'Aktivitäten', icon: Activity, requireAdmin: true },
   { href: '/admin/users', label: 'Benutzer', icon: Users, requireAdmin: true },
-  { href: '/admin/locations', label: 'Standorte', icon: Building2, requireAdmin: true },
-  { href: '/admin/settings', label: 'Einstellungen', icon: Settings, requireAdmin: true },
 ];
 
 export function Sidebar() {
