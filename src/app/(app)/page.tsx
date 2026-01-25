@@ -201,17 +201,21 @@ export default function HomePage() {
   const handleDeleteEntry = async (entry: TimeEntryWithProperty) => {
     try {
       const supabase = getClient();
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('time_entries')
         .delete()
         .eq('id', entry.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Delete error:', error);
+        throw error;
+      }
 
       toast.success('Zeiteintrag gelöscht');
       refetchEntries();
-    } catch (error) {
-      toast.error('Fehler beim Löschen des Zeiteintrags');
+    } catch (error: any) {
+      console.error('Delete failed:', error);
+      toast.error(`Fehler beim Löschen: ${error?.message || 'Unbekannter Fehler'}`);
     }
   };
 
