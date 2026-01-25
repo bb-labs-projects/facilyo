@@ -183,7 +183,7 @@ export function TimeEntryEditSheet({
           <SheetHeader className="text-left">
             <SheetTitle>Zeiteintrag bearbeiten</SheetTitle>
             <SheetDescription>
-              {entry.property.name}
+              {entry.property?.name || (entry.entry_type === 'travel' ? 'Fahrzeit' : entry.entry_type === 'break' ? 'Pause' : 'Zeiteintrag')}
             </SheetDescription>
           </SheetHeader>
 
