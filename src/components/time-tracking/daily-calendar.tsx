@@ -16,11 +16,11 @@ interface DailyCalendarProps {
   onEntryUpdated?: () => void;
 }
 
-// Time range for the calendar (6:00 - 21:00)
-const START_HOUR = 6;
-const END_HOUR = 21;
+// Time range for the calendar (5:00 - 24:00)
+const START_HOUR = 5;
+const END_HOUR = 24;
 const HOURS = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
-const HOUR_HEIGHT = 80; // pixels per hour - larger for single day view
+const HOUR_HEIGHT = 60; // pixels per hour
 
 // Entry type colors matching the design
 const ENTRY_COLORS: Record<TimeEntryType, { bg: string; border: string; text: string; icon: string }> = {
@@ -60,10 +60,10 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
 
     // Clamp to display range
     const startHour = Math.max(startDate.getHours() + startDate.getMinutes() / 60, START_HOUR);
-    const endHour = Math.min(endDate.getHours() + endDate.getMinutes() / 60, END_HOUR + 1);
+    const endHour = Math.min(endDate.getHours() + endDate.getMinutes() / 60, END_HOUR);
 
     const top = (startHour - START_HOUR) * HOUR_HEIGHT;
-    const height = Math.max((endHour - startHour) * HOUR_HEIGHT, 60); // Minimum 60px height
+    const height = Math.max((endHour - startHour) * HOUR_HEIGHT, 50); // Minimum 50px height
 
     return { ...entry, top, height };
   };
@@ -135,9 +135,9 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
 
   return (
     <>
-      <div className={cn('overflow-hidden rounded-lg border border-gray-200 bg-white', className)}>
+      <div className={cn('rounded-lg border border-gray-200 bg-white', className)}>
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
+        <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3 sticky top-0 z-20">
           <div className="font-medium text-gray-900">
             {format(selectedDate, 'EEEE, d. MMMM yyyy', { locale: de })}
           </div>
@@ -148,8 +148,9 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
           )}
         </div>
 
-        {/* Calendar body */}
-        <div className="flex relative" style={{ height: totalCalendarHeight }}>
+        {/* Calendar body - scrollable */}
+        <div className="overflow-y-auto max-h-[60vh]">
+          <div className="flex relative" style={{ height: totalCalendarHeight }}>
           {/* Time column */}
           <div className="w-16 shrink-0 relative border-r border-gray-200 bg-gray-50/50">
             {HOURS.map((hour) => (
@@ -283,6 +284,7 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
               );
             })}
           </div>
+        </div>
         </div>
       </div>
 

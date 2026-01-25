@@ -140,8 +140,7 @@ export const useTimerStore = create<TimerStore>()(
         const { error } = await (supabase
           .from('work_days') as any)
           .update({
-            end_time: new Date().toISOString(),
-            is_finalized: false
+            end_time: new Date().toISOString()
           })
           .eq('id', workDay.id);
 
