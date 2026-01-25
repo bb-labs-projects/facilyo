@@ -72,7 +72,7 @@ export function TimeEntryEditSheet({
   // Initialize form when entry changes
   useEffect(() => {
     if (entry) {
-      setPropertyId(entry.property_id);
+      setPropertyId(entry.property_id || '');
       setStartTime(formatTimeForInput(entry.start_time));
       setEndTime(entry.end_time ? formatTimeForInput(entry.end_time) : '');
       setPauseMinutes(String(Math.floor((entry.pause_duration || 0) / 60)));
