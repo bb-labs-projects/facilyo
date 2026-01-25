@@ -73,7 +73,7 @@ export const useTimerStore = create<TimerStore>()(
         const today = new Date().toISOString().split('T')[0];
         const now = new Date().toISOString();
 
-        // Check if there's already a finalized work day for today
+        // Check if there's already a work day for today
         const { data: existingWorkDay } = await (supabase
           .from('work_days') as any)
           .select()
@@ -81,12 +81,8 @@ export const useTimerStore = create<TimerStore>()(
           .eq('date', today)
           .single();
 
-        if (existingWorkDay?.is_finalized) {
-          throw new Error('Der Arbeitstag wurde bereits endgültig beendet und kann nicht wieder gestartet werden.');
-        }
-
-        if (existingWorkDay && !existingWorkDay.is_finalized) {
-          // Re-open existing non-finalized work day
+        if (existingWorkDay) {
+          // Re-open existing work day
           const { data, error } = await (supabase
             .from('work_days') as any)
             .update({ end_time: null })
@@ -109,7 +105,6 @@ export const useTimerStore = create<TimerStore>()(
             user_id: user.id,
             date: today,
             start_time: now,
-            is_finalized: false,
           })
           .select()
           .single();
@@ -409,14 +404,13 @@ export const useTimerStore = create<TimerStore>()(
 
         const today = new Date().toISOString().split('T')[0];
 
-        // Check for active (non-finalized) work day
+        // Check for active work day (no end_time means still active)
         const { data: workDay } = await (supabase
           .from('work_days') as any)
           .select()
           .eq('user_id', user.id)
           .eq('date', today)
           .is('end_time', null)
-          .eq('is_finalized', false)
           .single();
 
         if (workDay) {
