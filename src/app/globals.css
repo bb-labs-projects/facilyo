@@ -4,26 +4,30 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 210 40% 98%;
+    --foreground: 217 33% 17%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 217 33% 17%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 199 89% 48%;
-    --primary-foreground: 210 40% 98%;
+    --popover-foreground: 217 33% 17%;
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
     --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted-foreground: 215 16% 47%;
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 199 89% 48%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 221 83% 53%;
     --radius: 0.75rem;
+
+    /* Sidebar-specific variables */
+    --sidebar: 222 47% 11%;
+    --sidebar-foreground: 210 40% 98%;
   }
 
   .dark {
@@ -105,16 +109,16 @@
 
   /* Bottom navigation */
   .bottom-nav {
-    @apply fixed bottom-0 left-0 right-0 bg-white border-t border-border;
+    @apply fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200;
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
 
   .bottom-nav-item {
-    @apply flex flex-col items-center justify-center min-h-[64px] flex-1 text-xs text-muted-foreground transition-colors;
+    @apply flex flex-col items-center justify-center min-h-[64px] flex-1 text-xs text-slate-500 transition-colors;
   }
 
   .bottom-nav-item.active {
-    @apply text-primary-600;
+    @apply text-blue-600;
   }
 
   .bottom-nav-item svg {

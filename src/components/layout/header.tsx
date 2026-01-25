@@ -1,9 +1,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, MoreVertical } from 'lucide-react';
+import { ChevronLeft, MoreVertical, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useMobileMenu } from '@/contexts/mobile-menu-context';
 
 interface HeaderProps {
   title: string;
@@ -12,6 +13,8 @@ interface HeaderProps {
   backHref?: string;
   rightElement?: React.ReactNode;
   className?: string;
+  onMenuClick?: () => void;
+  showMobileMenu?: boolean;
 }
 
 export function Header({
@@ -21,8 +24,11 @@ export function Header({
   backHref,
   rightElement,
   className,
+  onMenuClick,
+  showMobileMenu = true,
 }: HeaderProps) {
   const router = useRouter();
+  const mobileMenu = useMobileMenu();
 
   const handleBack = () => {
     if (backHref) {
@@ -35,8 +41,7 @@ export function Header({
   return (
     <header
       className={cn(
-        'sticky top-0 z-40 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60',
-        'border-b border-border',
+        'sticky top-0 z-40 w-full bg-white border-b border-slate-200',
         'standalone-header',
         className
       )}
@@ -44,6 +49,18 @@ export function Header({
       <div className="flex h-14 items-center px-4">
         {/* Left section */}
         <div className="flex items-center gap-2 flex-1">
+          {/* Hamburger menu for mobile */}
+          {showMobileMenu && !showBack && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onMenuClick || mobileMenu.open}
+              className="-ml-2 lg:hidden"
+              aria-label="Menü öffnen"
+            >
+              <Menu className="h-6 w-6 text-slate-600" />
+            </Button>
+          )}
           {showBack && (
             <Button
               variant="ghost"
@@ -52,13 +69,13 @@ export function Header({
               className="-ml-2"
               aria-label="Zurück"
             >
-              <ChevronLeft className="h-6 w-6" />
+              <ChevronLeft className="h-6 w-6 text-slate-600" />
             </Button>
           )}
           <div className="flex flex-col">
-            <h1 className="text-lg font-semibold leading-tight">{title}</h1>
+            <h1 className="text-lg font-bold leading-tight text-slate-800">{title}</h1>
             {subtitle && (
-              <p className="text-sm text-muted-foreground">{subtitle}</p>
+              <p className="text-sm text-slate-500">{subtitle}</p>
             )}
           </div>
         </div>
@@ -91,9 +108,9 @@ export function PageContainer({
       <main
         className={cn(
           'flex-1',
-          !noPadding && 'p-4',
-          // Account for bottom nav
-          'pb-24',
+          !noPadding && 'p-4 lg:p-6',
+          // Account for bottom nav on mobile, no extra padding on desktop
+          'pb-24 lg:pb-6',
           className
         )}
       >

@@ -33,7 +33,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="mb-2 block text-sm font-medium text-foreground"
+            className="mb-2 block text-xs lg:text-sm font-medium text-slate-500"
           >
             {label}
           </label>
@@ -48,10 +48,10 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             type={type}
             id={inputId}
             className={cn(
-              'flex h-12 w-full rounded-lg border border-input bg-background px-4 py-3 text-base',
+              'flex h-12 w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-base text-slate-800',
               'ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium',
-              'placeholder:text-muted-foreground',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+              'placeholder:text-slate-400',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2',
               'disabled:cursor-not-allowed disabled:opacity-50',
               error && 'border-error-500 focus-visible:ring-error-500',
               leftElement && 'pl-10',
@@ -97,7 +97,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         {label && (
           <label
             htmlFor={textareaId}
-            className="mb-2 block text-sm font-medium text-foreground"
+            className="mb-2 block text-xs lg:text-sm font-medium text-slate-500"
           >
             {label}
           </label>
@@ -105,9 +105,9 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         <textarea
           id={textareaId}
           className={cn(
-            'flex min-h-[100px] w-full rounded-lg border border-input bg-background px-4 py-3 text-base',
-            'ring-offset-background placeholder:text-muted-foreground',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+            'flex min-h-[100px] w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-base text-slate-800',
+            'ring-offset-background placeholder:text-slate-400',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2',
             'disabled:cursor-not-allowed disabled:opacity-50',
             error && 'border-error-500 focus-visible:ring-error-500',
             className
@@ -119,7 +119,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           <p className="mt-1 text-sm text-error-600">{error}</p>
         )}
         {hint && !error && (
-          <p className="mt-1 text-sm text-muted-foreground">{hint}</p>
+          <p className="mt-1 text-sm text-slate-500">{hint}</p>
         )}
       </div>
     );

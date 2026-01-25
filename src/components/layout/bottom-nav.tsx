@@ -7,38 +7,28 @@ import {
   Clock,
   ClipboardList,
   AlertTriangle,
-  Activity,
   User,
 } from 'lucide-react';
 import { cn, hapticFeedback } from '@/lib/utils';
-import { usePermissions } from '@/hooks/use-permissions';
 
 interface NavItem {
   href: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
-  requireAdmin?: boolean;
 }
 
+// Mobile bottom nav only shows 5 core items
+// Admin items are accessible via sidebar on desktop or mobile menu
 const navItems: NavItem[] = [
   { href: '/', label: 'Start', icon: Home },
   { href: '/time', label: 'Zeiten', icon: Clock },
   { href: '/tasks', label: 'Aufgaben', icon: ClipboardList },
   { href: '/issues', label: 'Meldungen', icon: AlertTriangle },
-  { href: '/admin/activity', label: 'Aktivitäten', icon: Activity, requireAdmin: true },
   { href: '/profile', label: 'Profil', icon: User },
 ];
 
 export function BottomNav() {
   const pathname = usePathname();
-  const permissions = usePermissions();
-
-  const filteredNavItems = navItems.filter((item) => {
-    if (item.requireAdmin) {
-      return permissions.canAccessAdminPanel;
-    }
-    return true;
-  });
 
   const isActive = (href: string) => {
     if (href === '/') {
@@ -52,9 +42,9 @@ export function BottomNav() {
   };
 
   return (
-    <nav className="bottom-nav" role="navigation" aria-label="Hauptnavigation">
+    <nav className="bottom-nav lg:hidden" role="navigation" aria-label="Hauptnavigation">
       <div className="flex items-stretch">
-        {filteredNavItems.map((item) => {
+        {navItems.map((item) => {
           const active = isActive(item.href);
           const Icon = item.icon;
 
@@ -72,13 +62,13 @@ export function BottomNav() {
               <Icon
                 className={cn(
                   'w-6 h-6 transition-colors',
-                  active ? 'text-primary-600' : 'text-muted-foreground'
+                  active ? 'text-blue-600' : 'text-slate-400'
                 )}
               />
               <span
                 className={cn(
                   'text-xs mt-1 transition-colors',
-                  active ? 'text-primary-600 font-medium' : 'text-muted-foreground'
+                  active ? 'text-blue-600 font-medium' : 'text-slate-500'
                 )}
               >
                 {item.label}

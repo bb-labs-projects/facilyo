@@ -42,12 +42,12 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     const variantStyles = {
       primary:
-        'bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800 focus-visible:ring-primary-500',
+        'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 focus-visible:ring-blue-500',
       secondary:
-        'bg-secondary text-secondary-foreground hover:bg-secondary/80 active:bg-secondary/70',
+        'bg-slate-100 text-slate-700 hover:bg-slate-200 active:bg-slate-300',
       outline:
-        'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
-      ghost: 'hover:bg-accent hover:text-accent-foreground',
+        'border border-slate-200 bg-white hover:bg-slate-50 text-slate-700',
+      ghost: 'hover:bg-slate-100 text-slate-700',
       destructive:
         'bg-error-600 text-white hover:bg-error-700 active:bg-error-800 focus-visible:ring-error-500',
     };
@@ -78,14 +78,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       >
         {isLoading ? (
           <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="mr-1.5 lg:mr-2 h-4 w-4 animate-spin" />
             {loadingText || children}
           </>
         ) : (
           <>
-            {leftIcon && <span className="mr-2">{leftIcon}</span>}
+            {leftIcon && <span className="mr-1.5 lg:mr-2">{leftIcon}</span>}
             {children}
-            {rightIcon && <span className="ml-2">{rightIcon}</span>}
+            {rightIcon && <span className="ml-1.5 lg:ml-2">{rightIcon}</span>}
           </>
         )}
       </button>

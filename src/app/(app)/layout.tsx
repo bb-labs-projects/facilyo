@@ -3,6 +3,8 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { BottomNav } from '@/components/layout/bottom-nav';
+import { Sidebar } from '@/components/layout/sidebar';
+import { MobileMenuProvider } from '@/contexts/mobile-menu-context';
 import { useAuthStore } from '@/stores/auth-store';
 import { useTimerStore } from '@/stores/timer-store';
 
@@ -32,8 +34,8 @@ export default function AppLayout({
   // Show loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
       </div>
     );
   }
@@ -44,9 +46,21 @@ export default function AppLayout({
   }
 
   return (
-    <div className="min-h-screen pb-20">
-      {children}
-      <BottomNav />
-    </div>
+    <MobileMenuProvider>
+      <div className="min-h-screen bg-slate-50">
+        {/* Desktop Sidebar */}
+        <Sidebar />
+
+        {/* Main Content Area */}
+        <div className="lg:ml-64">
+          <div className="pb-20 lg:pb-0">
+            {children}
+          </div>
+        </div>
+
+        {/* Mobile Bottom Navigation */}
+        <BottomNav />
+      </div>
+    </MobileMenuProvider>
   );
 }
