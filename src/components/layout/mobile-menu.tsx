@@ -53,7 +53,7 @@ interface MobileMenuProps {
 export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
   const pathname = usePathname();
   const permissions = usePermissions();
-  const { user } = useAuthStore();
+  const { user, profile } = useAuthStore();
 
   const isActive = (href: string) => {
     if (href === '/') {
@@ -165,7 +165,7 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
             </div>
             <div className="flex flex-col overflow-hidden">
               <span className="truncate text-sm font-medium">
-                {user?.full_name || 'Benutzer'}
+                {profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Benutzer' : 'Benutzer'}
               </span>
               <span className="truncate text-xs text-slate-400">
                 {user?.email || ''}
