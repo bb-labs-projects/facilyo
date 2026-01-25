@@ -300,7 +300,7 @@ export default function HomePage() {
                     onStartBreak={handleStartBreak}
                     onEndWorkDay={handleEndWorkDay}
                     showPropertyButton={!!selectedProperty}
-                    disabled={!selectedProperty}
+                    propertyDisabled={!selectedProperty}
                   />
                 </>
               )}

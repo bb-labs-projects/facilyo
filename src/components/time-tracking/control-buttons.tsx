@@ -134,7 +134,7 @@ interface TravelControlsProps {
   onStartBreak: () => void;
   onEndWorkDay: () => void;
   isLoading?: boolean;
-  disabled?: boolean;
+  propertyDisabled?: boolean;
   showPropertyButton?: boolean;
   className?: string;
 }
@@ -144,7 +144,7 @@ export function TravelControls({
   onStartBreak,
   onEndWorkDay,
   isLoading = false,
-  disabled = false,
+  propertyDisabled = false,
   showPropertyButton = true,
   className,
 }: TravelControlsProps) {
@@ -160,7 +160,7 @@ export function TravelControls({
           size="touch"
           onClick={() => handleAction(onStartProperty)}
           isLoading={isLoading}
-          disabled={disabled}
+          disabled={propertyDisabled}
           className="w-full"
           leftIcon={<Building2 className="h-5 w-5" />}
         >
@@ -172,7 +172,6 @@ export function TravelControls({
         variant="secondary"
         onClick={() => handleAction(onStartBreak)}
         isLoading={isLoading}
-        disabled={disabled}
         className="w-full"
         leftIcon={<Coffee className="h-5 w-5" />}
       >
