@@ -161,16 +161,21 @@ export const useTimerStore = create<TimerStore>()(
         set({ workDay });
       },
 
-      // Start travel time entry
+      // Start travel time entry (stops any current entry first)
       startTravelTime: async () => {
         const supabase = getClient();
-        const { workDay } = get();
+        const { workDay, activeEntry } = get();
         const {
           data: { user },
         } = await supabase.auth.getUser();
 
         if (!user) throw new Error('Not authenticated');
         if (!workDay) throw new Error('No active work day');
+
+        // Stop any current entry first
+        if (activeEntry) {
+          await get().stopCurrentEntry();
+        }
 
         const now = new Date().toISOString();
 
@@ -200,10 +205,10 @@ export const useTimerStore = create<TimerStore>()(
         return entry;
       },
 
-      // Start working on a property (stops travel time first)
+      // Start working on a property (stops any current entry first)
       startPropertyWork: async (propertyId, coords) => {
         const supabase = getClient();
-        const { workDay, activeEntry, currentEntryType } = get();
+        const { workDay, activeEntry } = get();
         const {
           data: { user },
         } = await supabase.auth.getUser();
@@ -211,8 +216,8 @@ export const useTimerStore = create<TimerStore>()(
         if (!user) throw new Error('Not authenticated');
         if (!workDay) throw new Error('No active work day');
 
-        // Stop current entry (travel time) if active
-        if (activeEntry && currentEntryType === 'travel') {
+        // Stop any current entry (travel, break, or another property)
+        if (activeEntry) {
           await get().stopCurrentEntry(coords);
         }
 
