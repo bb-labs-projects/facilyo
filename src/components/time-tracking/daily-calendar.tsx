@@ -213,7 +213,8 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
               const startTime = format(parseISO(entry.start_time), 'HH:mm');
               const endTime = entry.end_time
                 ? format(parseISO(entry.end_time), 'HH:mm')
-                : 'Aktiv';
+                : null;
+              const isActive = !entry.end_time;
               const duration = calculateDuration(entry);
 
               // Determine layout based on height
@@ -246,8 +247,14 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
                       <span className="font-medium truncate flex-1">
                         {entry.property?.name || getEntryTypeLabel(entry.entry_type || 'property')}
                       </span>
-                      <span className="font-mono opacity-70 shrink-0 text-[10px]">
-                        {startTime}-{endTime}
+                      <span className="font-mono opacity-70 shrink-0 text-[10px] flex items-center gap-1">
+                        {startTime}-{endTime || ''}
+                        {isActive && (
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                          </span>
+                        )}
                       </span>
                     </div>
                   ) : isCompact ? (
@@ -257,15 +264,15 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
                       <span className="font-semibold truncate flex-1">
                         {entry.property?.name || getEntryTypeLabel(entry.entry_type || 'property')}
                       </span>
-                      <span className="text-xs font-mono opacity-80 shrink-0">
-                        {startTime}-{endTime}
+                      <span className="text-xs font-mono opacity-80 shrink-0 flex items-center gap-1">
+                        {startTime}-{endTime || ''}
+                        {isActive && (
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                          </span>
+                        )}
                       </span>
-                      {!entry.end_time && (
-                        <span className="flex h-2 w-2 shrink-0">
-                          <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-green-400 opacity-75" />
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
-                        </span>
-                      )}
                       <Pencil className={cn('h-3 w-3 opacity-50 shrink-0', colors.text)} />
                     </div>
                   ) : (
@@ -286,7 +293,15 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
                       <div className={cn('flex items-center gap-2 text-xs', colors.text, 'opacity-80')}>
                         <div className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          <span className="font-mono">{startTime} - {endTime}</span>
+                          <span className="font-mono flex items-center gap-1">
+                            {startTime} - {endTime || ''}
+                            {isActive && (
+                              <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                              </span>
+                            )}
+                          </span>
                         </div>
                         <div className="font-medium">
                           {swissFormat.durationHuman(duration)}
@@ -311,15 +326,6 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
                         </div>
                       )}
 
-                      {/* Active indicator */}
-                      {!entry.end_time && (
-                        <div className="absolute top-1.5 right-1.5">
-                          <span className="flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
-                          </span>
-                        </div>
-                      )}
                     </>
                   )}
                 </button>
