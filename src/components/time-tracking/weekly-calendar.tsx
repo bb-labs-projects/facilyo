@@ -3,21 +3,16 @@
 import { useMemo, useState } from 'react';
 import { format, startOfWeek, addDays, isSameDay, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { Car, Building2, Coffee } from 'lucide-react';
+import { Car, Building2, Coffee, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { swissFormat } from '@/lib/i18n';
 import type { TimeEntryWithProperty, TimeEntryType } from '@/types/database';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
+import { TimeEntryEditSheet } from './time-entry-edit-sheet';
 
 interface WeeklyCalendarProps {
   entries: TimeEntryWithProperty[];
   selectedDate: Date;
   className?: string;
+  onEntryUpdated?: () => void;
 }
 
 // Time range for the calendar (6:00 - 21:00)
@@ -50,8 +45,31 @@ interface CalendarEntry extends TimeEntryWithProperty {
   height: number;
 }
 
-export function WeeklyCalendar({ entries, selectedDate, className }: WeeklyCalendarProps) {
+export function WeeklyCalendar({ entries, selectedDate, className, onEntryUpdated }: WeeklyCalendarProps) {
   const [selectedEntry, setSelectedEntry] = useState<TimeEntryWithProperty | null>(null);
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
+
+  const handleEntryClick = (entry: TimeEntryWithProperty) => {
+    setSelectedEntry(entry);
+    setEditSheetOpen(true);
+  };
+
+  const handleEditSheetClose = () => {
+    setEditSheetOpen(false);
+    setSelectedEntry(null);
+  };
+
+  const handleEntrySaved = () => {
+    setEditSheetOpen(false);
+    setSelectedEntry(null);
+    onEntryUpdated?.();
+  };
+
+  const handleEntryDeleted = () => {
+    setEditSheetOpen(false);
+    setSelectedEntry(null);
+    onEntryUpdated?.();
+  };
 
   // Generate week days starting from Monday
   const weekStart = startOfWeek(selectedDate, { locale: de });
@@ -98,15 +116,6 @@ export function WeeklyCalendar({ entries, selectedDate, className }: WeeklyCalen
 
     return hours;
   }, [entriesByDay]);
-
-  // Convert time to position
-  const timeToPosition = (timeString: string): number => {
-    const date = new Date(timeString);
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    const totalMinutes = (hours - START_HOUR) * 60 + minutes;
-    return (totalMinutes / 60) * HOUR_HEIGHT;
-  };
 
   // Calculate entry dimensions
   const calculateEntryDimensions = (entry: TimeEntryWithProperty): CalendarEntry => {
@@ -239,7 +248,7 @@ export function WeeklyCalendar({ entries, selectedDate, className }: WeeklyCalen
                     return (
                       <button
                         key={entry.id}
-                        onClick={() => setSelectedEntry(entry)}
+                        onClick={() => handleEntryClick(entry)}
                         className={cn(
                           'absolute left-1 right-1 rounded-md border p-1 overflow-hidden',
                           'text-left transition-all hover:shadow-md cursor-pointer',
@@ -257,6 +266,7 @@ export function WeeklyCalendar({ entries, selectedDate, className }: WeeklyCalen
                           <span className="truncate">
                             {entry.property?.name || getEntryTypeLabel(entry.entry_type || 'property')}
                           </span>
+                          <Pencil className="h-2.5 w-2.5 ml-auto opacity-50 shrink-0" />
                         </div>
                         {dims.height > 40 && (
                           <div className="text-[10px] opacity-75 mt-0.5">
@@ -273,94 +283,16 @@ export function WeeklyCalendar({ entries, selectedDate, className }: WeeklyCalen
         </div>
       </div>
 
-      {/* Entry Detail Sheet */}
-      <Sheet open={!!selectedEntry} onOpenChange={(open) => !open && setSelectedEntry(null)}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>
-              {selectedEntry?.property?.name || getEntryTypeLabel(selectedEntry?.entry_type || 'property')}
-            </SheetTitle>
-          </SheetHeader>
-
-          {selectedEntry && (
-            <div className="mt-6 space-y-4">
-              {/* Entry Type Badge */}
-              <div className="flex items-center gap-2">
-                <div
-                  className={cn(
-                    'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium',
-                    ENTRY_COLORS[selectedEntry.entry_type || 'property'].bg,
-                    ENTRY_COLORS[selectedEntry.entry_type || 'property'].text
-                  )}
-                >
-                  {getEntryIcon(selectedEntry.entry_type || 'property')}
-                  {getEntryTypeLabel(selectedEntry.entry_type || 'property')}
-                </div>
-              </div>
-
-              {/* Time Details */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Datum</span>
-                  <span className="font-medium">
-                    {format(parseISO(selectedEntry.start_time), 'EEEE, d. MMMM yyyy', { locale: de })}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Start</span>
-                  <span className="font-mono">
-                    {format(parseISO(selectedEntry.start_time), 'HH:mm')}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Ende</span>
-                  <span className="font-mono">
-                    {selectedEntry.end_time
-                      ? format(parseISO(selectedEntry.end_time), 'HH:mm')
-                      : 'Aktiv'}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Dauer</span>
-                  <span className="font-mono font-semibold">
-                    {swissFormat.durationHuman(
-                      Math.floor(
-                        ((selectedEntry.end_time
-                          ? new Date(selectedEntry.end_time).getTime()
-                          : Date.now()) -
-                          new Date(selectedEntry.start_time).getTime()) /
-                          1000
-                      )
-                    )}
-                  </span>
-                </div>
-              </div>
-
-              {/* Property Details (if applicable) */}
-              {selectedEntry.property && (
-                <div className="pt-4 border-t space-y-2">
-                  <h4 className="text-sm font-medium">Liegenschaft</h4>
-                  <div className="text-sm text-muted-foreground">
-                    <p className="font-medium text-foreground">{selectedEntry.property.name}</p>
-                    <p>{selectedEntry.property.address}</p>
-                    <p>
-                      {selectedEntry.property.postal_code} {selectedEntry.property.city}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Notes */}
-              {selectedEntry.notes && (
-                <div className="pt-4 border-t">
-                  <h4 className="text-sm font-medium mb-2">Notizen</h4>
-                  <p className="text-sm text-muted-foreground">{selectedEntry.notes}</p>
-                </div>
-              )}
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
+      {/* Edit Sheet */}
+      <TimeEntryEditSheet
+        entry={selectedEntry}
+        open={editSheetOpen}
+        onOpenChange={(open) => {
+          if (!open) handleEditSheetClose();
+        }}
+        onSaved={handleEntrySaved}
+        onDeleted={handleEntryDeleted}
+      />
     </>
   );
 }

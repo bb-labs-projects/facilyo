@@ -5,10 +5,9 @@ import { useQuery } from '@tanstack/react-query';
 import { Calendar, ChevronLeft, ChevronRight, Car, Coffee, Building2 } from 'lucide-react';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
-import { WorkDayCard, TimeEntryList } from '@/components/time-tracking/work-day-card';
-import { WorkDayDetailSheet } from '@/components/time-tracking/work-day-detail-sheet';
 import { PropertyTimeSummary } from '@/components/time-tracking/property-time-summary';
 import { WeeklyCalendar } from '@/components/time-tracking/weekly-calendar';
+import { DailyCalendar } from '@/components/time-tracking/daily-calendar';
 import { PullToRefresh } from '@/components/layout/pull-to-refresh';
 import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
@@ -16,7 +15,7 @@ import { swissFormat } from '@/lib/i18n';
 import { addDays, subDays, startOfWeek, endOfWeek, format, isSameDay } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import type { WorkDayWithEntries, TimeEntryWithProperty, TimeEntryType } from '@/types/database';
+import type { WorkDayWithEntries, TimeEntryType } from '@/types/database';
 
 // Entry type display config
 const ENTRY_TYPE_CONFIG: Record<TimeEntryType, { label: string; icon: typeof Car; color: string }> = {
@@ -29,7 +28,6 @@ export default function TimePage() {
   const profile = useAuthStore((state) => state.profile);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
-  const [selectedWorkDay, setSelectedWorkDay] = useState<WorkDayWithEntries | null>(null);
 
   // Fetch work days with time entries
   const { data: workDays = [], refetch } = useQuery({
@@ -228,37 +226,34 @@ export default function TimePage() {
               entries={allEntries}
               selectedDate={selectedDate}
               className="mb-6"
+              onEntryUpdated={() => refetch()}
             />
           )
         ) : (
-          /* Day View - Work days list */
-          workDays.length === 0 ? (
+          /* Day View - Calendar View */
+          allEntries.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>Keine Einträge für diesen Tag</p>
             </div>
           ) : (
             <div className="space-y-4">
+              {/* Daily Calendar View */}
+              <DailyCalendar
+                entries={allEntries}
+                selectedDate={selectedDate}
+                className="mb-4"
+                onEntryUpdated={() => refetch()}
+              />
+
+              {/* Property Time Summary below the calendar */}
               {workDays.map((day) => (
                 <div key={day.id}>
-                  <WorkDayCard
-                    workDay={day}
-                    entries={day.time_entries}
-                    isActive={!day.end_time}
-                    onClick={() => setSelectedWorkDay(day)}
-                    className="mb-2"
-                  />
                   {day.time_entries.length > 0 && (
-                    <>
-                      <PropertyTimeSummary
-                        entries={day.time_entries}
-                        className="mb-2 ml-4"
-                      />
-                      <TimeEntryList
-                        entries={day.time_entries}
-                        className="ml-4"
-                      />
-                    </>
+                    <PropertyTimeSummary
+                      entries={day.time_entries}
+                      className="mb-2"
+                    />
                   )}
                 </div>
               ))}
@@ -266,14 +261,6 @@ export default function TimePage() {
           )
         )}
       </PullToRefresh>
-
-      {/* Work Day Detail Sheet */}
-      <WorkDayDetailSheet
-        workDay={selectedWorkDay}
-        open={!!selectedWorkDay}
-        onOpenChange={(open) => !open && setSelectedWorkDay(null)}
-        onEntryUpdated={() => refetch()}
-      />
     </PageContainer>
   );
 }

@@ -112,7 +112,7 @@ export function TimeEntryEditSheet({
       const { error } = await (supabase as any)
         .from('time_entries')
         .update({
-          property_id: propertyId,
+          property_id: entry.entry_type === 'property' ? propertyId : null,
           start_time: newStartTime,
           end_time: newEndTime,
           pause_duration: (parseInt(pauseMinutes) || 0) * 60,
@@ -159,7 +159,7 @@ export function TimeEntryEditSheet({
   });
 
   const handleSave = () => {
-    if (!propertyId) {
+    if (entry?.entry_type === 'property' && !propertyId) {
       toast.error('Bitte wählen Sie eine Liegenschaft');
       return;
     }
@@ -188,23 +188,25 @@ export function TimeEntryEditSheet({
           </SheetHeader>
 
           <div className="space-y-4 mt-6">
-            {/* Property Select */}
-            <div className="w-full">
-              <label className="mb-2 block text-sm font-medium text-foreground">
-                Liegenschaft
-              </label>
-              <select
-                value={propertyId}
-                onChange={(e) => setPropertyId(e.target.value)}
-                className="flex h-12 w-full rounded-lg border border-input bg-background px-4 py-3 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                {properties.map((property) => (
-                  <option key={property.id} value={property.id}>
-                    {property.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Property Select - only for property entries */}
+            {entry.entry_type === 'property' && (
+              <div className="w-full">
+                <label className="mb-2 block text-sm font-medium text-foreground">
+                  Liegenschaft
+                </label>
+                <select
+                  value={propertyId}
+                  onChange={(e) => setPropertyId(e.target.value)}
+                  className="flex h-12 w-full rounded-lg border border-input bg-background px-4 py-3 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  {properties.map((property) => (
+                    <option key={property.id} value={property.id}>
+                      {property.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Start Time */}
             <Input

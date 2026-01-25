@@ -136,12 +136,12 @@ export const useTimerStore = create<TimerStore>()(
           await get().stopCurrentEntry();
         }
 
-        // Mark work day as ended AND finalized
+        // Mark work day as ended (not finalized for testing)
         const { error } = await (supabase
           .from('work_days') as any)
           .update({
             end_time: new Date().toISOString(),
-            is_finalized: true
+            is_finalized: false
           })
           .eq('id', workDay.id);
 
