@@ -113,6 +113,30 @@ export async function POST(request: NextRequest) {
       // Generate placeholder email using username
       // Using example.com as it's a reserved domain (RFC 2606)
       email = `${username}@example.com`;
+
+      // Check if placeholder email already exists
+      const { data: existingPlaceholder } = await (serviceClient as any)
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .single();
+
+      if (existingPlaceholder) {
+        return NextResponse.json(
+          { error: 'Ein Benutzer mit diesem Namen existiert bereits' },
+          { status: 409 }
+        );
+      }
+    }
+
+    // Check if email exists in Supabase Auth (from previous failed attempts)
+    const { data: existingAuthUsers } = await serviceClient.auth.admin.listUsers();
+    const emailExistsInAuth = existingAuthUsers?.users?.some(u => u.email === email);
+    if (emailExistsInAuth) {
+      return NextResponse.json(
+        { error: 'Ein Benutzer mit dieser E-Mail existiert bereits im System. Bitte kontaktieren Sie den Administrator.' },
+        { status: 409 }
+      );
     }
 
     // Generate temporary password
