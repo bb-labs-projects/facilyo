@@ -41,7 +41,7 @@ export function Header({
   return (
     <header
       className={cn(
-        'sticky top-0 z-40 w-full bg-white border-b border-slate-200',
+        'sticky top-0 z-40 w-full bg-background border-b border-border',
         'standalone-header',
         className
       )}
@@ -58,7 +58,7 @@ export function Header({
               className="-ml-2 lg:hidden"
               aria-label="Menü öffnen"
             >
-              <Menu className="h-6 w-6 text-slate-600" />
+              <Menu className="h-6 w-6 text-foreground" />
             </Button>
           )}
           {showBack && (
@@ -69,13 +69,13 @@ export function Header({
               className="-ml-2"
               aria-label="Zurück"
             >
-              <ChevronLeft className="h-6 w-6 text-slate-600" />
+              <ChevronLeft className="h-6 w-6 text-foreground" />
             </Button>
           )}
           <div className="flex flex-col">
-            <h1 className="text-lg font-bold leading-tight text-slate-800">{title}</h1>
+            <h1 className="text-lg font-bold leading-tight text-foreground">{title}</h1>
             {subtitle && (
-              <p className="text-sm text-slate-500">{subtitle}</p>
+              <p className="text-sm text-muted-foreground">{subtitle}</p>
             )}
           </div>
         </div>
