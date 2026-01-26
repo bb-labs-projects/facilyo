@@ -27,15 +27,25 @@ export function PhotoCapture({
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const compressImage = async (file: File): Promise<File> => {
-    const options = {
-      maxSizeMB: 1,
-      maxWidthOrHeight: 1920,
-      useWebWorker: true,
-    };
-    return imageCompression(file, options);
+    console.log('[PhotoCapture] Starting compression for:', file.name, 'size:', file.size);
+    try {
+      const options = {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
+      };
+      const compressed = await imageCompression(file, options);
+      console.log('[PhotoCapture] Compression complete, new size:', compressed.size);
+      return compressed;
+    } catch (err) {
+      console.error('[PhotoCapture] Compression failed:', err);
+      // Return original file if compression fails
+      return file;
+    }
   };
 
   const uploadPhoto = async (file: File): Promise<string> => {
+    console.log('[PhotoCapture] Starting upload for:', file.name);
     const supabase = getClient();
 
     // Compress image
@@ -47,6 +57,8 @@ export function PhotoCapture({
     const filename = `${timestamp}-${Math.random().toString(36).substr(2, 9)}.${extension}`;
     const path = `issues/${filename}`;
 
+    console.log('[PhotoCapture] Uploading to path:', path);
+
     // Upload to Supabase Storage
     const { data, error } = await supabase.storage
       .from('photos')
@@ -55,24 +67,38 @@ export function PhotoCapture({
         upsert: false,
       });
 
-    if (error) throw error;
+    if (error) {
+      console.error('[PhotoCapture] Upload error:', error);
+      throw error;
+    }
+
+    console.log('[PhotoCapture] Upload success:', data);
 
     // Get public URL
     const {
       data: { publicUrl },
     } = supabase.storage.from('photos').getPublicUrl(data.path);
 
+    console.log('[PhotoCapture] Public URL:', publicUrl);
     return publicUrl;
   };
 
   const handleFileSelect = useCallback(
     async (files: FileList | null) => {
-      if (!files || files.length === 0) return;
+      console.log('[PhotoCapture] handleFileSelect called with files:', files?.length);
+      if (!files || files.length === 0) {
+        console.log('[PhotoCapture] No files selected');
+        return;
+      }
 
       const remainingSlots = maxPhotos - photos.length;
-      if (remainingSlots <= 0) return;
+      if (remainingSlots <= 0) {
+        console.log('[PhotoCapture] No remaining slots');
+        return;
+      }
 
       const filesToProcess = Array.from(files).slice(0, remainingSlots);
+      console.log('[PhotoCapture] Files to process:', filesToProcess.map(f => ({ name: f.name, size: f.size, type: f.type })));
 
       setIsUploading(true);
       setUploadProgress(0);
@@ -83,15 +109,17 @@ export function PhotoCapture({
         const total = filesToProcess.length;
 
         for (let i = 0; i < filesToProcess.length; i++) {
+          console.log('[PhotoCapture] Processing file', i + 1, 'of', total);
           const url = await uploadPhoto(filesToProcess[i]);
           uploadedUrls.push(url);
           setUploadProgress(((i + 1) / total) * 100);
         }
 
+        console.log('[PhotoCapture] All uploads complete:', uploadedUrls);
         onPhotosChange([...photos, ...uploadedUrls]);
         hapticFeedback('medium');
       } catch (error: any) {
-        console.error('Failed to upload photo:', error);
+        console.error('[PhotoCapture] Failed to upload photo:', error);
         toast.error(error?.message || 'Foto konnte nicht hochgeladen werden');
         hapticFeedback('heavy');
       } finally {
