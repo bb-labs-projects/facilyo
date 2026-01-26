@@ -88,12 +88,12 @@ export default function MigrationPage() {
 
   // Redirect if no permission
   useEffect(() => {
-    if (!permissions.isAdmin) {
+    if (!permissions.canManageEmployees) {
       router.push('/admin');
     }
-  }, [permissions.isAdmin, router]);
+  }, [permissions.canManageEmployees, router]);
 
-  if (!permissions.isAdmin) {
+  if (!permissions.canManageEmployees) {
     return null;
   }
 

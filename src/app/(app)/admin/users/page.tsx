@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Users, Shield, Building2, Search, UserPlus, KeyRound, LockOpen, AlertCircle } from 'lucide-react';
+import { Users, Shield, Building2, Search, UserPlus, KeyRound, Unlock, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
@@ -432,7 +432,7 @@ export default function AdminUsersPage() {
                           title="Account entsperren"
                           disabled={unlockAccountMutation.isPending}
                         >
-                          <LockOpen className="h-4 w-4 text-red-500" />
+                          <Unlock className="h-4 w-4 text-red-500" />
                         </Button>
                       )}
                       {/* Reset password button */}
