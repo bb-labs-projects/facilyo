@@ -41,7 +41,7 @@ export function Header({
   return (
     <header
       className={cn(
-        'sticky top-0 z-40 w-full bg-background border-b border-border',
+        'sticky top-0 z-40 w-full bg-slate-50 border-b border-slate-200',
         'standalone-header',
         className
       )}

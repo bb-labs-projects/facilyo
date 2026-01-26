@@ -114,7 +114,7 @@
 
   /* Bottom navigation */
   .bottom-nav {
-    @apply fixed bottom-0 left-0 right-0 bg-background border-t border-border;
+    @apply fixed bottom-0 left-0 right-0 bg-slate-50 border-t border-slate-200;
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
 
