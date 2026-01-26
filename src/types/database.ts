@@ -413,6 +413,82 @@ export interface Database {
           created_at?: string;
         };
       };
+      auth_credentials: {
+        Row: {
+          id: string;
+          user_id: string;
+          username: string;
+          password_hash: string;
+          must_change_password: boolean;
+          temp_password_expires_at: string | null;
+          failed_attempts: number;
+          locked_until: string | null;
+          last_login_at: string | null;
+          password_changed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          username: string;
+          password_hash: string;
+          must_change_password?: boolean;
+          temp_password_expires_at?: string | null;
+          failed_attempts?: number;
+          locked_until?: string | null;
+          last_login_at?: string | null;
+          password_changed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          username?: string;
+          password_hash?: string;
+          must_change_password?: boolean;
+          temp_password_expires_at?: string | null;
+          failed_attempts?: number;
+          locked_until?: string | null;
+          last_login_at?: string | null;
+          password_changed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      auth_audit_log: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          username: string | null;
+          event_type: string;
+          ip_address: string | null;
+          user_agent: string | null;
+          details: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          username?: string | null;
+          event_type: string;
+          ip_address?: string | null;
+          user_agent?: string | null;
+          details?: Json | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          username?: string | null;
+          event_type?: string;
+          ip_address?: string | null;
+          user_agent?: string | null;
+          details?: Json | null;
+          created_at?: string;
+        };
+      };
     };
     Views: {
       [_ in never]: never;
@@ -443,6 +519,8 @@ export type ChecklistInstance = Database['public']['Tables']['checklist_instance
 export type Issue = Database['public']['Tables']['issues']['Row'];
 export type Aufgabe = Database['public']['Tables']['aufgaben']['Row'];
 export type ChecklistItemCompletion = Database['public']['Tables']['checklist_item_completions']['Row'];
+export type AuthCredentials = Database['public']['Tables']['auth_credentials']['Row'];
+export type AuthAuditLog = Database['public']['Tables']['auth_audit_log']['Row'];
 
 // Insert types
 export type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];

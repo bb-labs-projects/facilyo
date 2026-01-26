@@ -12,17 +12,37 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  mustChangePassword: boolean;
+  username: string | null;
+}
+
+interface LoginResponse {
+  success: boolean;
+  user: {
+    id: string;
+    email: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+    role: string;
+  };
+  mustChangePassword: boolean;
+  sessionToken?: string;
+  error?: string;
+  locked?: boolean;
+  minutesRemaining?: number;
+  attemptsRemaining?: number;
 }
 
 interface AuthActions {
-  login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string) => Promise<void>;
+  login: (username: string, password: string) => Promise<{ mustChangePassword: boolean }>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   setUser: (user: User | null) => void;
   setProfile: (profile: Profile | null) => void;
   setLoading: (loading: boolean) => void;
   clearError: () => void;
+  clearMustChangePassword: () => void;
   initialize: () => Promise<void>;
 }
 
@@ -37,63 +57,56 @@ export const useAuthStore = create<AuthStore>()(
       isAuthenticated: false,
       isLoading: true,
       error: null,
+      mustChangePassword: false,
+      username: null,
 
       // Actions
-      login: async (email: string, password: string) => {
+      login: async (username: string, password: string) => {
         const supabase = getClient();
         set({ isLoading: true, error: null });
 
         try {
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
+          // Step 1: Call our custom login API to verify credentials
+          // This checks username/password against auth_credentials, handles lockout, etc.
+          const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password }),
           });
 
-          if (error) {
-            set({ error: error.message, isLoading: false });
-            throw error;
+          const data: LoginResponse = await response.json();
+
+          if (!response.ok) {
+            const errorMessage = data.error || 'Anmeldung fehlgeschlagen';
+            set({ error: errorMessage, isLoading: false });
+            throw new Error(errorMessage);
+          }
+
+          // Step 2: Sign in to Supabase using the user's email and password
+          // The password is synced between our auth_credentials and Supabase auth
+          const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+            email: data.user.email,
+            password: password,
+          });
+
+          if (authError) {
+            console.error('Supabase sign-in error:', authError);
+            // Our API already verified the password, so this shouldn't happen
+            // but if it does, still allow the user to proceed
           }
 
           set({
-            user: data.user,
+            user: authData?.user || null,
             isAuthenticated: true,
             isLoading: false,
+            mustChangePassword: data.mustChangePassword,
+            username: data.user.username,
           });
 
           // Fetch profile after login
           await get().refreshProfile();
-        } catch (error) {
-          set({ isLoading: false });
-          throw error;
-        }
-      },
 
-      signup: async (email: string, password: string) => {
-        const supabase = getClient();
-        set({ isLoading: true, error: null });
-
-        try {
-          const { data, error } = await supabase.auth.signUp({
-            email,
-            password,
-          });
-
-          if (error) {
-            set({ error: error.message, isLoading: false });
-            throw error;
-          }
-
-          // If email confirmation is required, user won't be immediately signed in
-          if (data.user && data.session) {
-            set({
-              user: data.user,
-              isAuthenticated: true,
-              isLoading: false,
-            });
-            await get().refreshProfile();
-          } else {
-            set({ isLoading: false });
-          }
+          return { mustChangePassword: data.mustChangePassword };
         } catch (error) {
           set({ isLoading: false });
           throw error;
@@ -112,6 +125,8 @@ export const useAuthStore = create<AuthStore>()(
             isAuthenticated: false,
             isLoading: false,
             error: null,
+            mustChangePassword: false,
+            username: null,
           });
         } catch (error) {
           set({ isLoading: false });
@@ -159,6 +174,10 @@ export const useAuthStore = create<AuthStore>()(
         set({ error: null });
       },
 
+      clearMustChangePassword: () => {
+        set({ mustChangePassword: false });
+      },
+
       initialize: async () => {
         const supabase = getClient();
         set({ isLoading: true });
@@ -204,6 +223,8 @@ export const useAuthStore = create<AuthStore>()(
       partialize: (state) => ({
         // Only persist minimal data
         isAuthenticated: state.isAuthenticated,
+        mustChangePassword: state.mustChangePassword,
+        username: state.username,
       }),
     }
   )
@@ -214,6 +235,8 @@ export const selectUser = (state: AuthStore) => state.user;
 export const selectProfile = (state: AuthStore) => state.profile;
 export const selectIsAuthenticated = (state: AuthStore) => state.isAuthenticated;
 export const selectIsLoading = (state: AuthStore) => state.isLoading;
+export const selectMustChangePassword = (state: AuthStore) => state.mustChangePassword;
+export const selectUsername = (state: AuthStore) => state.username;
 export const selectFullName = (state: AuthStore) => {
   const { profile } = state;
   if (!profile) return '';

@@ -2,11 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { LogIn, Eye, EyeOff } from 'lucide-react';
+import { LogIn, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,6 +18,7 @@ export default function LoginPage() {
   const login = useAuthStore((state) => state.login);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   const {
     register,
@@ -27,7 +27,7 @@ export default function LoginPage() {
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: '',
+      username: '',
       password: '',
       rememberMe: false,
     },
@@ -35,13 +35,22 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
+    setLoginError(null);
     try {
-      await login(data.email, data.password);
+      const result = await login(data.username, data.password);
       toast.success('Erfolgreich angemeldet');
-      router.push('/');
-    } catch (error) {
+
+      // Redirect to change-password if required
+      if (result.mustChangePassword) {
+        router.push('/change-password');
+      } else {
+        router.push('/');
+      }
+    } catch (error: any) {
+      const message = error.message || 'Bitte überprüfen Sie Ihre Eingaben.';
+      setLoginError(message);
       toast.error('Anmeldung fehlgeschlagen', {
-        description: 'Bitte überprüfen Sie Ihre Eingaben.',
+        description: message,
       });
     } finally {
       setIsLoading(false);
@@ -67,20 +76,28 @@ export default function LoginPage() {
         <CardHeader className="text-center">
           <CardTitle>Anmelden</CardTitle>
           <CardDescription>
-            Melden Sie sich mit Ihrer E-Mail und Passwort an
+            Melden Sie sich mit Ihrem Benutzernamen an
           </CardDescription>
         </CardHeader>
 
         <CardContent>
+          {loginError && (
+            <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 flex items-start gap-2">
+              <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-700">{loginError}</p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <Input
-              label="E-Mail"
-              type="email"
-              inputMode="email"
-              placeholder="name@firma.ch"
-              autoComplete="email"
-              error={errors.email?.message}
-              {...register('email')}
+              label="Benutzername"
+              type="text"
+              placeholder="benutzername"
+              autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              error={errors.username?.message}
+              {...register('username')}
             />
 
             <Input
@@ -136,10 +153,7 @@ export default function LoginPage() {
           </form>
 
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Noch kein Konto?{' '}
-            <Link href="/signup" className="text-primary-600 hover:underline">
-              Registrieren
-            </Link>
+            Bei Problemen wenden Sie sich an den Administrator.
           </p>
         </CardContent>
       </Card>

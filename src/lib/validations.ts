@@ -13,18 +13,36 @@ const messages = {
 
 // Login form schema
 export const loginSchema = z.object({
-  email: z
+  username: z
     .string()
     .min(1, messages.required)
-    .email(messages.email),
+    .min(3, messages.minLength(3)),
   password: z
     .string()
-    .min(1, messages.required)
-    .min(6, messages.minLength(6)),
+    .min(1, messages.required),
   rememberMe: z.boolean().optional(),
 });
 
 export type LoginFormData = z.infer<typeof loginSchema>;
+
+// Change password form schema
+export const changePasswordSchema = z.object({
+  currentPassword: z
+    .string()
+    .min(1, messages.required),
+  newPassword: z
+    .string()
+    .min(1, messages.required)
+    .min(12, 'Mindestens 12 Zeichen erforderlich'),
+  confirmPassword: z
+    .string()
+    .min(1, messages.required),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: 'Passwörter stimmen nicht überein',
+  path: ['confirmPassword'],
+});
+
+export type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
 
 // Profile update schema
 export const profileSchema = z.object({

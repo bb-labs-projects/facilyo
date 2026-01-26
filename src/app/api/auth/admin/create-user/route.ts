@@ -1,0 +1,230 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
+import { hashPassword, generateTempPassword, generateUsernameFromEmail, generateUniqueUsername } from '@/lib/auth/password';
+import type { UserRole } from '@/types/database';
+
+interface CreateUserRequest {
+  username?: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: UserRole;
+}
+
+const TEMP_PASSWORD_VALIDITY_HOURS = 24;
+
+export async function POST(request: NextRequest) {
+  const supabase = await createClient();
+  const serviceClient = createServiceRoleClient();
+  const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+  const userAgent = request.headers.get('user-agent') || 'unknown';
+
+  try {
+    // Check if current user is admin
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: 'Nicht authentifiziert' },
+        { status: 401 }
+      );
+    }
+
+    // Get current user's profile to check role
+    const { data: currentProfile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || !currentProfile) {
+      return NextResponse.json(
+        { error: 'Profil nicht gefunden' },
+        { status: 404 }
+      );
+    }
+
+    // Only admins and owners can create users
+    if (!['admin', 'owner'].includes(currentProfile.role)) {
+      return NextResponse.json(
+        { error: 'Keine Berechtigung zum Erstellen von Benutzern' },
+        { status: 403 }
+      );
+    }
+
+    const body: CreateUserRequest = await request.json();
+    const { email, firstName, lastName, role } = body;
+
+    if (!email || !firstName || !lastName || !role) {
+      return NextResponse.json(
+        { error: 'Alle Felder sind erforderlich' },
+        { status: 400 }
+      );
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: 'Ungültige E-Mail-Adresse' },
+        { status: 400 }
+      );
+    }
+
+    // Check if email already exists
+    const { data: existingProfile } = await serviceClient
+      .from('profiles')
+      .select('id')
+      .eq('email', email.toLowerCase())
+      .single();
+
+    if (existingProfile) {
+      return NextResponse.json(
+        { error: 'E-Mail-Adresse wird bereits verwendet' },
+        { status: 409 }
+      );
+    }
+
+    // Generate username from email or use provided
+    let username = body.username?.toLowerCase() || generateUsernameFromEmail(email);
+
+    // Check for username collisions
+    const { data: existingUsernames } = await serviceClient
+      .from('auth_credentials')
+      .select('username');
+
+    const usernameList = (existingUsernames || []).map((u: any) => u.username);
+    username = generateUniqueUsername(username, usernameList);
+
+    // Generate temporary password
+    const tempPassword = generateTempPassword(16);
+    const passwordHash = await hashPassword(tempPassword);
+
+    // Create auth user in Supabase with the temp password
+    // This allows the user to also sign in via Supabase auth for RLS to work
+    const { data: authUser, error: authError } = await serviceClient.auth.admin.createUser({
+      email: email.toLowerCase(),
+      password: tempPassword, // Same password for Supabase auth
+      email_confirm: true,
+      user_metadata: {
+        first_name: firstName,
+        last_name: lastName,
+        username,
+      },
+    });
+
+    if (authError) {
+      console.error('Auth user creation error:', authError);
+      return NextResponse.json(
+        { error: 'Fehler beim Erstellen des Benutzers' },
+        { status: 500 }
+      );
+    }
+
+    // Create profile
+    const { error: profileCreateError } = await serviceClient
+      .from('profiles')
+      .insert({
+        id: authUser.user.id,
+        email: email.toLowerCase(),
+        first_name: firstName,
+        last_name: lastName,
+        role,
+      });
+
+    if (profileCreateError) {
+      // Rollback: delete auth user
+      await serviceClient.auth.admin.deleteUser(authUser.user.id);
+      console.error('Profile creation error:', profileCreateError);
+      return NextResponse.json(
+        { error: 'Fehler beim Erstellen des Profils' },
+        { status: 500 }
+      );
+    }
+
+    // Create auth credentials
+    const tempPasswordExpires = new Date(
+      Date.now() + TEMP_PASSWORD_VALIDITY_HOURS * 60 * 60 * 1000
+    ).toISOString();
+
+    const { error: credError } = await serviceClient
+      .from('auth_credentials')
+      .insert({
+        user_id: authUser.user.id,
+        username,
+        password_hash: passwordHash,
+        must_change_password: true,
+        temp_password_expires_at: tempPasswordExpires,
+      });
+
+    if (credError) {
+      // Rollback: delete profile and auth user
+      await serviceClient.from('profiles').delete().eq('id', authUser.user.id);
+      await serviceClient.auth.admin.deleteUser(authUser.user.id);
+      console.error('Credentials creation error:', credError);
+      return NextResponse.json(
+        { error: 'Fehler beim Erstellen der Anmeldedaten' },
+        { status: 500 }
+      );
+    }
+
+    // Log audit event
+    await logAuditEvent(serviceClient, {
+      user_id: authUser.user.id,
+      username,
+      event_type: 'user_created',
+      ip_address: ip,
+      user_agent: userAgent,
+      details: {
+        created_by: user.id,
+        role,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      user: {
+        id: authUser.user.id,
+        email: email.toLowerCase(),
+        username,
+        firstName,
+        lastName,
+        role,
+      },
+      tempPassword, // Only returned once!
+      tempPasswordExpiresAt: tempPasswordExpires,
+      message: `Benutzer wurde erstellt. Temporäres Passwort ist ${TEMP_PASSWORD_VALIDITY_HOURS} Stunden gültig.`,
+    });
+  } catch (error) {
+    console.error('Create user error:', error);
+    return NextResponse.json(
+      { error: 'Ein unerwarteter Fehler ist aufgetreten' },
+      { status: 500 }
+    );
+  }
+}
+
+async function logAuditEvent(
+  supabase: any,
+  event: {
+    user_id?: string;
+    username?: string;
+    event_type: string;
+    ip_address?: string;
+    user_agent?: string;
+    details?: Record<string, any>;
+  }
+) {
+  try {
+    await supabase.from('auth_audit_log').insert({
+      user_id: event.user_id,
+      username: event.username,
+      event_type: event.event_type,
+      ip_address: event.ip_address,
+      user_agent: event.user_agent,
+      details: event.details,
+    });
+  } catch (error) {
+    console.error('Failed to log audit event:', error);
+  }
+}

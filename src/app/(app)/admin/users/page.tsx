@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Users, Plus, Mail, Shield, Building2, ChevronRight, Search, UserPlus } from 'lucide-react';
+import { Users, Shield, Building2, Search, UserPlus, KeyRound, LockOpen, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
@@ -23,6 +23,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { TempPasswordDialog } from './components/temp-password-dialog';
+import { ResetPasswordDialog } from './components/reset-password-dialog';
 import { useAuthStore } from '@/stores/auth-store';
 import { usePermissions } from '@/hooks/use-permissions';
 import { getClient } from '@/lib/supabase/client';
@@ -30,8 +32,18 @@ import { roleLabels, getAssignableRoles } from '@/lib/permissions';
 import { getInitials, cn } from '@/lib/utils';
 import type { Profile, Property, UserRole } from '@/types/database';
 
+interface AuthCredentials {
+  id: string;
+  user_id: string;
+  username: string;
+  must_change_password: boolean;
+  locked_until: string | null;
+  failed_attempts: number;
+}
+
 interface UserWithAssignments extends Profile {
   property_assignments: { property_id: string; property: Property }[];
+  auth_credentials?: AuthCredentials[];
 }
 
 export default function AdminUsersPage() {
@@ -45,12 +57,23 @@ export default function AdminUsersPage() {
   const [showRoleDialog, setShowRoleDialog] = useState(false);
   const [showAssignmentsSheet, setShowAssignmentsSheet] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
+  const [showTempPasswordDialog, setShowTempPasswordDialog] = useState(false);
+  const [tempPasswordData, setTempPasswordData] = useState<{
+    username: string;
+    tempPassword: string;
+    expiresAt: string;
+    isNewUser: boolean;
+  } | null>(null);
+
+  // Form state for creating user
+  const [newUserUsername, setNewUserUsername] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserFirstName, setNewUserFirstName] = useState('');
   const [newUserLastName, setNewUserLastName] = useState('');
   const [newUserRole, setNewUserRole] = useState<UserRole>('employee');
 
-  // Fetch all users
+  // Fetch all users with their auth credentials
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['admin-users'],
     queryFn: async () => {
@@ -62,6 +85,14 @@ export default function AdminUsersPage() {
           property_assignments (
             property_id,
             property:properties (*)
+          ),
+          auth_credentials (
+            id,
+            user_id,
+            username,
+            must_change_password,
+            locked_until,
+            failed_attempts
           )
         `)
         .order('first_name');
@@ -135,36 +166,101 @@ export default function AdminUsersPage() {
     },
   });
 
-  // Create user invitation mutation
+  // Create user mutation
   const createUserMutation = useMutation({
-    mutationFn: async ({ email, firstName, lastName, role }: {
+    mutationFn: async ({ username, email, firstName, lastName, role }: {
+      username?: string;
       email: string;
       firstName: string;
       lastName: string;
       role: UserRole;
     }) => {
-      const supabase = getClient();
-      // Create an invitation - when user signs up with this email, they get these settings
-      const { error } = await (supabase as any)
-        .from('user_invitations')
-        .insert({
-          email,
-          first_name: firstName,
-          last_name: lastName,
-          role,
-        });
+      const response = await fetch('/api/auth/admin/create-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, email, firstName, lastName, role }),
+      });
 
-      if (error) throw error;
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Erstellen des Benutzers');
+      }
+      return data;
     },
-    onSuccess: () => {
-      toast.success('Einladung erstellt. Der Benutzer kann sich jetzt mit dieser E-Mail registrieren.');
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
-      queryClient.invalidateQueries({ queryKey: ['user-invitations'] });
       setShowCreateDialog(false);
+      setNewUserUsername('');
       setNewUserEmail('');
       setNewUserFirstName('');
       setNewUserLastName('');
       setNewUserRole('employee');
+
+      // Show temp password dialog
+      setTempPasswordData({
+        username: data.user.username,
+        tempPassword: data.tempPassword,
+        expiresAt: data.tempPasswordExpiresAt,
+        isNewUser: true,
+      });
+      setShowTempPasswordDialog(true);
+    },
+    onError: (error: Error) => {
+      toast.error(`Fehler: ${error.message}`);
+    },
+  });
+
+  // Reset password mutation
+  const resetPasswordMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const response = await fetch('/api/auth/admin/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Zurücksetzen des Passworts');
+      }
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      setShowResetPasswordDialog(false);
+
+      // Show temp password dialog
+      setTempPasswordData({
+        username: data.user.username,
+        tempPassword: data.tempPassword,
+        expiresAt: data.tempPasswordExpiresAt,
+        isNewUser: false,
+      });
+      setShowTempPasswordDialog(true);
+    },
+    onError: (error: Error) => {
+      toast.error(`Fehler: ${error.message}`);
+    },
+  });
+
+  // Unlock account mutation
+  const unlockAccountMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const response = await fetch('/api/auth/admin/unlock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Fehler beim Entsperren des Accounts');
+      }
+      return data;
+    },
+    onSuccess: () => {
+      toast.success('Account wurde entsperrt');
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
     },
     onError: (error: Error) => {
       toast.error(`Fehler: ${error.message}`);
@@ -182,10 +278,12 @@ export default function AdminUsersPage() {
   const filteredUsers = users.filter((user) => {
     if (!searchQuery) return true;
     const search = searchQuery.toLowerCase();
+    const username = user.auth_credentials?.[0]?.username || '';
     return (
       user.email.toLowerCase().includes(search) ||
       user.first_name?.toLowerCase().includes(search) ||
-      user.last_name?.toLowerCase().includes(search)
+      user.last_name?.toLowerCase().includes(search) ||
+      username.toLowerCase().includes(search)
     );
   });
 
@@ -193,6 +291,15 @@ export default function AdminUsersPage() {
 
   const getUserAssignedPropertyIds = (user: UserWithAssignments) =>
     user.property_assignments?.map((a) => a.property_id) || [];
+
+  const isUserLocked = (user: UserWithAssignments) => {
+    const creds = user.auth_credentials?.[0];
+    return creds?.locked_until && new Date(creds.locked_until) > new Date();
+  };
+
+  const mustChangePassword = (user: UserWithAssignments) => {
+    return user.auth_credentials?.[0]?.must_change_password || false;
+  };
 
   if (!permissions.canManageEmployees) {
     return null;
@@ -203,7 +310,12 @@ export default function AdminUsersPage() {
       toast.error('E-Mail ist erforderlich');
       return;
     }
+    if (!newUserFirstName.trim() || !newUserLastName.trim()) {
+      toast.error('Vor- und Nachname sind erforderlich');
+      return;
+    }
     createUserMutation.mutate({
+      username: newUserUsername.trim() || undefined,
       email: newUserEmail.trim(),
       firstName: newUserFirstName.trim(),
       lastName: newUserLastName.trim(),
@@ -257,6 +369,9 @@ export default function AdminUsersPage() {
             const initials = getInitials(user.first_name, user.last_name);
             const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') || 'Kein Name';
             const assignedCount = user.property_assignments?.length || 0;
+            const username = user.auth_credentials?.[0]?.username;
+            const locked = isUserLocked(user);
+            const needsPasswordChange = mustChangePassword(user);
 
             return (
               <Card key={user.id} interactive className="cursor-pointer">
@@ -280,11 +395,23 @@ export default function AdminUsersPage() {
                     {/* Info */}
                     <div className="flex-1 min-w-0">
                       <h3 className="font-medium truncate">{fullName}</h3>
-                      <p className="text-sm text-muted-foreground truncate">{user.email}</p>
-                      <div className="flex items-center gap-2 mt-1">
+                      <p className="text-sm text-muted-foreground truncate">
+                        {username ? `@${username}` : user.email}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
                         <span className="badge badge-info text-xs">
                           {roleLabels[user.role]}
                         </span>
+                        {locked && (
+                          <span className="badge bg-red-100 text-red-700 text-xs">
+                            Gesperrt
+                          </span>
+                        )}
+                        {needsPasswordChange && !locked && (
+                          <span className="badge bg-amber-100 text-amber-700 text-xs">
+                            Passwort ändern
+                          </span>
+                        )}
                         <span className="text-xs text-muted-foreground">
                           {assignedCount} {assignedCount === 1 ? 'Liegenschaft' : 'Liegenschaften'}
                         </span>
@@ -292,7 +419,37 @@ export default function AdminUsersPage() {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex gap-2 flex-shrink-0">
+                    <div className="flex gap-1 flex-shrink-0">
+                      {/* Unlock button */}
+                      {locked && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            unlockAccountMutation.mutate(user.id);
+                          }}
+                          title="Account entsperren"
+                          disabled={unlockAccountMutation.isPending}
+                        >
+                          <LockOpen className="h-4 w-4 text-red-500" />
+                        </Button>
+                      )}
+                      {/* Reset password button */}
+                      {user.id !== profile?.id && username && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedUser(user);
+                            setShowResetPasswordDialog(true);
+                          }}
+                          title="Passwort zurücksetzen"
+                        >
+                          <KeyRound className="h-4 w-4" />
+                        </Button>
+                      )}
                       {/* Only show role change if can assign */}
                       {user.id !== profile?.id && assignableRoles.includes(user.role) && (
                         <Button
@@ -434,11 +591,21 @@ export default function AdminUsersPage() {
           <DialogHeader>
             <DialogTitle>Benutzer erstellen</DialogTitle>
             <DialogDescription>
-              Erstellen Sie ein neues Benutzerprofil. Der Benutzer muss sich anschließend mit dieser E-Mail-Adresse registrieren.
+              Erstellen Sie einen neuen Benutzer mit temporärem Passwort.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
+            <Input
+              label="Benutzername (optional)"
+              type="text"
+              placeholder="Wird aus E-Mail generiert wenn leer"
+              value={newUserUsername}
+              onChange={(e) => setNewUserUsername(e.target.value.toLowerCase())}
+              autoCapitalize="none"
+              autoCorrect="off"
+            />
+
             <Input
               label="E-Mail *"
               type="email"
@@ -449,13 +616,13 @@ export default function AdminUsersPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <Input
-                label="Vorname"
+                label="Vorname *"
                 placeholder="Max"
                 value={newUserFirstName}
                 onChange={(e) => setNewUserFirstName(e.target.value)}
               />
               <Input
-                label="Nachname"
+                label="Nachname *"
                 placeholder="Mustermann"
                 value={newUserLastName}
                 onChange={(e) => setNewUserLastName(e.target.value)}
@@ -481,6 +648,13 @@ export default function AdminUsersPage() {
                 ))}
               </select>
             </div>
+
+            <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 flex items-start gap-2">
+              <AlertCircle className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-blue-700">
+                Ein temporäres Passwort wird generiert und muss beim ersten Login geändert werden.
+              </p>
+            </div>
           </div>
 
           <DialogFooter>
@@ -493,6 +667,33 @@ export default function AdminUsersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Reset password confirmation dialog */}
+      {selectedUser && (
+        <ResetPasswordDialog
+          open={showResetPasswordDialog}
+          onOpenChange={setShowResetPasswordDialog}
+          userName={`${selectedUser.first_name} ${selectedUser.last_name}`}
+          onConfirm={async () => {
+            await resetPasswordMutation.mutateAsync(selectedUser.id);
+          }}
+        />
+      )}
+
+      {/* Temp password display dialog */}
+      {tempPasswordData && (
+        <TempPasswordDialog
+          open={showTempPasswordDialog}
+          onOpenChange={(open) => {
+            setShowTempPasswordDialog(open);
+            if (!open) setTempPasswordData(null);
+          }}
+          username={tempPasswordData.username}
+          tempPassword={tempPasswordData.tempPassword}
+          expiresAt={tempPasswordData.expiresAt}
+          isNewUser={tempPasswordData.isNewUser}
+        />
+      )}
     </PageContainer>
   );
 }

@@ -59,8 +59,14 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Paths that don't require authentication
-  const publicPaths = ['/login', '/api/push'];
+  const publicPaths = ['/login', '/api/push', '/api/auth/login'];
   const isPublicPath = publicPaths.some((path) =>
+    request.nextUrl.pathname.startsWith(path)
+  );
+
+  // Paths allowed when mustChangePassword is true
+  const changePasswordAllowedPaths = ['/change-password', '/api/auth/change-password', '/api/auth/logout', '/login'];
+  const isChangePasswordAllowedPath = changePasswordAllowedPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path)
   );
 
@@ -76,6 +82,25 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = '/';
     return NextResponse.redirect(url);
+  }
+
+  // Check mustChangePassword flag from client-side storage
+  // This is handled client-side in the auth store, but we add additional protection here
+  // by checking the cookie that zustand persist creates
+  if (user && !isChangePasswordAllowedPath) {
+    try {
+      const authCookie = request.cookies.get('facility-track-auth')?.value;
+      if (authCookie) {
+        const authState = JSON.parse(authCookie);
+        if (authState.state?.mustChangePassword) {
+          const url = request.nextUrl.clone();
+          url.pathname = '/change-password';
+          return NextResponse.redirect(url);
+        }
+      }
+    } catch {
+      // Ignore JSON parse errors
+    }
   }
 
   return response;
