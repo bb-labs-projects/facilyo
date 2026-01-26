@@ -111,7 +111,8 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // Generate placeholder email using username
-      email = `${username}@facility-track.internal`;
+      // Using example.com as it's a reserved domain (RFC 2606)
+      email = `${username}@example.com`;
     }
 
     // Generate temporary password
