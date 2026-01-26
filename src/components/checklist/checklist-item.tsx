@@ -1,10 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { Check, Camera, GripVertical } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Check, Camera, GripVertical, Loader2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
+import imageCompression from 'browser-image-compression';
 import { Input } from '@/components/ui/input';
 import { cn, hapticFeedback } from '@/lib/utils';
+import { getClient } from '@/lib/supabase/client';
 import type { ChecklistItem as ChecklistItemType } from '@/types/database';
 
 interface ChecklistItemProps {
@@ -198,7 +201,7 @@ function NumberInput({ value, onChange, label, required }: NumberInputProps) {
   );
 }
 
-// Photo input component (placeholder - full implementation in photo-capture)
+// Photo input component with upload functionality
 interface PhotoInputProps {
   value: string;
   onChange: (value: string) => void;
@@ -207,6 +210,72 @@ interface PhotoInputProps {
 }
 
 function PhotoInput({ value, onChange, label, required }: PhotoInputProps) {
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const compressImage = async (file: File): Promise<File> => {
+    try {
+      const options = {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
+      };
+      return await imageCompression(file, options);
+    } catch {
+      return file;
+    }
+  };
+
+  const uploadPhoto = async (file: File): Promise<string> => {
+    const supabase = getClient();
+
+    const compressedFile = await compressImage(file);
+
+    const timestamp = Date.now();
+    const extension = file.name.split('.').pop() || 'jpg';
+    const filename = `${timestamp}-${Math.random().toString(36).substr(2, 9)}.${extension}`;
+    const path = `checklists/${filename}`;
+
+    const { data, error } = await supabase.storage
+      .from('photos')
+      .upload(path, compressedFile, {
+        cacheControl: '3600',
+        upsert: false,
+      });
+
+    if (error) throw error;
+
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from('photos').getPublicUrl(data.path);
+
+    return publicUrl;
+  };
+
+  const handleFileSelect = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    hapticFeedback('light');
+
+    try {
+      const url = await uploadPhoto(files[0]);
+      onChange(url);
+      hapticFeedback('medium');
+    } catch (error: any) {
+      console.error('Failed to upload photo:', error);
+      toast.error(error?.message || 'Foto konnte nicht hochgeladen werden');
+      hapticFeedback('heavy');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleRemove = () => {
+    hapticFeedback('light');
+    onChange('');
+  };
+
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium">
@@ -214,7 +283,12 @@ function PhotoInput({ value, onChange, label, required }: PhotoInputProps) {
         {required && <span className="text-error-500 ml-1">*</span>}
       </label>
 
-      {value ? (
+      {isUploading ? (
+        <div className="w-full h-32 border-2 border-dashed border-primary-300 rounded-lg flex flex-col items-center justify-center gap-2 bg-primary-50">
+          <Loader2 className="h-8 w-8 text-primary-500 animate-spin" />
+          <span className="text-sm text-primary-600">Wird hochgeladen...</span>
+        </div>
+      ) : value ? (
         <div className="relative">
           <img
             src={value}
@@ -225,24 +299,32 @@ function PhotoInput({ value, onChange, label, required }: PhotoInputProps) {
             loading="lazy"
           />
           <button
-            onClick={() => onChange('')}
-            className="absolute top-2 right-2 bg-error-500 text-white p-1 rounded-full"
+            type="button"
+            onClick={handleRemove}
+            className="absolute top-2 right-2 bg-error-500 text-white p-1.5 rounded-full shadow-md hover:bg-error-600 transition-colors"
           >
-            ×
+            <X className="h-4 w-4" />
           </button>
         </div>
       ) : (
         <button
           type="button"
-          onClick={() => {
-            // Photo capture will be handled by parent
-          }}
+          onClick={() => fileInputRef.current?.click()}
           className="w-full h-32 border-2 border-dashed border-muted-foreground/50 rounded-lg flex flex-col items-center justify-center gap-2 hover:border-primary-500 transition-colors"
         >
           <Camera className="h-8 w-8 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">Foto aufnehmen</span>
         </button>
       )}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={(e) => handleFileSelect(e.target.files)}
+        className="hidden"
+      />
     </div>
   );
 }
