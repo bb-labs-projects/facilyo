@@ -34,6 +34,8 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
   const [expandedChecklist, setExpandedChecklist] = useState<string | null>(null);
   // Local state for unsaved changes per checklist
   const [localChanges, setLocalChanges] = useState<Record<string, Record<string, unknown>>>({});
+  // Track which checklist is currently being saved
+  const [savingChecklistId, setSavingChecklistId] = useState<string | null>(null);
 
   // Fetch checklists for the property
   const { data: checklists = [] } = useQuery({
@@ -149,10 +151,55 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
     }));
   }, [getSavedItems]);
 
-  const handleSave = useCallback((templateId: string) => {
+  const validateRequiredFields = useCallback((templateId: string): { valid: boolean; missingFields: string[] } => {
+    const checklist = checklists.find(c => c.id === templateId);
+    if (!checklist) return { valid: true, missingFields: [] };
+
+    const items = (checklist.items as unknown as ChecklistItem[]) || [];
+    const completedItems = getLocalItems(templateId);
+    const missingFields: string[] = [];
+
+    items.forEach((item) => {
+      if (!item.required) return;
+
+      const value = completedItems[item.id];
+      let isValid = false;
+
+      if (item.type === 'checkbox') {
+        isValid = value === true;
+      } else if (item.type === 'text') {
+        isValid = typeof value === 'string' && value.trim() !== '';
+      } else if (item.type === 'number') {
+        isValid = typeof value === 'number' || (typeof value === 'string' && value !== '');
+      } else if (item.type === 'photo') {
+        isValid = typeof value === 'string' && value !== '';
+      }
+
+      if (!isValid) {
+        missingFields.push(item.label);
+      }
+    });
+
+    return { valid: missingFields.length === 0, missingFields };
+  }, [checklists, getLocalItems]);
+
+  const handleSave = useCallback(async (templateId: string) => {
+    const validation = validateRequiredFields(templateId);
+
+    if (!validation.valid) {
+      toast.error(`Bitte füllen Sie alle Pflichtfelder aus: ${validation.missingFields.join(', ')}`);
+      return;
+    }
+
+    setSavingChecklistId(templateId);
     const items = getLocalItems(templateId);
-    upsertInstanceMutation.mutate({ templateId, completedItems: items });
-  }, [getLocalItems, upsertInstanceMutation]);
+
+    try {
+      await upsertInstanceMutation.mutateAsync({ templateId, completedItems: items });
+    } finally {
+      setSavingChecklistId(null);
+    }
+  }, [getLocalItems, upsertInstanceMutation, validateRequiredFields]);
 
   const hasUnsavedChanges = useCallback((templateId: string): boolean => {
     const local = localChanges[templateId];
@@ -255,11 +302,11 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
                     {/* Save button */}
                     <Button
                       onClick={() => handleSave(checklist.id)}
-                      disabled={upsertInstanceMutation.isPending}
+                      disabled={savingChecklistId === checklist.id}
                       className="w-full mt-4"
                     >
                       <Save className="h-4 w-4 mr-2" />
-                      {upsertInstanceMutation.isPending ? 'Wird gespeichert...' : 'Speichern'}
+                      {savingChecklistId === checklist.id ? 'Wird gespeichert...' : 'Speichern'}
                     </Button>
                   </CardContent>
                 </motion.div>
