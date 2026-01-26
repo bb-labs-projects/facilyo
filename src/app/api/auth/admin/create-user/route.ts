@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
     if (authError) {
       console.error('Auth user creation error:', authError);
       return NextResponse.json(
-        { error: 'Fehler beim Erstellen des Benutzers' },
+        { error: `Fehler beim Erstellen des Benutzers: ${authError.message}` },
         { status: 500 }
       );
     }
