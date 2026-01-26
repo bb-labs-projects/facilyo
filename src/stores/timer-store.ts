@@ -402,6 +402,13 @@ export const useTimerStore = create<TimerStore>()(
 
         if (!user) return;
 
+        // Check if persisted state belongs to a different user and reset if so
+        const { workDay: persistedWorkDay } = get();
+        if (persistedWorkDay && persistedWorkDay.user_id !== user.id) {
+          // Reset store - persisted state is from a different user
+          set(initialState);
+        }
+
         const today = new Date().toISOString().split('T')[0];
 
         // Check for active work day (no end_time means still active)
@@ -441,6 +448,9 @@ export const useTimerStore = create<TimerStore>()(
               currentEntryType: entry.entry_type,
             });
           }
+        } else {
+          // No active work day for this user - ensure state is clean
+          set(initialState);
         }
       },
 
