@@ -4,7 +4,29 @@
  * Run with: npx tsx scripts/migrate-base64-photos.ts
  */
 
+import { readFileSync } from 'fs';
 import { createClient } from '@supabase/supabase-js';
+
+// Load environment variables from .env.local
+function loadEnvFile() {
+  try {
+    const envContent = readFileSync('.env.local', 'utf-8');
+    for (const line of envContent.split('\n')) {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('#')) {
+        const [key, ...valueParts] = trimmed.split('=');
+        const value = valueParts.join('=').replace(/^["']|["']$/g, '');
+        if (key && value && !process.env[key]) {
+          process.env[key] = value;
+        }
+      }
+    }
+  } catch {
+    // .env.local not found, continue with existing env vars
+  }
+}
+
+loadEnvFile();
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
