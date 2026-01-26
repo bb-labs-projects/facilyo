@@ -130,11 +130,12 @@ export default function HomePage() {
     try {
       await startWorkDay();
       toast.success('Arbeitstag gestartet - Fahrzeit läuft');
+      refetchEntries();
     } catch (error: any) {
       if (error.message?.includes('endgültig beendet')) {
         toast.error(error.message);
       } else {
-        toast.error('Fehler beim Starten des Arbeitstags');
+        toast.error(error.message || 'Fehler beim Starten des Arbeitstags');
       }
     }
   };
@@ -143,8 +144,9 @@ export default function HomePage() {
     try {
       await endWorkDay();
       toast.success('Arbeitstag wurde beendet');
-    } catch (error) {
-      toast.error('Fehler beim Beenden des Arbeitstags');
+      refetchEntries();
+    } catch (error: any) {
+      toast.error(error.message || 'Fehler beim Beenden des Arbeitstags');
     }
   };
 
@@ -157,8 +159,9 @@ export default function HomePage() {
     try {
       await startPropertyWork(selectedProperty.id, coords || undefined);
       toast.success(`Arbeit auf ${selectedProperty.name} gestartet`);
-    } catch (error) {
-      toast.error('Fehler beim Starten der Arbeit');
+      refetchEntries();
+    } catch (error: any) {
+      toast.error(error.message || 'Fehler beim Starten der Arbeit');
     }
   };
 
@@ -167,8 +170,9 @@ export default function HomePage() {
       await stopPropertyWork(coords || undefined);
       setSelectedProperty(null);
       toast.success('Arbeit beendet - Fahrzeit läuft');
-    } catch (error) {
-      toast.error('Fehler beim Beenden der Arbeit');
+      refetchEntries();
+    } catch (error: any) {
+      toast.error(error.message || 'Fehler beim Beenden der Arbeit');
     }
   };
 
@@ -176,8 +180,9 @@ export default function HomePage() {
     try {
       await startBreak();
       toast.success('Pause gestartet');
-    } catch (error) {
-      toast.error('Fehler beim Starten der Pause');
+      refetchEntries();
+    } catch (error: any) {
+      toast.error(error.message || 'Fehler beim Starten der Pause');
     }
   };
 
@@ -185,8 +190,9 @@ export default function HomePage() {
     try {
       await endBreak();
       toast.success('Pause beendet');
-    } catch (error) {
-      toast.error('Fehler beim Beenden der Pause');
+      refetchEntries();
+    } catch (error: any) {
+      toast.error(error.message || 'Fehler beim Beenden der Pause');
     }
   };
 
