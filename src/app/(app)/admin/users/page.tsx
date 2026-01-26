@@ -44,7 +44,6 @@ interface AuthCredentials {
 interface UserWithAssignments extends Profile {
   property_assignments: { property_id: string; property: Property }[];
   auth_credentials?: AuthCredentials[];
-  is_active?: boolean;
 }
 
 export default function AdminUsersPage() {
@@ -327,9 +326,8 @@ export default function AdminUsersPage() {
 
   // Filter users by search and active status
   const filteredUsers = users.filter((user) => {
-    // Filter by active status (is_active may be undefined for old records, treat as active)
-    const isActive = user.is_active !== false;
-    if (!showInactiveUsers && !isActive) return false;
+    // Filter by active status
+    if (!showInactiveUsers && !user.is_active) return false;
 
     if (!searchQuery) return true;
     const search = searchQuery.toLowerCase();
@@ -357,7 +355,7 @@ export default function AdminUsersPage() {
   };
 
   const isUserInactive = (user: UserWithAssignments) => {
-    return user.is_active === false;
+    return !user.is_active;
   };
 
   if (!permissions.canManageEmployees) {

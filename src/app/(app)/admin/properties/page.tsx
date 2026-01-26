@@ -222,9 +222,8 @@ export default function AdminPropertiesPage() {
 
   // Filter properties by search and active status
   const filteredProperties = properties.filter((property) => {
-    // Filter by active status (is_active may be undefined for old records, treat as active)
-    const isActive = property.is_active !== false;
-    if (!showInactiveProperties && !isActive) return false;
+    // Filter by active status
+    if (!showInactiveProperties && !property.is_active) return false;
 
     if (!searchQuery) return true;
     const search = searchQuery.toLowerCase();
@@ -290,7 +289,7 @@ export default function AdminPropertiesPage() {
       ) : (
         <div className="space-y-3">
           {filteredProperties.map((property) => {
-            const inactive = property.is_active === false;
+            const inactive = !property.is_active;
             return (
               <Card key={property.id}>
                 <CardContent className="p-4">
