@@ -131,27 +131,36 @@ export function PhotoCapture({
     <div className={cn('space-y-4', className)}>
       {/* Photo grid */}
       {photos.length > 0 && (
-        <div className="grid grid-cols-3 gap-2">
+        <div className="flex flex-wrap gap-2">
           {photos.map((url, index) => (
             <div
               key={url}
-              className="relative aspect-square rounded-lg overflow-hidden bg-muted"
+              className="relative w-20 h-20 rounded-lg overflow-hidden bg-slate-100 border border-slate-200"
             >
-              <img
-                src={url}
-                alt={`Foto ${index + 1}`}
-                className="w-full h-full object-cover"
-                width={120}
-                height={120}
-                loading="lazy"
-              />
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full h-full"
+              >
+                <img
+                  src={url}
+                  alt={`Foto ${index + 1}`}
+                  className="w-full h-full object-contain"
+                  loading="lazy"
+                />
+              </a>
               <button
                 type="button"
-                onClick={() => handleRemovePhoto(index)}
-                className="absolute top-1 right-1 p-1 bg-error-500 text-white rounded-full shadow-md"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleRemovePhoto(index);
+                }}
+                className="absolute top-0.5 right-0.5 p-0.5 bg-error-500 text-white rounded-full shadow-md"
                 aria-label="Foto entfernen"
               >
-                <X className="h-4 w-4" />
+                <X className="h-3 w-3" />
               </button>
             </div>
           ))}
