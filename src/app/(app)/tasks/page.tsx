@@ -66,7 +66,36 @@ export default function TasksPage() {
     queryFn: async () => {
       const supabase = getClient();
 
-      let query = supabase
+      // Privileged users (admin, owner, manager) see all open aufgaben
+      if (permissions.isPrivileged) {
+        const { data, error } = await supabase
+          .from('aufgaben')
+          .select(`
+            *,
+            property:properties (*),
+            creator:profiles!aufgaben_created_by_fkey (*),
+            assignee:profiles!aufgaben_assigned_to_fkey (*)
+          `)
+          .in('status', ['open', 'in_progress'])
+          .order('due_date', { ascending: true, nullsFirst: false })
+          .order('priority', { ascending: false })
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        return data as AufgabeWithRelations[];
+      }
+
+      // Non-privileged users see aufgaben for their assigned properties
+      const { data: assignments } = await supabase
+        .from('property_assignments')
+        .select('property_id')
+        .eq('user_id', profile!.id);
+
+      if (!assignments || assignments.length === 0) return [];
+
+      const propertyIds = assignments.map((a: { property_id: string }) => a.property_id);
+
+      const { data, error } = await supabase
         .from('aufgaben')
         .select(`
           *,
@@ -74,17 +103,11 @@ export default function TasksPage() {
           creator:profiles!aufgaben_created_by_fkey (*),
           assignee:profiles!aufgaben_assigned_to_fkey (*)
         `)
+        .in('property_id', propertyIds)
         .in('status', ['open', 'in_progress'])
         .order('due_date', { ascending: true, nullsFirst: false })
         .order('priority', { ascending: false })
         .order('created_at', { ascending: false });
-
-      // Non-privileged users only see assigned aufgaben
-      if (!permissions.isPrivileged) {
-        query = query.eq('assigned_to', profile!.id);
-      }
-
-      const { data, error } = await query;
 
       if (error) throw error;
       return data as AufgabeWithRelations[];
