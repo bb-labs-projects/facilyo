@@ -74,13 +74,13 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="left" className="w-[280px] bg-primary-900 p-0 text-slate-100 border-primary-800">
         {/* Logo/Branding */}
-        <div className="flex h-16 items-center gap-3 border-b border-primary-800 px-6">
+        <div className="flex items-center justify-center border-b border-primary-800 p-4 bg-white">
           <Image
             src="/logo.png"
             alt="Flückiger Hauswartung"
-            width={140}
-            height={36}
-            className="h-9 w-auto object-contain"
+            width={200}
+            height={60}
+            className="w-full object-contain"
           />
         </div>
 

@@ -58,13 +58,13 @@ export function Sidebar() {
   return (
     <aside className="hidden lg:flex fixed inset-y-0 left-0 z-50 w-64 flex-col bg-primary-900 text-slate-100">
       {/* Logo/Branding */}
-      <div className="flex h-16 items-center gap-3 border-b border-primary-800 px-6">
+      <div className="flex items-center justify-center border-b border-primary-800 p-4 bg-white">
         <Image
           src="/logo.png"
           alt="Flückiger Hauswartung"
-          width={140}
-          height={36}
-          className="h-9 w-auto object-contain"
+          width={200}
+          height={60}
+          className="w-full object-contain"
           priority
         />
       </div>
