@@ -42,7 +42,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     const variantStyles = {
       primary:
-        'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 focus-visible:ring-blue-500',
+        'bg-primary-900 text-white hover:bg-primary-800 active:bg-primary-950 focus-visible:ring-primary-700',
       secondary:
         'bg-slate-100 text-slate-700 hover:bg-slate-200 active:bg-slate-300',
       outline:

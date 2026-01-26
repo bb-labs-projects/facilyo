@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { UserPlus, Eye, EyeOff, Building2 } from 'lucide-react';
+import { UserPlus, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -64,10 +65,14 @@ export default function SignupPage() {
     <>
       {/* Logo */}
       <div className="flex flex-col items-center mb-8">
-        <div className="w-16 h-16 bg-primary-600 rounded-2xl flex items-center justify-center mb-4">
-          <Building2 className="h-8 w-8 text-white" />
-        </div>
-        <h1 className="text-2xl font-bold text-primary-900">FacilityTrack</h1>
+        <Image
+          src="/logo.png"
+          alt="Flückiger Hauswartung"
+          width={200}
+          height={60}
+          className="h-16 w-auto object-contain mb-4"
+          priority
+        />
         <p className="text-sm text-muted-foreground">Zeit- & Problemerfassung</p>
       </div>
 

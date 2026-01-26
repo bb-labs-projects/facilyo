@@ -35,9 +35,9 @@ export function StatusBadge({ entryType, propertyName, className }: StatusBadgeP
     property: {
       label: propertyName || 'Liegenschaft',
       icon: Building2,
-      bgColor: 'bg-blue-100',
-      textColor: 'text-blue-800',
-      borderColor: 'border-blue-300',
+      bgColor: 'bg-primary-100',
+      textColor: 'text-primary-800',
+      borderColor: 'border-primary-300',
     },
     break: {
       label: 'Pause',

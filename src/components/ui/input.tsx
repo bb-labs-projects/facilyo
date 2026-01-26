@@ -51,7 +51,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
               'flex h-12 w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-base text-slate-800',
               'ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium',
               'placeholder:text-slate-400',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-700 focus-visible:ring-offset-2',
               'disabled:cursor-not-allowed disabled:opacity-50',
               error && 'border-error-500 focus-visible:ring-error-500',
               leftElement && 'pl-10',
@@ -107,7 +107,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           className={cn(
             'flex min-h-[100px] w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-base text-slate-800',
             'ring-offset-background placeholder:text-slate-400',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-700 focus-visible:ring-offset-2',
             'disabled:cursor-not-allowed disabled:opacity-50',
             error && 'border-error-500 focus-visible:ring-error-500',
             className

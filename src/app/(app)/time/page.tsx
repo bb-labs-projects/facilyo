@@ -19,7 +19,7 @@ import type { WorkDayWithEntries, TimeEntryType } from '@/types/database';
 
 // Entry type display config
 const ENTRY_TYPE_CONFIG: Record<TimeEntryType, { label: string; icon: typeof Car; color: string }> = {
-  property: { label: 'Liegenschaft', icon: Building2, color: 'text-blue-600' },
+  property: { label: 'Liegenschaft', icon: Building2, color: 'text-primary-900' },
   travel: { label: 'Fahrzeit', icon: Car, color: 'text-amber-600' },
   break: { label: 'Pause', icon: Coffee, color: 'text-orange-600' },
 };

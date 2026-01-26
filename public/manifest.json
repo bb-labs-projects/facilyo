@@ -1,11 +1,11 @@
 {
-  "name": "FacilityTrack",
-  "short_name": "FacilityTrack",
+  "name": "Flückiger Hauswartung",
+  "short_name": "Flückiger",
   "description": "Zeit- & Problemerfassung für Facility Management",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#0284c7",
+  "theme_color": "#32373c",
   "orientation": "portrait-primary",
   "icons": [
     {

@@ -70,7 +70,7 @@ const SheetContent = React.forwardRef<
         <div className="mx-auto mb-4 h-1.5 w-12 flex-shrink-0 rounded-full bg-muted" />
       )}
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-lg opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-slate-700">
+      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-lg opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-primary-700 focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-slate-700">
         <X className="h-5 w-5" />
         <span className="sr-only">Schliessen</span>
       </DialogPrimitive.Close>

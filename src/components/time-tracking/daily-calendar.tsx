@@ -26,10 +26,10 @@ const MIN_ENTRY_HEIGHT = 22; // minimum height for readable text (single line)
 // Entry type colors matching the design
 const ENTRY_COLORS: Record<TimeEntryType, { bg: string; border: string; text: string; icon: string }> = {
   property: {
-    bg: 'bg-blue-50',
-    border: 'border-blue-300',
-    text: 'text-blue-800',
-    icon: 'text-blue-600',
+    bg: 'bg-primary-50',
+    border: 'border-primary-300',
+    text: 'text-primary-800',
+    icon: 'text-primary-900',
   },
   travel: {
     bg: 'bg-amber-50',

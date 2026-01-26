@@ -237,7 +237,7 @@ export default function ProfilePage() {
 
       {/* Version */}
       <p className="text-center text-xs text-muted-foreground mt-6">
-        FacilityTrack v1.0.0
+        Flückiger Hauswartung App v1.0.0
       </p>
     </PageContainer>
   );

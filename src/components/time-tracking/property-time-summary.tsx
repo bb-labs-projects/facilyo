@@ -28,7 +28,7 @@ const ENTRY_TYPE_CONFIG: Record<TimeEntryType, {
   property: {
     label: 'Liegenschaft',
     icon: Building2,
-    color: 'text-blue-600',
+    color: 'text-primary-900',
   },
   travel: {
     label: 'Fahrzeit',

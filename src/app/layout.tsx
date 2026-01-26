@@ -10,13 +10,13 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'FacilityTrack',
+  title: 'Flückiger Hauswartung',
   description: 'Zeit- & Problemerfassung für Facility Management',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'FacilityTrack',
+    title: 'Flückiger',
   },
   formatDetection: {
     telephone: false,
@@ -38,7 +38,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: 'cover',
-  themeColor: '#2563eb',
+  themeColor: '#32373c',
 };
 
 export default async function RootLayout({
