@@ -156,13 +156,38 @@ export default function AdminUsersPage() {
           .eq('property_id', propertyId);
         if (error) throw error;
       }
+      return { userId, propertyId, assign };
+    },
+    onMutate: async ({ userId, propertyId, assign }) => {
+      // Optimistic update - immediately update selectedUser state
+      if (selectedUser && selectedUser.id === userId) {
+        const property = allProperties.find(p => p.id === propertyId);
+        if (assign && property) {
+          setSelectedUser({
+            ...selectedUser,
+            property_assignments: [
+              ...selectedUser.property_assignments,
+              { property_id: propertyId, property }
+            ]
+          });
+        } else {
+          setSelectedUser({
+            ...selectedUser,
+            property_assignments: selectedUser.property_assignments.filter(
+              a => a.property_id !== propertyId
+            )
+          });
+        }
+      }
     },
     onSuccess: () => {
       toast.success('Zuweisung wurde aktualisiert');
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
     },
-    onError: (error: Error) => {
+    onError: (error: Error, { userId, propertyId, assign }) => {
       toast.error(`Fehler: ${error.message}`);
+      // Revert optimistic update on error
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
     },
   });
 
