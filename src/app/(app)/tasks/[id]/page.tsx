@@ -12,6 +12,7 @@ import {
   CheckCircle,
   Trash2,
   AlertTriangle,
+  Camera,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Header, PageContainer } from '@/components/layout/header';
@@ -26,6 +27,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { AufgabeForm } from '@/components/aufgaben/aufgabe-form';
+import { PhotoCapture } from '@/components/issues/photo-capture';
 import { useAuthStore } from '@/stores/auth-store';
 import { usePermissions } from '@/hooks/use-permissions';
 import { getClient } from '@/lib/supabase/client';
@@ -55,6 +57,8 @@ export default function AufgabeDetailPage() {
   const permissions = usePermissions();
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showCompleteDialog, setShowCompleteDialog] = useState(false);
+  const [completionPhotos, setCompletionPhotos] = useState<string[]>([]);
 
   const aufgabeId = params.id as string;
 
@@ -108,7 +112,7 @@ export default function AufgabeDetailPage() {
 
   // Complete mutation
   const completeMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (photoUrls: string[]) => {
       const supabase = getClient();
       const { data: result, error } = await (supabase as any)
         .from('aufgaben')
@@ -116,6 +120,7 @@ export default function AufgabeDetailPage() {
           status: 'resolved',
           completed_at: new Date().toISOString(),
           completed_by: profile!.id,
+          completion_photo_urls: photoUrls,
         })
         .eq('id', aufgabeId)
         .select()
@@ -128,6 +133,8 @@ export default function AufgabeDetailPage() {
       toast.success('Aufgabe als erledigt markiert');
       queryClient.invalidateQueries({ queryKey: ['aufgabe', aufgabeId] });
       queryClient.invalidateQueries({ queryKey: ['aufgaben'] });
+      setShowCompleteDialog(false);
+      setCompletionPhotos([]);
     },
     onError: (error: Error) => {
       toast.error(`Fehler: ${error.message}`);
@@ -315,11 +322,36 @@ export default function AufgabeDetailPage() {
       {/* Completion info */}
       {aufgabe.completed_at && (
         <Card className="mb-4 bg-success-50 border-success-200">
-          <CardContent className="p-4">
+          <CardContent className="p-4 space-y-3">
             <div className="flex items-center gap-2 text-success-700">
               <CheckCircle className="h-5 w-5" />
               <span className="font-medium">Erledigt am {swissFormat.datetime(aufgabe.completed_at)}</span>
             </div>
+            {aufgabe.completion_photo_urls && aufgabe.completion_photo_urls.length > 0 && (
+              <div className="pt-2">
+                <p className="text-sm text-success-700 mb-2 flex items-center gap-1">
+                  <Camera className="h-4 w-4" />
+                  Nachweisfotos
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {aufgabe.completion_photo_urls.map((url, index) => (
+                    <a
+                      key={url}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="aspect-square rounded-lg overflow-hidden bg-white border border-success-200"
+                    >
+                      <img
+                        src={url}
+                        alt={`Nachweis ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -330,11 +362,10 @@ export default function AufgabeDetailPage() {
           <Button
             size="touch"
             className="w-full"
-            onClick={() => completeMutation.mutate()}
-            disabled={completeMutation.isPending}
+            onClick={() => setShowCompleteDialog(true)}
             leftIcon={<CheckCircle className="h-5 w-5" />}
           >
-            {completeMutation.isPending ? 'Wird markiert...' : 'Als erledigt markieren'}
+            Als erledigt markieren
           </Button>
         )}
 
@@ -350,6 +381,48 @@ export default function AufgabeDetailPage() {
           </Button>
         )}
       </div>
+
+      {/* Complete task dialog */}
+      <Dialog open={showCompleteDialog} onOpenChange={(open) => {
+        setShowCompleteDialog(open);
+        if (!open) setCompletionPhotos([]);
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Aufgabe abschliessen</DialogTitle>
+            <DialogDescription>
+              Optional: Fügen Sie ein Foto als Nachweis hinzu.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <PhotoCapture
+              photos={completionPhotos}
+              onPhotosChange={setCompletionPhotos}
+              maxPhotos={3}
+            />
+          </div>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowCompleteDialog(false);
+                setCompletionPhotos([]);
+              }}
+              className="w-full sm:w-auto"
+            >
+              Abbrechen
+            </Button>
+            <Button
+              onClick={() => completeMutation.mutate(completionPhotos)}
+              disabled={completeMutation.isPending}
+              className="w-full sm:w-auto"
+              leftIcon={<CheckCircle className="h-4 w-4" />}
+            >
+              {completeMutation.isPending ? 'Wird markiert...' : 'Als erledigt markieren'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete confirmation dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

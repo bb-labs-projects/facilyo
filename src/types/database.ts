@@ -339,6 +339,7 @@ export interface Database {
           due_date: string | null;
           completed_at: string | null;
           completed_by: string | null;
+          completion_photo_urls: string[];
           created_at: string;
           updated_at: string;
         };
@@ -355,6 +356,7 @@ export interface Database {
           due_date?: string | null;
           completed_at?: string | null;
           completed_by?: string | null;
+          completion_photo_urls?: string[];
           created_at?: string;
           updated_at?: string;
         };
@@ -371,6 +373,7 @@ export interface Database {
           due_date?: string | null;
           completed_at?: string | null;
           completed_by?: string | null;
+          completion_photo_urls?: string[];
           created_at?: string;
           updated_at?: string;
         };
