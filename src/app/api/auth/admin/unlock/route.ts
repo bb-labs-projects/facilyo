@@ -36,8 +36,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const userRole = (currentProfile as { role: string }).role;
+
     // Only admins and owners can unlock accounts
-    if (!['admin', 'owner'].includes(currentProfile.role)) {
+    if (!['admin', 'owner'].includes(userRole)) {
       return NextResponse.json(
         { error: 'Keine Berechtigung zum Entsperren von Accounts' },
         { status: 403 }

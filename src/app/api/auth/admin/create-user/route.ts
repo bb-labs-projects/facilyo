@@ -44,8 +44,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const userRole = (currentProfile as { role: string }).role;
+
     // Only admins and owners can create users
-    if (!['admin', 'owner'].includes(currentProfile.role)) {
+    if (!['admin', 'owner'].includes(userRole)) {
       return NextResponse.json(
         { error: 'Keine Berechtigung zum Erstellen von Benutzern' },
         { status: 403 }

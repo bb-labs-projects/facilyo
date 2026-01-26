@@ -39,8 +39,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const userRole = (currentProfile as { role: string }).role;
+
     // Only admins and owners can reset passwords
-    if (!['admin', 'owner'].includes(currentProfile.role)) {
+    if (!['admin', 'owner'].includes(userRole)) {
       return NextResponse.json(
         { error: 'Keine Berechtigung zum Zurücksetzen von Passwörtern' },
         { status: 403 }
