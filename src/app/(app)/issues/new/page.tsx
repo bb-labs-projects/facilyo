@@ -1,21 +1,21 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Header, PageContainer } from '@/components/layout/header';
 import { IssueForm } from '@/components/issues/issue-form';
 import { useAuthStore } from '@/stores/auth-store';
 import { useGeolocation } from '@/hooks/use-geolocation';
-import { useSimpleMutation } from '@/hooks/use-optimistic-mutation';
 import { getClient } from '@/lib/supabase/client';
 import type { Property } from '@/types/database';
 import type { IssueFormData } from '@/lib/validations';
 
 export default function NewIssuePage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const profile = useAuthStore((state) => state.profile);
-  const { coords, getCurrentPosition } = useGeolocation();
+  const { coords } = useGeolocation();
 
   // Fetch assigned properties
   const { data: properties = [] } = useQuery({
@@ -34,7 +34,7 @@ export default function NewIssuePage() {
   });
 
   // Create issue mutation
-  const { mutate: createIssue, isPending } = useSimpleMutation({
+  const { mutate: createIssue, isPending } = useMutation({
     mutationFn: async (data: IssueFormData) => {
       const supabase = getClient();
 
@@ -57,11 +57,14 @@ export default function NewIssuePage() {
       if (error) throw error;
       return issue;
     },
-    queryKey: ['issues'],
-    successMessage: 'Problem wurde gemeldet',
-    errorMessage: 'Problem konnte nicht gemeldet werden',
     onSuccess: () => {
+      toast.success('Problem wurde gemeldet');
+      // Invalidate all meldungen queries to refresh the list
+      queryClient.invalidateQueries({ queryKey: ['meldungen'] });
       router.push('/issues');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Problem konnte nicht gemeldet werden');
     },
   });
 

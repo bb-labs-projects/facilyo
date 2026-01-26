@@ -135,7 +135,7 @@ export function PhotoCapture({
           {photos.map((url, index) => (
             <div
               key={url}
-              className="relative w-20 h-20 rounded-lg overflow-hidden bg-slate-100 border border-slate-200"
+              className="relative w-[200px] h-[200px] rounded-lg overflow-hidden bg-slate-100 border border-slate-200"
             >
               <a
                 href={url}
