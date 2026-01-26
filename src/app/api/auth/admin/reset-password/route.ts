@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch target user's credentials
-    const { data: credentials, error: credError } = await serviceClient
+    const { data: credentials, error: credError } = await (serviceClient as any)
       .from('auth_credentials')
       .select('*, profiles(*)')
       .eq('user_id', userId)
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     ).toISOString();
 
     // Update credentials in our auth_credentials table
-    const { error: updateError } = await serviceClient
+    const { error: updateError } = await (serviceClient as any)
       .from('auth_credentials')
       .update({
         password_hash: passwordHash,

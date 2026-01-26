@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if email already exists
-    const { data: existingProfile } = await serviceClient
+    const { data: existingProfile } = await (serviceClient as any)
       .from('profiles')
       .select('id')
       .eq('email', email.toLowerCase())
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     let username = body.username?.toLowerCase() || generateUsernameFromEmail(email);
 
     // Check for username collisions
-    const { data: existingUsernames } = await serviceClient
+    const { data: existingUsernames } = await (serviceClient as any)
       .from('auth_credentials')
       .select('username');
 
@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create profile
-    const { error: profileCreateError } = await serviceClient
+    const { error: profileCreateError } = await (serviceClient as any)
       .from('profiles')
       .insert({
         id: authUser.user.id,
@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
       Date.now() + TEMP_PASSWORD_VALIDITY_HOURS * 60 * 60 * 1000
     ).toISOString();
 
-    const { error: credError } = await serviceClient
+    const { error: credError } = await (serviceClient as any)
       .from('auth_credentials')
       .insert({
         user_id: authUser.user.id,

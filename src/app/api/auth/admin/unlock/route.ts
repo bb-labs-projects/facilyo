@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch target user's credentials
-    const { data: credentials, error: credError } = await serviceClient
+    const { data: credentials, error: credError } = await (serviceClient as any)
       .from('auth_credentials')
       .select('*, profiles(*)')
       .eq('user_id', userId)
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Unlock the account
-    const { error: updateError } = await serviceClient
+    const { error: updateError } = await (serviceClient as any)
       .from('auth_credentials')
       .update({
         locked_until: null,

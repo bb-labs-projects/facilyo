@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fetch auth credentials by username
-    const { data: credentials, error: credError } = await supabase
+    const { data: credentials, error: credError } = await (supabase as any)
       .from('auth_credentials')
       .select('*, profiles(*)')
       .eq('username', username.toLowerCase())
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
         ).toISOString();
       }
 
-      await supabase
+      await (supabase as any)
         .from('auth_credentials')
         .update(updateData)
         .eq('id', credentials.id);
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Login successful - reset failed attempts and update last login
-    await supabase
+    await (supabase as any)
       .from('auth_credentials')
       .update({
         failed_attempts: 0,
