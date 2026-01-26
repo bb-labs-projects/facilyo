@@ -5,7 +5,7 @@ import type { UserRole } from '@/types/database';
 
 interface CreateUserRequest {
   username?: string;
-  email: string;
+  email?: string;
   firstName: string;
   lastName: string;
   role: UserRole;
@@ -55,48 +55,61 @@ export async function POST(request: NextRequest) {
     }
 
     const body: CreateUserRequest = await request.json();
-    const { email, firstName, lastName, role } = body;
+    const { firstName, lastName, role } = body;
 
-    if (!email || !firstName || !lastName || !role) {
+    if (!firstName || !lastName || !role) {
       return NextResponse.json(
-        { error: 'Alle Felder sind erforderlich' },
+        { error: 'Vor- und Nachname sowie Rolle sind erforderlich' },
         { status: 400 }
       );
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { error: 'Ungültige E-Mail-Adresse' },
-        { status: 400 }
-      );
+    // Generate username first (needed for placeholder email)
+    let username = body.username?.toLowerCase();
+
+    // If no username provided, generate from name
+    if (!username) {
+      username = `${firstName.toLowerCase()}.${lastName.toLowerCase()}`.replace(/[^a-z0-9.-]/g, '');
     }
 
-    // Check if email already exists
-    const { data: existingProfile } = await (serviceClient as any)
-      .from('profiles')
-      .select('id')
-      .eq('email', email.toLowerCase())
-      .single();
-
-    if (existingProfile) {
-      return NextResponse.json(
-        { error: 'E-Mail-Adresse wird bereits verwendet' },
-        { status: 409 }
-      );
-    }
-
-    // Generate username from email or use provided
-    let username = body.username?.toLowerCase() || generateUsernameFromEmail(email);
-
-    // Check for username collisions
+    // Check for username collisions early
     const { data: existingUsernames } = await (serviceClient as any)
       .from('auth_credentials')
       .select('username');
 
     const usernameList = (existingUsernames || []).map((u: any) => u.username);
     username = generateUniqueUsername(username, usernameList);
+
+    // Handle email - use provided or generate placeholder
+    let email = body.email?.toLowerCase().trim();
+
+    if (email) {
+      // Validate email format if provided
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return NextResponse.json(
+          { error: 'Ungültige E-Mail-Adresse' },
+          { status: 400 }
+        );
+      }
+
+      // Check if email already exists
+      const { data: existingProfile } = await (serviceClient as any)
+        .from('profiles')
+        .select('id')
+        .eq('email', email)
+        .single();
+
+      if (existingProfile) {
+        return NextResponse.json(
+          { error: 'E-Mail-Adresse wird bereits verwendet' },
+          { status: 409 }
+        );
+      }
+    } else {
+      // Generate placeholder email using username
+      email = `${username}@facility-track.internal`;
+    }
 
     // Generate temporary password
     const tempPassword = generateTempPassword(16);
@@ -105,7 +118,7 @@ export async function POST(request: NextRequest) {
     // Create auth user in Supabase with the temp password
     // This allows the user to also sign in via Supabase auth for RLS to work
     const { data: authUser, error: authError } = await serviceClient.auth.admin.createUser({
-      email: email.toLowerCase(),
+      email,
       password: tempPassword, // Same password for Supabase auth
       email_confirm: true,
       user_metadata: {

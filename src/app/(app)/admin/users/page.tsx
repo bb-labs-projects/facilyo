@@ -170,7 +170,7 @@ export default function AdminUsersPage() {
   const createUserMutation = useMutation({
     mutationFn: async ({ username, email, firstName, lastName, role }: {
       username?: string;
-      email: string;
+      email?: string;
       firstName: string;
       lastName: string;
       role: UserRole;
@@ -306,17 +306,13 @@ export default function AdminUsersPage() {
   }
 
   const handleCreateUser = () => {
-    if (!newUserEmail.trim()) {
-      toast.error('E-Mail ist erforderlich');
-      return;
-    }
     if (!newUserFirstName.trim() || !newUserLastName.trim()) {
       toast.error('Vor- und Nachname sind erforderlich');
       return;
     }
     createUserMutation.mutate({
       username: newUserUsername.trim() || undefined,
-      email: newUserEmail.trim(),
+      email: newUserEmail.trim() || undefined,
       firstName: newUserFirstName.trim(),
       lastName: newUserLastName.trim(),
       role: newUserRole,
@@ -607,7 +603,7 @@ export default function AdminUsersPage() {
             />
 
             <Input
-              label="E-Mail *"
+              label="E-Mail (optional)"
               type="email"
               placeholder="benutzer@beispiel.de"
               value={newUserEmail}
@@ -651,9 +647,10 @@ export default function AdminUsersPage() {
 
             <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 flex items-start gap-2">
               <AlertCircle className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-blue-700">
-                Ein temporäres Passwort wird generiert und muss beim ersten Login geändert werden.
-              </p>
+              <div className="text-sm text-blue-700 space-y-1">
+                <p>Ein temporäres Passwort wird generiert und muss beim ersten Login geändert werden.</p>
+                <p>Benutzername wird aus Vor-/Nachname generiert, falls nicht angegeben.</p>
+              </div>
             </div>
           </div>
 
