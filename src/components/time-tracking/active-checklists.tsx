@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ClipboardList, ChevronDown, ChevronUp, Check, Camera, Save } from 'lucide-react';
+import { ClipboardList, ChevronDown, ChevronUp, Check, Camera, Save, Loader2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import imageCompression from 'browser-image-compression';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -485,26 +486,70 @@ function PhotoItem({
   onChange: (value: string) => void;
   required?: boolean;
 }) {
-  const handleCapture = async () => {
-    // For now, use file input - can be enhanced with camera capture later
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.capture = 'environment';
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
-
-      // Convert to base64 for simple storage (in production, upload to storage)
-      const reader = new FileReader();
-      reader.onload = () => {
-        onChange(reader.result as string);
+  const compressImage = async (file: File): Promise<File> => {
+    try {
+      const options = {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
       };
-      reader.readAsDataURL(file);
-    };
+      return await imageCompression(file, options);
+    } catch {
+      return file;
+    }
+  };
 
-    input.click();
+  const uploadPhoto = async (file: File): Promise<string> => {
+    const supabase = getClient();
+
+    const compressedFile = await compressImage(file);
+
+    const timestamp = Date.now();
+    const extension = file.name.split('.').pop() || 'jpg';
+    const filename = `${timestamp}-${Math.random().toString(36).substr(2, 9)}.${extension}`;
+    const path = `checklists/${filename}`;
+
+    const { data, error } = await supabase.storage
+      .from('photos')
+      .upload(path, compressedFile, {
+        cacheControl: '3600',
+        upsert: false,
+      });
+
+    if (error) throw error;
+
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from('photos').getPublicUrl(data.path);
+
+    return publicUrl;
+  };
+
+  const handleFileSelect = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    hapticFeedback('light');
+
+    try {
+      const url = await uploadPhoto(files[0]);
+      onChange(url);
+      hapticFeedback('medium');
+    } catch (error: any) {
+      console.error('Failed to upload photo:', error);
+      toast.error(error?.message || 'Foto konnte nicht hochgeladen werden');
+      hapticFeedback('heavy');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleRemove = () => {
+    hapticFeedback('light');
+    onChange('');
   };
 
   return (
@@ -514,7 +559,12 @@ function PhotoItem({
         {required && <span className="text-error-500 ml-1">*</span>}
       </label>
 
-      {value ? (
+      {isUploading ? (
+        <div className="w-full h-24 border-2 border-dashed border-primary-300 rounded-lg flex flex-col items-center justify-center gap-2 bg-primary-50">
+          <Loader2 className="h-6 w-6 text-primary-500 animate-spin" />
+          <span className="text-sm text-primary-600">Wird hochgeladen...</span>
+        </div>
+      ) : value ? (
         <div className="relative">
           <img
             src={value}
@@ -522,22 +572,32 @@ function PhotoItem({
             className="w-full h-32 object-cover rounded-lg"
           />
           <button
-            onClick={() => onChange('')}
-            className="absolute top-2 right-2 bg-error-500 text-white p-1.5 rounded-full hover:bg-error-600"
+            type="button"
+            onClick={handleRemove}
+            className="absolute top-2 right-2 bg-error-500 text-white p-1.5 rounded-full shadow-md hover:bg-error-600 transition-colors"
           >
-            ×
+            <X className="h-4 w-4" />
           </button>
         </div>
       ) : (
         <button
           type="button"
-          onClick={handleCapture}
+          onClick={() => fileInputRef.current?.click()}
           className="w-full h-24 border-2 border-dashed border-muted-foreground/50 rounded-lg flex flex-col items-center justify-center gap-2 hover:border-primary-500 transition-colors"
         >
           <Camera className="h-6 w-6 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">Foto aufnehmen</span>
         </button>
       )}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={(e) => handleFileSelect(e.target.files)}
+        className="hidden"
+      />
     </div>
   );
 }
