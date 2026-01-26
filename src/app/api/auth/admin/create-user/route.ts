@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
       await serviceClient.auth.admin.deleteUser(authUser.user.id);
       console.error('Profile creation error:', profileCreateError);
       return NextResponse.json(
-        { error: 'Fehler beim Erstellen des Profils' },
+        { error: `Fehler beim Erstellen des Profils: ${profileCreateError.message}` },
         { status: 500 }
       );
     }
@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
       await serviceClient.auth.admin.deleteUser(authUser.user.id);
       console.error('Credentials creation error:', credError);
       return NextResponse.json(
-        { error: 'Fehler beim Erstellen der Anmeldedaten' },
+        { error: `Fehler beim Erstellen der Anmeldedaten: ${credError.message}` },
         { status: 500 }
       );
     }
