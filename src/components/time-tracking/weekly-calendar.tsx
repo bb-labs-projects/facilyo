@@ -134,57 +134,58 @@ export function WeeklyCalendar({ entries, selectedDate, className, onEntryUpdate
       const calculatedHeight = (endHour - startHour) * HOUR_HEIGHT;
       const height = Math.max(calculatedHeight, MIN_ENTRY_HEIGHT);
 
-      return { ...entry, top, height, column: 0, totalColumns: 1 };
+      return { ...entry, top, height, column: 0, totalColumns: 1, startTimestamp: startDate.getTime() };
     });
 
-    // Sort by start time
-    withDimensions.sort((a, b) => a.top - b.top);
+    // Sort by start time (chronologically - earliest first)
+    withDimensions.sort((a, b) => a.startTimestamp - b.startTimestamp);
 
-    // Second pass: detect visual collisions and assign columns
+    // Second pass: assign columns chronologically (earliest = leftmost)
     for (let i = 0; i < withDimensions.length; i++) {
       const current = withDimensions[i];
-      const visualBottom = current.top + current.height;
 
-      const overlappingGroup: CalendarEntry[] = [current];
+      // Find which columns are taken by visually overlapping earlier entries
+      const usedColumns = new Set<number>();
 
-      for (let j = i + 1; j < withDimensions.length; j++) {
-        const next = withDimensions[j];
-        if (next.top < visualBottom) {
-          overlappingGroup.push(next);
+      for (let j = 0; j < i; j++) {
+        const prev = withDimensions[j];
+        const prevBottom = prev.top + prev.height;
+        const currentBottom = current.top + current.height;
+        const overlaps = !(current.top >= prevBottom || prev.top >= currentBottom);
+
+        if (overlaps) {
+          usedColumns.add(prev.column);
         }
       }
 
-      if (overlappingGroup.length > 1) {
-        const usedColumns = new Set<number>();
-
-        for (const entry of overlappingGroup) {
-          for (let k = 0; k < withDimensions.length; k++) {
-            const prev = withDimensions[k];
-            if (prev.id === entry.id) continue;
-
-            const prevBottom = prev.top + prev.height;
-            const entryBottom = entry.top + entry.height;
-            const overlaps = !(entry.top >= prevBottom || prev.top >= entryBottom);
-
-            if (overlaps && prev.column !== undefined) {
-              usedColumns.add(prev.column);
-            }
-          }
-
-          let col = 0;
-          while (usedColumns.has(col)) col++;
-          entry.column = col;
-          usedColumns.add(col);
-        }
-
-        const maxCol = Math.max(...overlappingGroup.map(e => e.column)) + 1;
-        for (const entry of overlappingGroup) {
-          entry.totalColumns = Math.max(entry.totalColumns, maxCol);
-        }
-      }
+      // Assign first available column
+      let col = 0;
+      while (usedColumns.has(col)) col++;
+      current.column = col;
     }
 
-    // Third pass: normalize totalColumns
+    // Third pass: calculate totalColumns for each entry
+    for (let i = 0; i < withDimensions.length; i++) {
+      const current = withDimensions[i];
+      let maxColumn = current.column;
+
+      for (let j = 0; j < withDimensions.length; j++) {
+        if (i === j) continue;
+        const other = withDimensions[j];
+
+        const currentBottom = current.top + current.height;
+        const otherBottom = other.top + other.height;
+        const overlaps = !(current.top >= otherBottom || other.top >= currentBottom);
+
+        if (overlaps) {
+          maxColumn = Math.max(maxColumn, other.column);
+        }
+      }
+
+      current.totalColumns = maxColumn + 1;
+    }
+
+    // Fourth pass: ensure all overlapping entries have same totalColumns
     for (let i = 0; i < withDimensions.length; i++) {
       const current = withDimensions[i];
       for (let j = 0; j < withDimensions.length; j++) {
@@ -319,6 +320,7 @@ export function WeeklyCalendar({ entries, selectedDate, className, onEntryUpdate
                       : null;
                     const isActive = !entry.end_time;
                     const isTiny = entry.height < 25;
+                    const isOverlapping = entry.totalColumns > 1;
 
                     // Calculate horizontal position based on columns
                     const columnWidth = 100 / entry.totalColumns;
@@ -347,13 +349,20 @@ export function WeeklyCalendar({ entries, selectedDate, className, onEntryUpdate
                         {/* Single line layout - always fit on one line */}
                         <div className={cn(
                           'flex items-center gap-0.5 h-full whitespace-nowrap',
-                          isTiny ? 'text-[10px]' : 'text-xs'
+                          isTiny ? 'text-[10px]' : 'text-xs',
+                          isOverlapping && 'justify-center'
                         )}>
-                          {!isTiny && getEntryIcon(entry.entry_type || 'property')}
-                          <span className="truncate flex-1 min-w-0 font-medium">
+                          {getEntryIcon(entry.entry_type || 'property')}
+                          <span className={cn(
+                            'truncate flex-1 min-w-0 font-medium',
+                            isOverlapping && 'hidden lg:inline'
+                          )}>
                             {entry.property?.name || getEntryTypeLabel(entry.entry_type || 'property')}
                           </span>
-                          <span className="text-[10px] opacity-75 shrink-0 flex items-center gap-0.5">
+                          <span className={cn(
+                            'text-[10px] opacity-75 shrink-0 flex items-center gap-0.5',
+                            isOverlapping && 'hidden lg:flex'
+                          )}>
                             {startTime}-{endTime || ''}
                             {isActive && (
                               <span className="relative flex h-1.5 w-1.5">
@@ -362,6 +371,12 @@ export function WeeklyCalendar({ entries, selectedDate, className, onEntryUpdate
                               </span>
                             )}
                           </span>
+                          {isOverlapping && isActive && (
+                            <span className="relative flex h-1.5 w-1.5 lg:hidden">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500" />
+                            </span>
+                          )}
                         </div>
                       </button>
                     );

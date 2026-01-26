@@ -58,7 +58,7 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
 
   // Calculate entry dimensions with visual collision detection
   const entriesWithLayout = useMemo(() => {
-    // First pass: calculate basic dimensions
+    // First pass: calculate basic dimensions and sort by start time
     const withDimensions = entries.map((entry) => {
       const startDate = new Date(entry.start_time);
       const endDate = entry.end_time ? new Date(entry.end_time) : new Date();
@@ -70,65 +70,58 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
       const calculatedHeight = (endHour - startHour) * HOUR_HEIGHT;
       const height = Math.max(calculatedHeight, MIN_ENTRY_HEIGHT);
 
-      return { ...entry, top, height, column: 0, totalColumns: 1 };
+      return { ...entry, top, height, column: 0, totalColumns: 1, startTimestamp: startDate.getTime() };
     });
 
-    // Sort by start time
-    withDimensions.sort((a, b) => a.top - b.top);
+    // Sort by start time (chronologically)
+    withDimensions.sort((a, b) => a.startTimestamp - b.startTimestamp);
 
-    // Second pass: detect visual collisions and assign columns
+    // Second pass: assign columns chronologically (earliest = leftmost)
     for (let i = 0; i < withDimensions.length; i++) {
       const current = withDimensions[i];
-      const visualBottom = current.top + current.height;
 
-      // Find all entries that visually overlap with current
-      const overlappingGroup: CalendarEntry[] = [current];
+      // Find which columns are taken by visually overlapping earlier entries
+      const usedColumns = new Set<number>();
 
-      for (let j = i + 1; j < withDimensions.length; j++) {
-        const next = withDimensions[j];
-        // Check if next entry starts before current entry visually ends
-        if (next.top < visualBottom) {
-          overlappingGroup.push(next);
+      for (let j = 0; j < i; j++) {
+        const prev = withDimensions[j];
+        const prevBottom = prev.top + prev.height;
+        const currentBottom = current.top + current.height;
+        const overlaps = !(current.top >= prevBottom || prev.top >= currentBottom);
+
+        if (overlaps) {
+          usedColumns.add(prev.column);
         }
       }
 
-      // If there are overlapping entries, assign columns
-      if (overlappingGroup.length > 1) {
-        // Find which columns are already taken
-        const usedColumns = new Set<number>();
-
-        for (const entry of overlappingGroup) {
-          // Check against all previous entries that visually overlap
-          for (let k = 0; k < withDimensions.length; k++) {
-            const prev = withDimensions[k];
-            if (prev.id === entry.id) continue;
-
-            // Check if they visually overlap
-            const prevBottom = prev.top + prev.height;
-            const entryBottom = entry.top + entry.height;
-            const overlaps = !(entry.top >= prevBottom || prev.top >= entryBottom);
-
-            if (overlaps && prev.column !== undefined) {
-              usedColumns.add(prev.column);
-            }
-          }
-
-          // Assign first available column
-          let col = 0;
-          while (usedColumns.has(col)) col++;
-          entry.column = col;
-          usedColumns.add(col);
-        }
-
-        // Update total columns for all in group
-        const maxCol = Math.max(...overlappingGroup.map(e => e.column)) + 1;
-        for (const entry of overlappingGroup) {
-          entry.totalColumns = Math.max(entry.totalColumns, maxCol);
-        }
-      }
+      // Assign first available column (earliest entries get lower column numbers = left)
+      let col = 0;
+      while (usedColumns.has(col)) col++;
+      current.column = col;
     }
 
-    // Third pass: normalize totalColumns for overlapping groups
+    // Third pass: calculate totalColumns for each entry based on all overlapping entries
+    for (let i = 0; i < withDimensions.length; i++) {
+      const current = withDimensions[i];
+      let maxColumn = current.column;
+
+      for (let j = 0; j < withDimensions.length; j++) {
+        if (i === j) continue;
+        const other = withDimensions[j];
+
+        const currentBottom = current.top + current.height;
+        const otherBottom = other.top + other.height;
+        const overlaps = !(current.top >= otherBottom || other.top >= currentBottom);
+
+        if (overlaps) {
+          maxColumn = Math.max(maxColumn, other.column);
+        }
+      }
+
+      current.totalColumns = maxColumn + 1;
+    }
+
+    // Fourth pass: ensure all overlapping entries have same totalColumns
     for (let i = 0; i < withDimensions.length; i++) {
       const current = withDimensions[i];
       for (let j = 0; j < withDimensions.length; j++) {
@@ -300,6 +293,7 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
               const isCompact = entry.height < 60;
               const isMediumEntry = entry.height >= 80;
               const isLargeEntry = entry.height >= 110;
+              const isOverlapping = entry.totalColumns > 1;
 
               // Calculate horizontal position based on columns
               const columnWidth = 100 / entry.totalColumns;
@@ -328,10 +322,13 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
                     // Tiny single-line layout (minimal)
                     <div className={cn('flex items-center gap-1 h-full text-xs', colors.text)}>
                       {getEntryIcon(entry.entry_type || 'property')}
-                      <span className="font-medium truncate flex-1">
+                      <span className={cn('font-medium truncate flex-1', isOverlapping && 'hidden sm:inline')}>
                         {entry.property?.name || getEntryTypeLabel(entry.entry_type || 'property')}
                       </span>
-                      <span className="font-mono opacity-70 shrink-0 text-[10px] flex items-center gap-1">
+                      <span className={cn(
+                        'font-mono opacity-70 shrink-0 text-[10px] flex items-center gap-1',
+                        isOverlapping && 'hidden sm:flex'
+                      )}>
                         {startTime}-{endTime || ''}
                         {isActive && (
                           <span className="relative flex h-2 w-2">
@@ -340,15 +337,24 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
                           </span>
                         )}
                       </span>
+                      {isOverlapping && isActive && (
+                        <span className="relative flex h-2 w-2 sm:hidden">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                        </span>
+                      )}
                     </div>
                   ) : isCompact ? (
                     // Compact single-line layout
                     <div className={cn('flex items-center gap-1.5 h-full text-sm', colors.text)}>
                       {getEntryIcon(entry.entry_type || 'property')}
-                      <span className="font-semibold truncate flex-1">
+                      <span className={cn('font-semibold truncate flex-1', isOverlapping && 'hidden sm:inline')}>
                         {entry.property?.name || getEntryTypeLabel(entry.entry_type || 'property')}
                       </span>
-                      <span className="text-xs font-mono opacity-80 shrink-0 flex items-center gap-1">
+                      <span className={cn(
+                        'text-xs font-mono opacity-80 shrink-0 flex items-center gap-1',
+                        isOverlapping && 'hidden sm:flex'
+                      )}>
                         {startTime}-{endTime || ''}
                         {isActive && (
                           <span className="relative flex h-2 w-2">
@@ -357,7 +363,13 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
                           </span>
                         )}
                       </span>
-                      <Pencil className={cn('h-3 w-3 opacity-50 shrink-0', colors.text)} />
+                      {isOverlapping && isActive && (
+                        <span className="relative flex h-2 w-2 sm:hidden">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                        </span>
+                      )}
+                      <Pencil className={cn('h-3 w-3 opacity-50 shrink-0 hidden sm:block', colors.text)} />
                     </div>
                   ) : (
                     // Full layout for larger entries
