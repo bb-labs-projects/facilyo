@@ -114,7 +114,7 @@ export default function AufgabeDetailPage() {
   const completeMutation = useMutation({
     mutationFn: async (photoUrls: string[]) => {
       const supabase = getClient();
-      const { data: result, error } = await (supabase as any)
+      const { error } = await (supabase as any)
         .from('aufgaben')
         .update({
           status: 'resolved',
@@ -122,12 +122,9 @@ export default function AufgabeDetailPage() {
           completed_by: profile!.id,
           completion_photo_urls: photoUrls,
         })
-        .eq('id', aufgabeId)
-        .select()
-        .single();
+        .eq('id', aufgabeId);
 
       if (error) throw error;
-      return result as Aufgabe;
     },
     onSuccess: () => {
       toast.success('Aufgabe als erledigt markiert');

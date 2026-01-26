@@ -79,7 +79,7 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
   const completeMutation = useMutation({
     mutationFn: async ({ aufgabeId, photoUrls }: { aufgabeId: string; photoUrls: string[] }) => {
       const supabase = getClient();
-      const { data, error } = await (supabase as any)
+      const { error } = await (supabase as any)
         .from('aufgaben')
         .update({
           status: 'resolved',
@@ -87,12 +87,9 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
           completed_by: profile!.id,
           completion_photo_urls: photoUrls,
         })
-        .eq('id', aufgabeId)
-        .select()
-        .single();
+        .eq('id', aufgabeId);
 
       if (error) throw error;
-      return data;
     },
     onSuccess: async () => {
       hapticFeedback('medium');
