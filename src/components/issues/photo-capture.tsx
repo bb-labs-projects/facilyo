@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import { Camera, X, Plus, Image, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import imageCompression from 'browser-image-compression';
 import { Button } from '@/components/ui/button';
 import { cn, hapticFeedback } from '@/lib/utils';
@@ -89,8 +90,9 @@ export function PhotoCapture({
 
         onPhotosChange([...photos, ...uploadedUrls]);
         hapticFeedback('medium');
-      } catch (error) {
+      } catch (error: any) {
         console.error('Failed to upload photo:', error);
+        toast.error(error?.message || 'Foto konnte nicht hochgeladen werden');
         hapticFeedback('heavy');
       } finally {
         setIsUploading(false);
