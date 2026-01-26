@@ -565,18 +565,29 @@ function PhotoItem({
           <span className="text-sm text-primary-600">Wird hochgeladen...</span>
         </div>
       ) : value ? (
-        <div className="relative">
-          <img
-            src={value}
-            alt="Aufgenommen"
-            className="w-full h-32 object-cover rounded-lg"
-          />
+        <div className="relative w-[200px] h-[200px] rounded-lg overflow-hidden bg-slate-100 border border-slate-200">
+          <a
+            href={value}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-full h-full"
+          >
+            <img
+              src={value}
+              alt="Aufgenommen"
+              className="w-full h-full object-contain"
+            />
+          </a>
           <button
             type="button"
-            onClick={handleRemove}
-            className="absolute top-2 right-2 bg-error-500 text-white p-1.5 rounded-full shadow-md hover:bg-error-600 transition-colors"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleRemove();
+            }}
+            className="absolute top-0.5 right-0.5 p-0.5 bg-error-500 text-white rounded-full shadow-md"
           >
-            <X className="h-4 w-4" />
+            <X className="h-3 w-3" />
           </button>
         </div>
       ) : (
