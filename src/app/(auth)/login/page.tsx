@@ -51,16 +51,15 @@ export default function LoginPage() {
   return (
     <>
       {/* Logo */}
-      <div className="flex flex-col items-center mb-8">
+      <div className="flex justify-center mb-8 w-full">
         <Image
           src="/logo.png"
           alt="Flückiger Hauswartung"
-          width={200}
-          height={60}
-          className="h-16 w-auto object-contain mb-4"
+          width={400}
+          height={120}
+          className="w-full max-w-sm object-contain"
           priority
         />
-        <p className="text-sm text-muted-foreground">Zeit- & Problemerfassung</p>
       </div>
 
       {/* Login card */}
