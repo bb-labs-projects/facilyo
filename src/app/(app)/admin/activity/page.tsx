@@ -298,7 +298,7 @@ export default function AdminActivityPage() {
         ) : (
           <div className="space-y-3">
             {aufgaben.map((aufgabe) => {
-              const hasPhotos = (aufgabe.completion_photo_urls?.length > 0) || (aufgabe.source_meldung?.photo_urls?.length > 0);
+              const hasPhotos = (aufgabe.completion_photo_urls && aufgabe.completion_photo_urls.length > 0) || (aufgabe.source_meldung?.photo_urls && aufgabe.source_meldung.photo_urls.length > 0);
               const hasNotes = !!aufgabe.completion_notes;
               return (
                 <Card
