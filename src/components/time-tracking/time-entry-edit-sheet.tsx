@@ -133,10 +133,18 @@ export function TimeEntryEditSheet({
     },
   });
 
+  // Check if entry is active (no end_time means still running)
+  const isActive = entry?.status === 'active' || !entry?.end_time;
+
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async () => {
       if (!entry) return;
+
+      // Prevent deletion of active entries
+      if (isActive) {
+        throw new Error('Aktive Einträge können nicht gelöscht werden');
+      }
 
       const supabase = getClient();
       const { error } = await (supabase as any)
@@ -261,14 +269,21 @@ export function TimeEntryEditSheet({
             >
               Speichern
             </Button>
-            <Button
-              variant="destructive"
-              onClick={() => setShowDeleteDialog(true)}
-              leftIcon={<Trash2 className="h-4 w-4" />}
-              className="w-full"
-            >
-              Löschen
-            </Button>
+            {!isActive && (
+              <Button
+                variant="destructive"
+                onClick={() => setShowDeleteDialog(true)}
+                leftIcon={<Trash2 className="h-4 w-4" />}
+                className="w-full"
+              >
+                Löschen
+              </Button>
+            )}
+            {isActive && (
+              <p className="text-xs text-center text-muted-foreground">
+                Aktive Einträge können nicht gelöscht werden
+              </p>
+            )}
           </SheetFooter>
         </SheetContent>
       </Sheet>
