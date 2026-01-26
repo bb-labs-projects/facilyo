@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { hashPassword, generateTempPassword } from '@/lib/auth/password';
 
+// Force Node.js runtime for bcrypt support
+export const runtime = 'nodejs';
+
 interface ResetPasswordRequest {
   userId: string;
 }

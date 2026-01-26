@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
-import { hashPassword, generateTempPassword, generateUsernameFromEmail, generateUniqueUsername } from '@/lib/auth/password';
+import { hashPassword, generateTempPassword, generateUniqueUsername } from '@/lib/auth/password';
 import type { UserRole } from '@/types/database';
+
+// Force Node.js runtime for crypto support
+export const runtime = 'nodejs';
 
 interface CreateUserRequest {
   username?: string;

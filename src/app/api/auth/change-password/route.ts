@@ -3,6 +3,9 @@ import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
 import { validatePassword } from '@/lib/auth/validation';
 
+// Force Node.js runtime for bcrypt support
+export const runtime = 'nodejs';
+
 interface ChangePasswordRequest {
   currentPassword: string;
   newPassword: string;

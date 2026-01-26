@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 import { verifyPassword } from '@/lib/auth/password';
 
+// Force Node.js runtime for bcrypt support
+export const runtime = 'nodejs';
+
 // Account lockout settings
 const MAX_FAILED_ATTEMPTS = 10;
 const LOCKOUT_DURATION_MINUTES = 30;
