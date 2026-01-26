@@ -164,16 +164,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create profile
+    // Create or update profile (upsert handles case where trigger already created it)
     const { error: profileCreateError } = await (serviceClient as any)
       .from('profiles')
-      .insert({
+      .upsert({
         id: authUser.user.id,
-        email: email.toLowerCase(),
+        email: email,
         first_name: firstName,
         last_name: lastName,
         role,
-      });
+      }, { onConflict: 'id' });
 
     if (profileCreateError) {
       // Rollback: delete auth user
