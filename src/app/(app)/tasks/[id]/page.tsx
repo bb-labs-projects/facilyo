@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/dialog';
 import { AufgabeForm } from '@/components/aufgaben/aufgabe-form';
 import { PhotoCapture } from '@/components/issues/photo-capture';
+import { Textarea } from '@/components/ui/input';
 import { useAuthStore } from '@/stores/auth-store';
 import { usePermissions } from '@/hooks/use-permissions';
 import { getClient } from '@/lib/supabase/client';
@@ -59,6 +60,7 @@ export default function AufgabeDetailPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [completionPhotos, setCompletionPhotos] = useState<string[]>([]);
+  const [completionNotes, setCompletionNotes] = useState('');
 
   const aufgabeId = params.id as string;
 
@@ -112,7 +114,7 @@ export default function AufgabeDetailPage() {
 
   // Complete mutation
   const completeMutation = useMutation({
-    mutationFn: async (photoUrls: string[]) => {
+    mutationFn: async ({ photoUrls, notes }: { photoUrls: string[]; notes: string }) => {
       const supabase = getClient();
       const { error } = await (supabase as any)
         .from('aufgaben')
@@ -121,6 +123,7 @@ export default function AufgabeDetailPage() {
           completed_at: new Date().toISOString(),
           completed_by: profile!.id,
           completion_photo_urls: photoUrls,
+          completion_notes: notes || null,
         })
         .eq('id', aufgabeId);
 
@@ -132,6 +135,7 @@ export default function AufgabeDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['aufgaben'] });
       setShowCompleteDialog(false);
       setCompletionPhotos([]);
+      setCompletionNotes('');
     },
     onError: (error: Error) => {
       toast.error(`Fehler: ${error.message}`);
@@ -324,6 +328,14 @@ export default function AufgabeDetailPage() {
               <CheckCircle className="h-5 w-5" />
               <span className="font-medium">Erledigt am {swissFormat.datetime(aufgabe.completed_at)}</span>
             </div>
+            {aufgabe.completion_notes && (
+              <div className="pt-2">
+                <p className="text-sm text-success-700 mb-1 font-medium">Abschluss-Notizen</p>
+                <p className="text-sm text-success-800 whitespace-pre-wrap bg-white p-3 rounded-lg border border-success-200">
+                  {aufgabe.completion_notes}
+                </p>
+              </div>
+            )}
             {aufgabe.completion_photo_urls && aufgabe.completion_photo_urls.length > 0 && (
               <div className="pt-2">
                 <p className="text-sm text-success-700 mb-2 flex items-center gap-1">
@@ -382,21 +394,36 @@ export default function AufgabeDetailPage() {
       {/* Complete task dialog */}
       <Dialog open={showCompleteDialog} onOpenChange={(open) => {
         setShowCompleteDialog(open);
-        if (!open) setCompletionPhotos([]);
+        if (!open) {
+          setCompletionPhotos([]);
+          setCompletionNotes('');
+        }
       }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Aufgabe abschliessen</DialogTitle>
             <DialogDescription>
-              Optional: Fügen Sie ein Foto als Nachweis hinzu.
+              Optional: Beschreiben Sie die Lösung und fügen Sie Fotos hinzu.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <PhotoCapture
-              photos={completionPhotos}
-              onPhotosChange={setCompletionPhotos}
-              maxPhotos={3}
-            />
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Abschluss-Notizen</label>
+              <Textarea
+                placeholder="Beschreiben Sie die durchgeführten Arbeiten..."
+                value={completionNotes}
+                onChange={(e) => setCompletionNotes(e.target.value)}
+                rows={3}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Fotos (optional)</label>
+              <PhotoCapture
+                photos={completionPhotos}
+                onPhotosChange={setCompletionPhotos}
+                maxPhotos={3}
+              />
+            </div>
           </div>
           <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button
@@ -404,13 +431,14 @@ export default function AufgabeDetailPage() {
               onClick={() => {
                 setShowCompleteDialog(false);
                 setCompletionPhotos([]);
+                setCompletionNotes('');
               }}
               className="w-full sm:w-auto"
             >
               Abbrechen
             </Button>
             <Button
-              onClick={() => completeMutation.mutate(completionPhotos)}
+              onClick={() => completeMutation.mutate({ photoUrls: completionPhotos, notes: completionNotes })}
               disabled={completeMutation.isPending}
               className="w-full sm:w-auto"
               leftIcon={<CheckCircle className="h-4 w-4" />}

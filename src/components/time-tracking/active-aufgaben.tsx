@@ -17,6 +17,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { PhotoCapture } from '@/components/issues/photo-capture';
+import { Textarea } from '@/components/ui/input';
 import { getClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
 import { swissFormat } from '@/lib/i18n';
@@ -48,6 +49,7 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
   const profile = useAuthStore((state) => state.profile);
   const [completingAufgabe, setCompletingAufgabe] = useState<AufgabeWithRelations | null>(null);
   const [completionPhotos, setCompletionPhotos] = useState<string[]>([]);
+  const [completionNotes, setCompletionNotes] = useState('');
 
   // Fetch aufgaben for the property
   const { data: aufgaben = [] } = useQuery({
@@ -77,7 +79,7 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
 
   // Mark aufgabe as resolved
   const completeMutation = useMutation({
-    mutationFn: async ({ aufgabeId, photoUrls }: { aufgabeId: string; photoUrls: string[] }) => {
+    mutationFn: async ({ aufgabeId, photoUrls, notes }: { aufgabeId: string; photoUrls: string[]; notes: string }) => {
       const supabase = getClient();
       const { error } = await (supabase as any)
         .from('aufgaben')
@@ -86,6 +88,7 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
           completed_at: new Date().toISOString(),
           completed_by: profile!.id,
           completion_photo_urls: photoUrls,
+          completion_notes: notes || null,
         })
         .eq('id', aufgabeId);
 
@@ -100,6 +103,7 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
       ]);
       setCompletingAufgabe(null);
       setCompletionPhotos([]);
+      setCompletionNotes('');
     },
     onError: (error: Error) => {
       toast.error(`Fehler: ${error.message}`);
@@ -190,19 +194,20 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
         if (!open) {
           setCompletingAufgabe(null);
           setCompletionPhotos([]);
+          setCompletionNotes('');
         }
       }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Aufgabe abschliessen</DialogTitle>
             <DialogDescription>
-              Optional: Fügen Sie ein Foto als Nachweis hinzu.
+              Optional: Beschreiben Sie die Lösung und fügen Sie Fotos hinzu.
             </DialogDescription>
           </DialogHeader>
 
           {completingAufgabe && (
-            <div className="py-2">
-              <div className="p-3 bg-muted rounded-lg mb-4">
+            <div className="py-2 space-y-4">
+              <div className="p-3 bg-muted rounded-lg">
                 <h4 className="font-medium">{completingAufgabe.title}</h4>
                 {completingAufgabe.description && (
                   <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
@@ -210,11 +215,25 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
                   </p>
                 )}
               </div>
-              <PhotoCapture
-                photos={completionPhotos}
-                onPhotosChange={setCompletionPhotos}
-                maxPhotos={3}
-              />
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Abschluss-Notizen</label>
+                <Textarea
+                  placeholder="Beschreiben Sie die durchgeführten Arbeiten..."
+                  value={completionNotes}
+                  onChange={(e) => setCompletionNotes(e.target.value)}
+                  rows={3}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Fotos (optional)</label>
+                <PhotoCapture
+                  photos={completionPhotos}
+                  onPhotosChange={setCompletionPhotos}
+                  maxPhotos={3}
+                />
+              </div>
             </div>
           )}
 
@@ -224,6 +243,7 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
               onClick={() => {
                 setCompletingAufgabe(null);
                 setCompletionPhotos([]);
+                setCompletionNotes('');
               }}
               className="w-full sm:w-auto"
             >
@@ -232,7 +252,8 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
             <Button
               onClick={() => completingAufgabe && completeMutation.mutate({
                 aufgabeId: completingAufgabe.id,
-                photoUrls: completionPhotos
+                photoUrls: completionPhotos,
+                notes: completionNotes
               })}
               disabled={completeMutation.isPending}
               className="w-full sm:w-auto"

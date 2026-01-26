@@ -38,6 +38,14 @@ import type {
 
 type TabType = 'aufgaben' | 'checklists';
 
+interface SourceMeldung {
+  id: string;
+  title: string;
+  description: string | null;
+  photo_urls: string[];
+  category: string;
+}
+
 interface AufgabeWithRelations {
   id: string;
   title: string;
@@ -45,9 +53,12 @@ interface AufgabeWithRelations {
   status: string;
   completed_at: string | null;
   completed_by: string | null;
+  completion_photo_urls: string[];
+  completion_notes: string | null;
   property_id: string;
   property: Property;
   completer: Profile | null;
+  source_meldung: SourceMeldung | null;
 }
 
 interface ChecklistInstanceWithRelations {
@@ -100,6 +111,7 @@ export default function AdminActivityPage() {
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedChecklist, setSelectedChecklist] = useState<ChecklistInstanceWithRelations | null>(null);
+  const [selectedAufgabe, setSelectedAufgabe] = useState<AufgabeWithRelations | null>(null);
 
   // Fetch all properties for filter
   const { data: properties = [] } = useQuery({
@@ -121,12 +133,13 @@ export default function AdminActivityPage() {
     queryKey: ['admin-completed-aufgaben', selectedPropertyId],
     queryFn: async () => {
       const supabase = getClient();
-      let query = supabase
+      let query = (supabase as any)
         .from('aufgaben')
         .select(`
           *,
           property:properties (*),
-          completer:profiles!aufgaben_completed_by_fkey (*)
+          completer:profiles!aufgaben_completed_by_fkey (*),
+          source_meldung:issues (*)
         `)
         .eq('status', 'resolved')
         .not('completed_at', 'is', null)
@@ -284,48 +297,70 @@ export default function AdminActivityPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {aufgaben.map((aufgabe) => (
-              <Card key={aufgabe.id}>
-                <CardContent className="p-4">
-                  <div className="space-y-2">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-success-100 flex items-center justify-center flex-shrink-0">
-                        <CheckCircle2 className="h-5 w-5 text-success-600" />
+            {aufgaben.map((aufgabe) => {
+              const hasPhotos = (aufgabe.completion_photo_urls?.length > 0) || (aufgabe.source_meldung?.photo_urls?.length > 0);
+              const hasNotes = !!aufgabe.completion_notes;
+              return (
+                <Card
+                  key={aufgabe.id}
+                  interactive
+                  className="cursor-pointer"
+                  onClick={() => setSelectedAufgabe(aufgabe)}
+                >
+                  <CardContent className="p-4">
+                    <div className="space-y-2">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-success-100 flex items-center justify-center flex-shrink-0">
+                          <CheckCircle2 className="h-5 w-5 text-success-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium truncate">{aufgabe.title}</h3>
+                          {aufgabe.description && (
+                            <p className="text-sm text-muted-foreground line-clamp-2 mt-0.5">
+                              {aufgabe.description}
+                            </p>
+                          )}
+                        </div>
+                        <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-medium truncate">{aufgabe.title}</h3>
-                        {aufgabe.description && (
-                          <p className="text-sm text-muted-foreground line-clamp-2 mt-0.5">
-                            {aufgabe.description}
-                          </p>
+
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground pl-13">
+                        <div className="flex items-center gap-1.5">
+                          <Building2 className="h-3.5 w-3.5" />
+                          <span>{aufgabe.property?.name || 'Unbekannt'}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <User className="h-3.5 w-3.5" />
+                          <span>{formatName(aufgabe.completer)}</span>
+                        </div>
+                        {aufgabe.completed_at && (
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="h-3.5 w-3.5" />
+                            <span>{formatDateTime(aufgabe.completed_at)}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="pl-13 flex items-center gap-2">
+                        <span className="badge badge-success text-xs">Erledigt</span>
+                        {hasPhotos && (
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Camera className="h-3 w-3" />
+                            Fotos
+                          </span>
+                        )}
+                        {hasNotes && (
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Type className="h-3 w-3" />
+                            Notizen
+                          </span>
                         )}
                       </div>
                     </div>
-
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground pl-13">
-                      <div className="flex items-center gap-1.5">
-                        <Building2 className="h-3.5 w-3.5" />
-                        <span>{aufgabe.property?.name || 'Unbekannt'}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <User className="h-3.5 w-3.5" />
-                        <span>{formatName(aufgabe.completer)}</span>
-                      </div>
-                      {aufgabe.completed_at && (
-                        <div className="flex items-center gap-1.5">
-                          <Calendar className="h-3.5 w-3.5" />
-                          <span>{formatDateTime(aufgabe.completed_at)}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="pl-13">
-                      <span className="badge badge-success text-xs">Erledigt</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )
       ) : (
@@ -475,6 +510,130 @@ export default function AdminActivityPage() {
                     Keine Checklistenpunkte vorhanden
                   </p>
                 )}
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Aufgabe Detail Sheet */}
+      <Sheet open={!!selectedAufgabe} onOpenChange={() => setSelectedAufgabe(null)}>
+        <SheetContent side="bottom" className="h-[85vh]">
+          {selectedAufgabe && (
+            <>
+              <SheetHeader>
+                <SheetTitle>{selectedAufgabe.title}</SheetTitle>
+                <p className="text-sm text-muted-foreground">
+                  {formatName(selectedAufgabe.completer)} • {selectedAufgabe.completed_at && formatDateTime(selectedAufgabe.completed_at)}
+                </p>
+              </SheetHeader>
+
+              <div className="mt-6 space-y-6 overflow-y-auto max-h-[calc(85vh-120px)]">
+                {/* Task Description */}
+                {selectedAufgabe.description && (
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-sm">Aufgabenbeschreibung</h4>
+                    <p className="text-sm text-muted-foreground bg-muted p-3 rounded-lg whitespace-pre-wrap">
+                      {selectedAufgabe.description}
+                    </p>
+                  </div>
+                )}
+
+                {/* Source Issue (Problem) */}
+                {selectedAufgabe.source_meldung && (
+                  <div className="space-y-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                    <h4 className="font-medium text-sm text-amber-800">Ursprüngliche Meldung</h4>
+                    <p className="text-sm font-medium text-amber-900">{selectedAufgabe.source_meldung.title}</p>
+                    {selectedAufgabe.source_meldung.description && (
+                      <p className="text-sm text-amber-800 whitespace-pre-wrap">
+                        {selectedAufgabe.source_meldung.description}
+                      </p>
+                    )}
+                    {selectedAufgabe.source_meldung.photo_urls && selectedAufgabe.source_meldung.photo_urls.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-sm text-amber-700 flex items-center gap-1">
+                          <Camera className="h-4 w-4" />
+                          Fotos der Meldung
+                        </p>
+                        <div className="grid grid-cols-3 gap-2">
+                          {selectedAufgabe.source_meldung.photo_urls.map((url, index) => (
+                            <a
+                              key={url}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="aspect-square rounded-lg overflow-hidden bg-white border border-amber-200"
+                            >
+                              <img
+                                src={url}
+                                alt={`Meldung Foto ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Completion Info */}
+                <div className="space-y-3 p-4 bg-success-50 border border-success-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-success-700">
+                    <CheckCircle2 className="h-5 w-5" />
+                    <h4 className="font-medium text-sm">Abschluss-Dokumentation</h4>
+                  </div>
+
+                  {selectedAufgabe.completion_notes && (
+                    <div className="space-y-1">
+                      <p className="text-sm text-success-700 font-medium">Abschluss-Notizen</p>
+                      <p className="text-sm text-success-800 whitespace-pre-wrap bg-white p-3 rounded-lg border border-success-200">
+                        {selectedAufgabe.completion_notes}
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedAufgabe.completion_photo_urls && selectedAufgabe.completion_photo_urls.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-success-700 flex items-center gap-1 font-medium">
+                        <Camera className="h-4 w-4" />
+                        Nachweisfotos
+                      </p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {selectedAufgabe.completion_photo_urls.map((url, index) => (
+                          <a
+                            key={url}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="aspect-square rounded-lg overflow-hidden bg-white border border-success-200"
+                          >
+                            <img
+                              src={url}
+                              alt={`Nachweis ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {!selectedAufgabe.completion_notes && (!selectedAufgabe.completion_photo_urls || selectedAufgabe.completion_photo_urls.length === 0) && (
+                    <p className="text-sm text-success-600">Keine Abschluss-Dokumentation vorhanden</p>
+                  )}
+                </div>
+
+                {/* Property Info */}
+                <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                  <Building2 className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">{selectedAufgabe.property?.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {selectedAufgabe.property?.address}, {selectedAufgabe.property?.city}
+                    </p>
+                  </div>
+                </div>
               </div>
             </>
           )}

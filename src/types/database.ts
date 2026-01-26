@@ -358,6 +358,7 @@ export interface Database {
           completed_at: string | null;
           completed_by: string | null;
           completion_photo_urls: string[];
+          completion_notes: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -375,6 +376,7 @@ export interface Database {
           completed_at?: string | null;
           completed_by?: string | null;
           completion_photo_urls?: string[];
+          completion_notes?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -392,6 +394,7 @@ export interface Database {
           completed_at?: string | null;
           completed_by?: string | null;
           completion_photo_urls?: string[];
+          completion_notes?: string | null;
           created_at?: string;
           updated_at?: string;
         };
