@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { BottomNav } from '@/components/layout/bottom-nav';
 import { Sidebar } from '@/components/layout/sidebar';
 import { MobileMenuProvider } from '@/contexts/mobile-menu-context';
 import { useAuthStore } from '@/stores/auth-store';
 import { useTimerStore } from '@/stores/timer-store';
+import { getClient } from '@/lib/supabase/client';
 
 export default function AppLayout({
   children,
@@ -17,12 +18,47 @@ export default function AppLayout({
   const { isAuthenticated, isLoading } = useAuthStore();
   const initializeTimer = useTimerStore((state) => state.initializeFromServer);
 
+  // Refresh session and timer state
+  const refreshState = useCallback(async () => {
+    if (!isAuthenticated) return;
+
+    try {
+      // Refresh Supabase session
+      const supabase = getClient();
+      await supabase.auth.getSession();
+
+      // Reinitialize timer from server
+      await initializeTimer();
+    } catch (error) {
+      console.error('Failed to refresh state:', error);
+    }
+  }, [isAuthenticated, initializeTimer]);
+
   // Initialize timer state on mount
   useEffect(() => {
     if (isAuthenticated) {
       initializeTimer();
     }
   }, [isAuthenticated, initializeTimer]);
+
+  // Handle visibility change - refresh state when user returns to tab
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshState();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Also refresh on focus (for browsers that don't fire visibilitychange)
+    window.addEventListener('focus', refreshState);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', refreshState);
+    };
+  }, [refreshState]);
 
   // Redirect to login if not authenticated
   useEffect(() => {

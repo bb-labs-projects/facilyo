@@ -64,11 +64,18 @@ export const useTimerStore = create<TimerStore>()(
       // Start work day - automatically starts travel time
       startWorkDay: async () => {
         const supabase = getClient();
+
+        // Refresh session first
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          throw new Error('Sitzung abgelaufen - bitte Seite neu laden');
+        }
+
         const {
           data: { user },
         } = await supabase.auth.getUser();
 
-        if (!user) throw new Error('Not authenticated');
+        if (!user) throw new Error('Nicht authentifiziert - bitte Seite neu laden');
 
         const today = new Date().toISOString().split('T')[0];
         const now = new Date().toISOString();
@@ -124,7 +131,13 @@ export const useTimerStore = create<TimerStore>()(
         const supabase = getClient();
         const { workDay, activeEntry } = get();
 
-        if (!workDay) throw new Error('No active work day');
+        // Refresh session first
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          throw new Error('Sitzung abgelaufen - bitte Seite neu laden');
+        }
+
+        if (!workDay) throw new Error('Kein aktiver Arbeitstag');
 
         // Stop any active entry first
         if (activeEntry) {
@@ -160,12 +173,19 @@ export const useTimerStore = create<TimerStore>()(
       startTravelTime: async () => {
         const supabase = getClient();
         const { workDay, activeEntry } = get();
+
+        // Refresh session first
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          throw new Error('Sitzung abgelaufen - bitte Seite neu laden');
+        }
+
         const {
           data: { user },
         } = await supabase.auth.getUser();
 
-        if (!user) throw new Error('Not authenticated');
-        if (!workDay) throw new Error('No active work day');
+        if (!user) throw new Error('Nicht authentifiziert - bitte Seite neu laden');
+        if (!workDay) throw new Error('Kein aktiver Arbeitstag');
 
         // Stop any current entry first
         if (activeEntry) {
@@ -204,12 +224,19 @@ export const useTimerStore = create<TimerStore>()(
       startPropertyWork: async (propertyId, coords) => {
         const supabase = getClient();
         const { workDay, activeEntry } = get();
+
+        // Refresh session first
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          throw new Error('Sitzung abgelaufen - bitte Seite neu laden');
+        }
+
         const {
           data: { user },
         } = await supabase.auth.getUser();
 
-        if (!user) throw new Error('Not authenticated');
-        if (!workDay) throw new Error('No active work day');
+        if (!user) throw new Error('Nicht authentifiziert - bitte Seite neu laden');
+        if (!workDay) throw new Error('Kein aktiver Arbeitstag');
 
         // Stop any current entry (travel, break, or another property)
         if (activeEntry) {
@@ -272,12 +299,19 @@ export const useTimerStore = create<TimerStore>()(
       startBreak: async () => {
         const supabase = getClient();
         const { workDay, activeEntry, currentEntryType, activeProperty } = get();
+
+        // Refresh session first
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          throw new Error('Sitzung abgelaufen - bitte Seite neu laden');
+        }
+
         const {
           data: { user },
         } = await supabase.auth.getUser();
 
-        if (!user) throw new Error('Not authenticated');
-        if (!workDay) throw new Error('No active work day');
+        if (!user) throw new Error('Nicht authentifiziert - bitte Seite neu laden');
+        if (!workDay) throw new Error('Kein aktiver Arbeitstag');
 
         // Remember previous state for resuming after break
         const prevType = currentEntryType;
@@ -320,10 +354,17 @@ export const useTimerStore = create<TimerStore>()(
 
       // End break (resumes previous state)
       endBreak: async () => {
+        const supabase = getClient();
         const { activeEntry, currentEntryType, previousEntryType, previousPropertyId } = get();
 
+        // Refresh session first
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          throw new Error('Sitzung abgelaufen - bitte Seite neu laden');
+        }
+
         if (!activeEntry || currentEntryType !== 'break') {
-          throw new Error('No active break');
+          throw new Error('Keine aktive Pause');
         }
 
         // Stop the break entry
