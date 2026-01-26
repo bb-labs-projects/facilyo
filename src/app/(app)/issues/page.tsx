@@ -135,17 +135,21 @@ export default function IssuesPage() {
         <Header
           title="Meldungen"
           rightElement={
-            <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative">
-                  <Filter className="h-5 w-5" />
-                  {activeFilters > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary-600 text-white text-xs rounded-full flex items-center justify-center">
-                      {activeFilters}
-                    </span>
-                  )}
-                </Button>
-              </SheetTrigger>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" onClick={handleNewIssue}>
+                <Plus className="h-5 w-5" />
+              </Button>
+              <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative">
+                    <Filter className="h-5 w-5" />
+                    {activeFilters > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary-600 text-white text-xs rounded-full flex items-center justify-center">
+                        {activeFilters}
+                      </span>
+                    )}
+                  </Button>
+                </SheetTrigger>
               <SheetContent side="bottom">
                 <SheetHeader>
                   <SheetTitle>Filter</SheetTitle>
@@ -213,7 +217,8 @@ export default function IssuesPage() {
                   )}
                 </div>
               </SheetContent>
-            </Sheet>
+              </Sheet>
+            </div>
           }
         />
       }
@@ -270,14 +275,6 @@ export default function IssuesPage() {
           </div>
         )}
 
-        {/* Floating action button for mobile */}
-        <button
-          onClick={handleNewIssue}
-          className="fixed bottom-24 right-4 w-14 h-14 bg-primary-600 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-primary-700 active:scale-95 transition-all"
-          aria-label="Neue Meldung erstellen"
-        >
-          <Plus className="h-6 w-6" />
-        </button>
       </PullToRefresh>
 
       {/* Convert to Aufgabe Dialog */}
