@@ -595,7 +595,7 @@ export default function AdminUsersPage() {
             <Input
               label="Benutzername (optional)"
               type="text"
-              placeholder="Wird aus E-Mail generiert wenn leer"
+              placeholder="Wird aus Vor-/Nachname generiert"
               value={newUserUsername}
               onChange={(e) => setNewUserUsername(e.target.value.toLowerCase())}
               autoCapitalize="none"
