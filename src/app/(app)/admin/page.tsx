@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Users, Building2, ClipboardList, ChevronRight, Settings, Activity } from 'lucide-react';
+import { Users, Building2, ClipboardList, ChevronRight, Settings, Activity, Shield } from 'lucide-react';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -12,6 +12,7 @@ interface AdminMenuItem {
   description: string;
   icon: React.ComponentType<{ className?: string }>;
   requireOwner?: boolean;
+  requireRolePermissions?: boolean;
 }
 
 const adminMenuItems: AdminMenuItem[] = [
@@ -40,6 +41,13 @@ const adminMenuItems: AdminMenuItem[] = [
     description: 'Erledigte Aufgaben und Checklisten einsehen',
     icon: Activity,
   },
+  {
+    href: '/admin/roles',
+    label: 'Rollen & Berechtigungen',
+    description: 'Berechtigungen pro Rolle verwalten',
+    icon: Shield,
+    requireRolePermissions: true,
+  },
 ];
 
 export default function AdminPage() {
@@ -55,6 +63,9 @@ export default function AdminPage() {
   const filteredMenuItems = adminMenuItems.filter((item) => {
     if (item.requireOwner) {
       return permissions.canManageEmployees;
+    }
+    if (item.requireRolePermissions) {
+      return permissions.canManageRolePermissions;
     }
     return true;
   });

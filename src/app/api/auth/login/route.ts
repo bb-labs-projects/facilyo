@@ -85,6 +85,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if user is inactive
+    if (profile.is_active === false) {
+      await logAuditEvent(supabase, {
+        user_id: credentials.user_id,
+        username,
+        event_type: 'login_failed_inactive_user',
+        ip_address: ip,
+        user_agent: userAgent,
+      });
+
+      return NextResponse.json(
+        { error: 'Ihr Konto ist deaktiviert. Bitte kontaktieren Sie den Administrator.' },
+        { status: 403 }
+      );
+    }
+
     // Verify password against our Argon2 hash
     const isValidPassword = await verifyPassword(password, credentials.password_hash);
 

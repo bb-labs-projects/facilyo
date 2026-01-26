@@ -7,6 +7,18 @@ export type Json =
   | Json[];
 
 export type UserRole = 'admin' | 'owner' | 'manager' | 'employee';
+
+export type PermissionName =
+  | 'manage_properties'
+  | 'manage_employees'
+  | 'manage_checklists'
+  | 'manage_aufgaben'
+  | 'assign_aufgaben'
+  | 'convert_meldungen'
+  | 'view_all_users'
+  | 'update_user_roles'
+  | 'access_admin_panel'
+  | 'manage_role_permissions';
 export type PropertyType = 'residential' | 'commercial' | 'industrial' | 'mixed';
 export type TimeEntryStatus = 'active' | 'paused' | 'completed';
 export type TimeEntryType = 'property' | 'travel' | 'break';
@@ -28,6 +40,7 @@ export interface Database {
           role: UserRole;
           avatar_url: string | null;
           push_subscription: Json | null;
+          is_active: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -40,6 +53,7 @@ export interface Database {
           role?: UserRole;
           avatar_url?: string | null;
           push_subscription?: Json | null;
+          is_active?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -52,6 +66,7 @@ export interface Database {
           role?: UserRole;
           avatar_url?: string | null;
           push_subscription?: Json | null;
+          is_active?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -67,6 +82,7 @@ export interface Database {
           latitude: number | null;
           longitude: number | null;
           geofence_radius: number;
+          is_active: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -80,6 +96,7 @@ export interface Database {
           latitude?: number | null;
           longitude?: number | null;
           geofence_radius?: number;
+          is_active?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -93,6 +110,7 @@ export interface Database {
           latitude?: number | null;
           longitude?: number | null;
           geofence_radius?: number;
+          is_active?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -492,6 +510,32 @@ export interface Database {
           created_at?: string;
         };
       };
+      role_permissions: {
+        Row: {
+          id: string;
+          role: UserRole;
+          permission: PermissionName;
+          enabled: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          role: UserRole;
+          permission: PermissionName;
+          enabled?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          role?: UserRole;
+          permission?: PermissionName;
+          enabled?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Views: {
       [_ in never]: never;
@@ -524,6 +568,7 @@ export type Aufgabe = Database['public']['Tables']['aufgaben']['Row'];
 export type ChecklistItemCompletion = Database['public']['Tables']['checklist_item_completions']['Row'];
 export type AuthCredentials = Database['public']['Tables']['auth_credentials']['Row'];
 export type AuthAuditLog = Database['public']['Tables']['auth_audit_log']['Row'];
+export type RolePermission = Database['public']['Tables']['role_permissions']['Row'];
 
 // Insert types
 export type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];

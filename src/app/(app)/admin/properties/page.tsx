@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Building2, Plus, MapPin, Edit, Trash2, Search } from 'lucide-react';
+import { Building2, Plus, MapPin, Edit, Trash2, Search, Power } from 'lucide-react';
 import { toast } from 'sonner';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
@@ -41,10 +41,13 @@ export default function AdminPropertiesPage() {
   const permissions = usePermissions();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [showInactiveProperties, setShowInactiveProperties] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deletingProperty, setDeletingProperty] = useState<Property | null>(null);
+  const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
+  const [deactivatingProperty, setDeactivatingProperty] = useState<Property | null>(null);
 
   // Form state
   const [name, setName] = useState('');
@@ -140,6 +143,29 @@ export default function AdminPropertiesPage() {
     },
   });
 
+  // Toggle property active status mutation
+  const toggleActiveMutation = useMutation({
+    mutationFn: async ({ propertyId, isActive }: { propertyId: string; isActive: boolean }) => {
+      const supabase = getClient();
+      const { error } = await (supabase as any)
+        .from('properties')
+        .update({ is_active: isActive })
+        .eq('id', propertyId);
+
+      if (error) throw error;
+      return { propertyId, isActive };
+    },
+    onSuccess: (_, { isActive }) => {
+      toast.success(isActive ? 'Liegenschaft aktiviert' : 'Liegenschaft deaktiviert');
+      queryClient.invalidateQueries({ queryKey: ['admin-properties'] });
+      setShowDeactivateDialog(false);
+      setDeactivatingProperty(null);
+    },
+    onError: (error: Error) => {
+      toast.error(`Fehler: ${error.message}`);
+    },
+  });
+
   // Redirect if no permission
   useEffect(() => {
     if (!permissions.canManageProperties) {
@@ -194,8 +220,12 @@ export default function AdminPropertiesPage() {
     }
   };
 
-  // Filter properties by search
+  // Filter properties by search and active status
   const filteredProperties = properties.filter((property) => {
+    // Filter by active status (is_active may be undefined for old records, treat as active)
+    const isActive = property.is_active !== false;
+    if (!showInactiveProperties && !isActive) return false;
+
     if (!searchQuery) return true;
     const search = searchQuery.toLowerCase();
     return (
@@ -225,15 +255,26 @@ export default function AdminPropertiesPage() {
         />
       }
     >
-      {/* Search */}
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Liegenschaft suchen..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
-        />
+      {/* Search and Filters */}
+      <div className="space-y-3 mb-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Liegenschaft suchen..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showInactiveProperties}
+            onChange={(e) => setShowInactiveProperties(e.target.checked)}
+            className="rounded border-gray-300"
+          />
+          <span className="text-muted-foreground">Inaktive Liegenschaften anzeigen</span>
+        </label>
       </div>
 
       {/* Properties list */}
@@ -248,43 +289,71 @@ export default function AdminPropertiesPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {filteredProperties.map((property) => (
-            <Card key={property.id}>
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-medium">{property.name}</h3>
-                    <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
-                      <MapPin className="h-3 w-3" />
-                      {property.address}, {property.postal_code} {property.city}
-                    </p>
-                    <span className="badge badge-info text-xs mt-2">
-                      {propertyTypeLabels[property.type]}
-                    </span>
+          {filteredProperties.map((property) => {
+            const inactive = property.is_active === false;
+            return (
+              <Card key={property.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium">{property.name}</h3>
+                      <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <MapPin className="h-3 w-3" />
+                        {property.address}, {property.postal_code} {property.city}
+                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="badge badge-info text-xs">
+                          {propertyTypeLabels[property.type]}
+                        </span>
+                        {inactive && (
+                          <span className="badge bg-gray-100 text-gray-700 text-xs">
+                            Inaktiv
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-1 flex-shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          if (inactive) {
+                            // Activate directly
+                            toggleActiveMutation.mutate({ propertyId: property.id, isActive: true });
+                          } else {
+                            // Show confirmation dialog for deactivation
+                            setDeactivatingProperty(property);
+                            setShowDeactivateDialog(true);
+                          }
+                        }}
+                        title={inactive ? 'Liegenschaft aktivieren' : 'Liegenschaft deaktivieren'}
+                        disabled={toggleActiveMutation.isPending}
+                      >
+                        <Power className={cn('h-4 w-4', inactive ? 'text-green-500' : 'text-gray-400')} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openEditForm(property)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setDeletingProperty(property);
+                          setShowDeleteDialog(true);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-error-600" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-1 flex-shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => openEditForm(property)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        setDeletingProperty(property);
-                        setShowDeleteDialog(true);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 text-error-600" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
@@ -449,6 +518,32 @@ export default function AdminPropertiesPage() {
               disabled={deleteMutation.isPending}
             >
               {deleteMutation.isPending ? 'Wird gelöscht...' : 'Löschen'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Deactivate confirmation dialog */}
+      <Dialog open={showDeactivateDialog} onOpenChange={setShowDeactivateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Liegenschaft deaktivieren</DialogTitle>
+            <DialogDescription>
+              Sind Sie sicher, dass Sie &quot;{deactivatingProperty?.name}&quot; deaktivieren möchten?
+              Mitarbeiter werden diese Liegenschaft nicht mehr sehen und keine Checklisten oder Aufgaben
+              dafür bearbeiten können.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeactivateDialog(false)}>
+              Abbrechen
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deactivatingProperty && toggleActiveMutation.mutate({ propertyId: deactivatingProperty.id, isActive: false })}
+              disabled={toggleActiveMutation.isPending}
+            >
+              {toggleActiveMutation.isPending ? 'Wird deaktiviert...' : 'Deaktivieren'}
             </Button>
           </DialogFooter>
         </DialogContent>

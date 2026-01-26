@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Users, Shield, Building2, Search, UserPlus, KeyRound, Unlock, AlertCircle } from 'lucide-react';
+import { Users, Shield, Building2, Search, UserPlus, KeyRound, Unlock, AlertCircle, Power } from 'lucide-react';
 import { toast } from 'sonner';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
@@ -44,6 +44,7 @@ interface AuthCredentials {
 interface UserWithAssignments extends Profile {
   property_assignments: { property_id: string; property: Property }[];
   auth_credentials?: AuthCredentials[];
+  is_active?: boolean;
 }
 
 export default function AdminUsersPage() {
@@ -53,12 +54,14 @@ export default function AdminUsersPage() {
   const permissions = usePermissions();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [showInactiveUsers, setShowInactiveUsers] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithAssignments | null>(null);
   const [showRoleDialog, setShowRoleDialog] = useState(false);
   const [showAssignmentsSheet, setShowAssignmentsSheet] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
   const [showTempPasswordDialog, setShowTempPasswordDialog] = useState(false);
+  const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
   const [tempPasswordData, setTempPasswordData] = useState<{
     username: string;
     tempPassword: string;
@@ -292,6 +295,29 @@ export default function AdminUsersPage() {
     },
   });
 
+  // Toggle user active status mutation
+  const toggleActiveMutation = useMutation({
+    mutationFn: async ({ userId, isActive }: { userId: string; isActive: boolean }) => {
+      const supabase = getClient();
+      const { error } = await (supabase as any)
+        .from('profiles')
+        .update({ is_active: isActive })
+        .eq('id', userId);
+
+      if (error) throw error;
+      return { userId, isActive };
+    },
+    onSuccess: (_, { isActive }) => {
+      toast.success(isActive ? 'Benutzer aktiviert' : 'Benutzer deaktiviert');
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      setShowDeactivateDialog(false);
+      setSelectedUser(null);
+    },
+    onError: (error: Error) => {
+      toast.error(`Fehler: ${error.message}`);
+    },
+  });
+
   // Redirect if no permission
   useEffect(() => {
     if (!permissions.canManageEmployees) {
@@ -299,8 +325,12 @@ export default function AdminUsersPage() {
     }
   }, [permissions.canManageEmployees, router]);
 
-  // Filter users by search
+  // Filter users by search and active status
   const filteredUsers = users.filter((user) => {
+    // Filter by active status (is_active may be undefined for old records, treat as active)
+    const isActive = user.is_active !== false;
+    if (!showInactiveUsers && !isActive) return false;
+
     if (!searchQuery) return true;
     const search = searchQuery.toLowerCase();
     const username = user.auth_credentials?.[0]?.username || '';
@@ -324,6 +354,10 @@ export default function AdminUsersPage() {
 
   const mustChangePassword = (user: UserWithAssignments) => {
     return user.auth_credentials?.[0]?.must_change_password || false;
+  };
+
+  const isUserInactive = (user: UserWithAssignments) => {
+    return user.is_active === false;
   };
 
   if (!permissions.canManageEmployees) {
@@ -363,15 +397,26 @@ export default function AdminUsersPage() {
         />
       }
     >
-      {/* Search */}
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Benutzer suchen..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
-        />
+      {/* Search and Filters */}
+      <div className="space-y-3 mb-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Benutzer suchen..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showInactiveUsers}
+            onChange={(e) => setShowInactiveUsers(e.target.checked)}
+            className="rounded border-gray-300"
+          />
+          <span className="text-muted-foreground">Inaktive Benutzer anzeigen</span>
+        </label>
       </div>
 
       {/* Users list */}
@@ -393,6 +438,7 @@ export default function AdminUsersPage() {
             const username = user.auth_credentials?.[0]?.username;
             const locked = isUserLocked(user);
             const needsPasswordChange = mustChangePassword(user);
+            const inactive = isUserInactive(user);
 
             return (
               <Card key={user.id} interactive className="cursor-pointer">
@@ -423,12 +469,17 @@ export default function AdminUsersPage() {
                         <span className="badge badge-info text-xs">
                           {roleLabels[user.role]}
                         </span>
+                        {inactive && (
+                          <span className="badge bg-gray-100 text-gray-700 text-xs">
+                            Inaktiv
+                          </span>
+                        )}
                         {locked && (
                           <span className="badge bg-red-100 text-red-700 text-xs">
                             Gesperrt
                           </span>
                         )}
-                        {needsPasswordChange && !locked && (
+                        {needsPasswordChange && !locked && !inactive && (
                           <span className="badge bg-amber-100 text-amber-700 text-xs">
                             Passwort ändern
                           </span>
@@ -441,6 +492,28 @@ export default function AdminUsersPage() {
 
                     {/* Actions */}
                     <div className="flex gap-1 flex-shrink-0">
+                      {/* Activate/Deactivate button */}
+                      {user.id !== profile?.id && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (inactive) {
+                              // Activate directly
+                              toggleActiveMutation.mutate({ userId: user.id, isActive: true });
+                            } else {
+                              // Show confirmation dialog for deactivation
+                              setSelectedUser(user);
+                              setShowDeactivateDialog(true);
+                            }
+                          }}
+                          title={inactive ? 'Benutzer aktivieren' : 'Benutzer deaktivieren'}
+                          disabled={toggleActiveMutation.isPending}
+                        >
+                          <Power className={cn('h-4 w-4', inactive ? 'text-green-500' : 'text-gray-400')} />
+                        </Button>
+                      )}
                       {/* Unlock button */}
                       {locked && (
                         <Button
@@ -716,6 +789,31 @@ export default function AdminUsersPage() {
           isNewUser={tempPasswordData.isNewUser}
         />
       )}
+
+      {/* Deactivate user confirmation dialog */}
+      <Dialog open={showDeactivateDialog} onOpenChange={setShowDeactivateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Benutzer deaktivieren</DialogTitle>
+            <DialogDescription>
+              Sind Sie sicher, dass Sie {selectedUser?.first_name} {selectedUser?.last_name} deaktivieren möchten?
+              Der Benutzer kann sich nicht mehr anmelden, bis das Konto wieder aktiviert wird.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeactivateDialog(false)}>
+              Abbrechen
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => selectedUser && toggleActiveMutation.mutate({ userId: selectedUser.id, isActive: false })}
+              disabled={toggleActiveMutation.isPending}
+            >
+              {toggleActiveMutation.isPending ? 'Wird deaktiviert...' : 'Deaktivieren'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageContainer>
   );
 }
