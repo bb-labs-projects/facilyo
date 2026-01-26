@@ -44,6 +44,8 @@ const ENTRY_COLORS: Record<TimeEntryType, { bg: string; border: string; text: st
 interface CalendarEntry extends TimeEntryWithProperty {
   top: number;
   height: number;
+  column: number;
+  totalColumns: number;
 }
 
 export function WeeklyCalendar({ entries, selectedDate, className, onEntryUpdated }: WeeklyCalendarProps) {
@@ -118,21 +120,90 @@ export function WeeklyCalendar({ entries, selectedDate, className, onEntryUpdate
     return hours;
   }, [entriesByDay]);
 
-  // Calculate entry dimensions - height matches actual duration
-  const calculateEntryDimensions = (entry: TimeEntryWithProperty): CalendarEntry => {
-    const startDate = new Date(entry.start_time);
-    const endDate = entry.end_time ? new Date(entry.end_time) : new Date();
+  // Calculate entry dimensions with collision detection for a day's entries
+  const calculateEntriesWithLayout = (dayEntries: TimeEntryWithProperty[]): CalendarEntry[] => {
+    // First pass: calculate basic dimensions
+    const withDimensions = dayEntries.map((entry) => {
+      const startDate = new Date(entry.start_time);
+      const endDate = entry.end_time ? new Date(entry.end_time) : new Date();
 
-    // Clamp to display range
-    const startHour = Math.max(startDate.getHours() + startDate.getMinutes() / 60, START_HOUR);
-    const endHour = Math.min(endDate.getHours() + endDate.getMinutes() / 60, END_HOUR);
+      const startHour = Math.max(startDate.getHours() + startDate.getMinutes() / 60, START_HOUR);
+      const endHour = Math.min(endDate.getHours() + endDate.getMinutes() / 60, END_HOUR);
 
-    const top = (startHour - START_HOUR) * HOUR_HEIGHT;
-    // Use actual time-based height with small minimum for readability
-    const calculatedHeight = (endHour - startHour) * HOUR_HEIGHT;
-    const height = Math.max(calculatedHeight, MIN_ENTRY_HEIGHT);
+      const top = (startHour - START_HOUR) * HOUR_HEIGHT;
+      const calculatedHeight = (endHour - startHour) * HOUR_HEIGHT;
+      const height = Math.max(calculatedHeight, MIN_ENTRY_HEIGHT);
 
-    return { ...entry, top, height };
+      return { ...entry, top, height, column: 0, totalColumns: 1 };
+    });
+
+    // Sort by start time
+    withDimensions.sort((a, b) => a.top - b.top);
+
+    // Second pass: detect visual collisions and assign columns
+    for (let i = 0; i < withDimensions.length; i++) {
+      const current = withDimensions[i];
+      const visualBottom = current.top + current.height;
+
+      const overlappingGroup: CalendarEntry[] = [current];
+
+      for (let j = i + 1; j < withDimensions.length; j++) {
+        const next = withDimensions[j];
+        if (next.top < visualBottom) {
+          overlappingGroup.push(next);
+        }
+      }
+
+      if (overlappingGroup.length > 1) {
+        const usedColumns = new Set<number>();
+
+        for (const entry of overlappingGroup) {
+          for (let k = 0; k < withDimensions.length; k++) {
+            const prev = withDimensions[k];
+            if (prev.id === entry.id) continue;
+
+            const prevBottom = prev.top + prev.height;
+            const entryBottom = entry.top + entry.height;
+            const overlaps = !(entry.top >= prevBottom || prev.top >= entryBottom);
+
+            if (overlaps && prev.column !== undefined) {
+              usedColumns.add(prev.column);
+            }
+          }
+
+          let col = 0;
+          while (usedColumns.has(col)) col++;
+          entry.column = col;
+          usedColumns.add(col);
+        }
+
+        const maxCol = Math.max(...overlappingGroup.map(e => e.column)) + 1;
+        for (const entry of overlappingGroup) {
+          entry.totalColumns = Math.max(entry.totalColumns, maxCol);
+        }
+      }
+    }
+
+    // Third pass: normalize totalColumns
+    for (let i = 0; i < withDimensions.length; i++) {
+      const current = withDimensions[i];
+      for (let j = 0; j < withDimensions.length; j++) {
+        if (i === j) continue;
+        const other = withDimensions[j];
+
+        const currentBottom = current.top + current.height;
+        const otherBottom = other.top + other.height;
+        const overlaps = !(current.top >= otherBottom || other.top >= currentBottom);
+
+        if (overlaps) {
+          const maxCols = Math.max(current.totalColumns, other.totalColumns);
+          current.totalColumns = maxCols;
+          other.totalColumns = maxCols;
+        }
+      }
+    }
+
+    return withDimensions;
   };
 
   // Get entry type label
@@ -240,23 +311,26 @@ export function WeeklyCalendar({ entries, selectedDate, className, onEntryUpdate
                   ))}
 
                   {/* Entries */}
-                  {dayEntries.map((entry) => {
-                    const dims = calculateEntryDimensions(entry);
+                  {calculateEntriesWithLayout(dayEntries).map((entry) => {
                     const colors = ENTRY_COLORS[entry.entry_type || 'property'];
                     const startTime = format(parseISO(entry.start_time), 'HH:mm');
                     const endTime = entry.end_time
                       ? format(parseISO(entry.end_time), 'HH:mm')
                       : null;
                     const isActive = !entry.end_time;
-                    const isTiny = dims.height < 25;
+                    const isTiny = entry.height < 25;
+
+                    // Calculate horizontal position based on columns
+                    const columnWidth = 100 / entry.totalColumns;
+                    const leftPercent = entry.column * columnWidth;
 
                     return (
                       <button
                         key={entry.id}
                         onClick={() => handleEntryClick(entry)}
                         className={cn(
-                          'absolute left-0.5 right-0.5 rounded overflow-hidden',
-                          'text-left transition-all hover:shadow-md cursor-pointer',
+                          'absolute rounded overflow-hidden',
+                          'text-left transition-all hover:shadow-md cursor-pointer hover:z-20',
                           'border',
                           isTiny ? 'px-0.5' : 'px-1 py-0.5',
                           colors.bg,
@@ -264,8 +338,10 @@ export function WeeklyCalendar({ entries, selectedDate, className, onEntryUpdate
                           colors.text
                         )}
                         style={{
-                          top: dims.top,
-                          height: dims.height,
+                          top: entry.top,
+                          height: entry.height,
+                          left: `calc(${leftPercent}% + 2px)`,
+                          width: `calc(${columnWidth}% - 4px)`,
                         }}
                       >
                         {/* Single line layout - always fit on one line */}

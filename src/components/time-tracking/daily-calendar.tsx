@@ -48,28 +48,107 @@ const ENTRY_COLORS: Record<TimeEntryType, { bg: string; border: string; text: st
 interface CalendarEntry extends TimeEntryWithProperty {
   top: number;
   height: number;
+  column: number;
+  totalColumns: number;
 }
 
 export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated }: DailyCalendarProps) {
   const [selectedEntry, setSelectedEntry] = useState<TimeEntryWithProperty | null>(null);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
 
-  // Calculate entry dimensions - height matches actual duration
-  const calculateEntryDimensions = (entry: TimeEntryWithProperty): CalendarEntry => {
-    const startDate = new Date(entry.start_time);
-    const endDate = entry.end_time ? new Date(entry.end_time) : new Date();
+  // Calculate entry dimensions with visual collision detection
+  const entriesWithLayout = useMemo(() => {
+    // First pass: calculate basic dimensions
+    const withDimensions = entries.map((entry) => {
+      const startDate = new Date(entry.start_time);
+      const endDate = entry.end_time ? new Date(entry.end_time) : new Date();
 
-    // Clamp to display range
-    const startHour = Math.max(startDate.getHours() + startDate.getMinutes() / 60, START_HOUR);
-    const endHour = Math.min(endDate.getHours() + endDate.getMinutes() / 60, END_HOUR);
+      const startHour = Math.max(startDate.getHours() + startDate.getMinutes() / 60, START_HOUR);
+      const endHour = Math.min(endDate.getHours() + endDate.getMinutes() / 60, END_HOUR);
 
-    const top = (startHour - START_HOUR) * HOUR_HEIGHT;
-    // Use actual time-based height with small minimum for readability
-    const calculatedHeight = (endHour - startHour) * HOUR_HEIGHT;
-    const height = Math.max(calculatedHeight, MIN_ENTRY_HEIGHT);
+      const top = (startHour - START_HOUR) * HOUR_HEIGHT;
+      const calculatedHeight = (endHour - startHour) * HOUR_HEIGHT;
+      const height = Math.max(calculatedHeight, MIN_ENTRY_HEIGHT);
 
-    return { ...entry, top, height };
-  };
+      return { ...entry, top, height, column: 0, totalColumns: 1 };
+    });
+
+    // Sort by start time
+    withDimensions.sort((a, b) => a.top - b.top);
+
+    // Second pass: detect visual collisions and assign columns
+    for (let i = 0; i < withDimensions.length; i++) {
+      const current = withDimensions[i];
+      const visualBottom = current.top + current.height;
+
+      // Find all entries that visually overlap with current
+      const overlappingGroup: CalendarEntry[] = [current];
+
+      for (let j = i + 1; j < withDimensions.length; j++) {
+        const next = withDimensions[j];
+        // Check if next entry starts before current entry visually ends
+        if (next.top < visualBottom) {
+          overlappingGroup.push(next);
+        }
+      }
+
+      // If there are overlapping entries, assign columns
+      if (overlappingGroup.length > 1) {
+        // Find which columns are already taken
+        const usedColumns = new Set<number>();
+
+        for (const entry of overlappingGroup) {
+          // Check against all previous entries that visually overlap
+          for (let k = 0; k < withDimensions.length; k++) {
+            const prev = withDimensions[k];
+            if (prev.id === entry.id) continue;
+
+            // Check if they visually overlap
+            const prevBottom = prev.top + prev.height;
+            const entryBottom = entry.top + entry.height;
+            const overlaps = !(entry.top >= prevBottom || prev.top >= entryBottom);
+
+            if (overlaps && prev.column !== undefined) {
+              usedColumns.add(prev.column);
+            }
+          }
+
+          // Assign first available column
+          let col = 0;
+          while (usedColumns.has(col)) col++;
+          entry.column = col;
+          usedColumns.add(col);
+        }
+
+        // Update total columns for all in group
+        const maxCol = Math.max(...overlappingGroup.map(e => e.column)) + 1;
+        for (const entry of overlappingGroup) {
+          entry.totalColumns = Math.max(entry.totalColumns, maxCol);
+        }
+      }
+    }
+
+    // Third pass: normalize totalColumns for overlapping groups
+    for (let i = 0; i < withDimensions.length; i++) {
+      const current = withDimensions[i];
+      for (let j = 0; j < withDimensions.length; j++) {
+        if (i === j) continue;
+        const other = withDimensions[j];
+
+        const currentBottom = current.top + current.height;
+        const otherBottom = other.top + other.height;
+        const overlaps = !(current.top >= otherBottom || other.top >= currentBottom);
+
+        if (overlaps) {
+          const maxCols = Math.max(current.totalColumns, other.totalColumns);
+          current.totalColumns = maxCols;
+          other.totalColumns = maxCols;
+        }
+      }
+    }
+
+    return withDimensions;
+  }, [entries]);
 
   // Get entry type label
   const getEntryTypeLabel = (type: TimeEntryType): string => {
@@ -207,8 +286,7 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
             })()}
 
             {/* Entries */}
-            {entries.map((entry) => {
-              const dims = calculateEntryDimensions(entry);
+            {entriesWithLayout.map((entry) => {
               const colors = ENTRY_COLORS[entry.entry_type || 'property'];
               const startTime = format(parseISO(entry.start_time), 'HH:mm');
               const endTime = entry.end_time
@@ -218,26 +296,32 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
               const duration = calculateDuration(entry);
 
               // Determine layout based on height
-              const isTiny = dims.height < 30;
-              const isCompact = dims.height < 60;
-              const isMediumEntry = dims.height >= 80;
-              const isLargeEntry = dims.height >= 110;
+              const isTiny = entry.height < 30;
+              const isCompact = entry.height < 60;
+              const isMediumEntry = entry.height >= 80;
+              const isLargeEntry = entry.height >= 110;
+
+              // Calculate horizontal position based on columns
+              const columnWidth = 100 / entry.totalColumns;
+              const leftPercent = entry.column * columnWidth;
 
               return (
                 <button
                   key={entry.id}
                   onClick={() => handleEntryClick(entry)}
                   className={cn(
-                    'absolute left-2 right-2 rounded-lg border overflow-hidden',
-                    'text-left transition-all hover:shadow-md cursor-pointer',
+                    'absolute rounded-lg border overflow-hidden',
+                    'text-left transition-all hover:shadow-md cursor-pointer hover:z-20',
                     'active:scale-[0.99]',
                     isTiny ? 'px-1.5 py-0 border' : isCompact ? 'px-2 py-0.5 border' : 'p-2 border-2',
                     colors.bg,
                     colors.border
                   )}
                   style={{
-                    top: dims.top,
-                    height: dims.height,
+                    top: entry.top,
+                    height: entry.height,
+                    left: `calc(${leftPercent}% + 8px)`,
+                    width: `calc(${columnWidth}% - 16px)`,
                   }}
                 >
                   {isTiny ? (
