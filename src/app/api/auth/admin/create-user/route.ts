@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
       await serviceClient.auth.admin.deleteUser(authUser.user.id);
       console.error('Profile creation error:', profileCreateError);
       return NextResponse.json(
-        { error: `Fehler beim Erstellen des Profils: ${profileCreateError.message}` },
+        { error: `Fehler beim Erstellen des Profils: ${profileCreateError.message} (user_id: ${authUser.user.id}, email: ${email})` },
         { status: 500 }
       );
     }
