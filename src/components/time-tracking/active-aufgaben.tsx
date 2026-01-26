@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ListTodo, ChevronRight, Check, Calendar, AlertTriangle } from 'lucide-react';
+import { ListTodo, ChevronRight, Check, Calendar, AlertTriangle, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
@@ -16,6 +16,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { PhotoCapture } from '@/components/issues/photo-capture';
 import { getClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
 import { swissFormat } from '@/lib/i18n';
@@ -46,6 +47,7 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
   const queryClient = useQueryClient();
   const profile = useAuthStore((state) => state.profile);
   const [completingAufgabe, setCompletingAufgabe] = useState<AufgabeWithRelations | null>(null);
+  const [completionPhotos, setCompletionPhotos] = useState<string[]>([]);
 
   // Fetch aufgaben for the property
   const { data: aufgaben = [] } = useQuery({
@@ -75,18 +77,22 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
 
   // Mark aufgabe as resolved
   const completeMutation = useMutation({
-    mutationFn: async (aufgabeId: string) => {
+    mutationFn: async ({ aufgabeId, photoUrls }: { aufgabeId: string; photoUrls: string[] }) => {
       const supabase = getClient();
-      const { error } = await (supabase as any)
+      const { data, error } = await (supabase as any)
         .from('aufgaben')
         .update({
           status: 'resolved',
           completed_at: new Date().toISOString(),
           completed_by: profile!.id,
+          completion_photo_urls: photoUrls,
         })
-        .eq('id', aufgabeId);
+        .eq('id', aufgabeId)
+        .select()
+        .single();
 
       if (error) throw error;
+      return data;
     },
     onSuccess: async () => {
       hapticFeedback('medium');
@@ -96,6 +102,7 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
         queryClient.invalidateQueries({ queryKey: ['aufgaben'] })
       ]);
       setCompletingAufgabe(null);
+      setCompletionPhotos([]);
     },
     onError: (error: Error) => {
       toast.error(`Fehler: ${error.message}`);
@@ -182,18 +189,23 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
       </div>
 
       {/* Confirm completion dialog */}
-      <Dialog open={!!completingAufgabe} onOpenChange={() => setCompletingAufgabe(null)}>
-        <DialogContent>
+      <Dialog open={!!completingAufgabe} onOpenChange={(open) => {
+        if (!open) {
+          setCompletingAufgabe(null);
+          setCompletionPhotos([]);
+        }
+      }}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Aufgabe abschliessen?</DialogTitle>
+            <DialogTitle>Aufgabe abschliessen</DialogTitle>
             <DialogDescription>
-              Möchten Sie diese Aufgabe als erledigt markieren?
+              Optional: Fügen Sie ein Foto als Nachweis hinzu.
             </DialogDescription>
           </DialogHeader>
 
           {completingAufgabe && (
-            <div className="py-4">
-              <div className="p-3 bg-muted rounded-lg">
+            <div className="py-2">
+              <div className="p-3 bg-muted rounded-lg mb-4">
                 <h4 className="font-medium">{completingAufgabe.title}</h4>
                 {completingAufgabe.description && (
                   <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
@@ -201,19 +213,33 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
                   </p>
                 )}
               </div>
+              <PhotoCapture
+                photos={completionPhotos}
+                onPhotosChange={setCompletionPhotos}
+                maxPhotos={3}
+              />
             </div>
           )}
 
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button
               variant="outline"
-              onClick={() => setCompletingAufgabe(null)}
+              onClick={() => {
+                setCompletingAufgabe(null);
+                setCompletionPhotos([]);
+              }}
+              className="w-full sm:w-auto"
             >
               Abbrechen
             </Button>
             <Button
-              onClick={() => completingAufgabe && completeMutation.mutate(completingAufgabe.id)}
+              onClick={() => completingAufgabe && completeMutation.mutate({
+                aufgabeId: completingAufgabe.id,
+                photoUrls: completionPhotos
+              })}
               disabled={completeMutation.isPending}
+              className="w-full sm:w-auto"
+              leftIcon={<CheckCircle className="h-4 w-4" />}
             >
               {completeMutation.isPending ? 'Wird gespeichert...' : 'Als erledigt markieren'}
             </Button>
