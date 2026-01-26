@@ -14,7 +14,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import * as argon2 from 'argon2';
+import bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 
@@ -23,13 +23,8 @@ const TEMP_PASSWORD_LENGTH = 16;
 const TEMP_PASSWORD_VALIDITY_HOURS = 168; // 1 week for migration
 const OUTPUT_FILE = 'user-credentials.csv';
 
-// Argon2 options
-const ARGON2_OPTIONS: argon2.Options = {
-  type: argon2.argon2id,
-  memoryCost: 65536,
-  timeCost: 3,
-  parallelism: 4,
-};
+// Bcrypt cost factor
+const BCRYPT_ROUNDS = 12;
 
 // Check environment variables
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
@@ -182,7 +177,7 @@ async function main() {
 
   for (const result of results) {
     try {
-      const passwordHash = await argon2.hash(result.tempPassword, ARGON2_OPTIONS);
+      const passwordHash = await bcrypt.hash(result.tempPassword, BCRYPT_ROUNDS);
 
       const { error: insertError } = await supabase.from('auth_credentials').insert({
         user_id: result.userId,

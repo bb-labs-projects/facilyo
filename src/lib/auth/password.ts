@@ -1,19 +1,14 @@
-import * as argon2 from 'argon2';
+import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 
-// Argon2id configuration as per security requirements
-const ARGON2_OPTIONS: argon2.Options = {
-  type: argon2.argon2id,
-  memoryCost: 65536, // 64 MB
-  timeCost: 3,
-  parallelism: 4,
-};
+// Bcrypt cost factor (10-12 is recommended for production)
+const BCRYPT_ROUNDS = 12;
 
 /**
- * Hash a password using Argon2id
+ * Hash a password using bcrypt
  */
 export async function hashPassword(password: string): Promise<string> {
-  return argon2.hash(password, ARGON2_OPTIONS);
+  return bcrypt.hash(password, BCRYPT_ROUNDS);
 }
 
 /**
@@ -24,7 +19,7 @@ export async function verifyPassword(
   hash: string
 ): Promise<boolean> {
   try {
-    return await argon2.verify(hash, password);
+    return await bcrypt.compare(password, hash);
   } catch {
     return false;
   }

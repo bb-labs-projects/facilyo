@@ -74,7 +74,14 @@ export const useAuthStore = create<AuthStore>()(
             body: JSON.stringify({ username, password }),
           });
 
-          const data: LoginResponse = await response.json();
+          let data: LoginResponse;
+          try {
+            data = await response.json();
+          } catch {
+            const errorMessage = 'Server-Fehler: Ungültige Antwort';
+            set({ error: errorMessage, isLoading: false });
+            throw new Error(errorMessage);
+          }
 
           if (!response.ok) {
             const errorMessage = data.error || 'Anmeldung fehlgeschlagen';
