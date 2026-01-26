@@ -1,4 +1,4 @@
-import bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 
 // Bcrypt cost factor (10-12 is recommended for production)

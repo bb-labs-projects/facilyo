@@ -7,7 +7,7 @@
 
 import { config } from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
-import bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcryptjs';
 
 // Load environment variables from .env.local
 config({ path: '.env.local' });
