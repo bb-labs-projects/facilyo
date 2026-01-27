@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Users, Building2, ClipboardList, ChevronRight, Settings, Activity, Shield } from 'lucide-react';
+import { Users, Building2, ClipboardList, ChevronRight, Settings, Activity, Shield, Clock } from 'lucide-react';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -40,6 +40,12 @@ const adminMenuItems: AdminMenuItem[] = [
     label: 'Aktivitäten',
     description: 'Erledigte Aufgaben und Checklisten einsehen',
     icon: Activity,
+  },
+  {
+    href: '/admin/time-overview',
+    label: 'Zeitübersicht',
+    description: 'Arbeitszeiten aller Mitarbeiter einsehen und exportieren',
+    icon: Clock,
   },
   {
     href: '/admin/roles',
