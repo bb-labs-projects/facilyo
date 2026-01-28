@@ -40,7 +40,7 @@ interface TimerActions {
   setElapsedSeconds: (seconds: number) => void;
   setCurrentEntryType: (type: TimeEntryType | null) => void;
   // Initialization
-  initializeFromServer: () => Promise<void>;
+  initializeFromServer: () => Promise<{ autoClosedDates: string[] }>;
   reset: () => void;
 }
 
@@ -441,7 +441,9 @@ export const useTimerStore = create<TimerStore>()(
           data: { user },
         } = await supabase.auth.getUser();
 
-        if (!user) return;
+        const autoClosedDates: string[] = [];
+
+        if (!user) return { autoClosedDates };
 
         // Check if persisted state belongs to a different user and reset if so
         const { workDay: persistedWorkDay } = get();
@@ -451,8 +453,60 @@ export const useTimerStore = create<TimerStore>()(
         }
 
         const today = new Date().toISOString().split('T')[0];
+        const now = new Date();
 
-        // Check for active work day (no end_time means still active)
+        // Auto-stop configuration: 20:00
+        const AUTO_STOP_HOUR = 20;
+        const AUTO_STOP_MINUTE = 0;
+
+        // First, check for any open work days (including past days)
+        const { data: openWorkDays } = await (supabase
+          .from('work_days') as any)
+          .select()
+          .eq('user_id', user.id)
+          .is('end_time', null)
+          .order('date', { ascending: false });
+
+        if (openWorkDays && openWorkDays.length > 0) {
+          for (const openWorkDay of openWorkDays) {
+            const workDayDate = openWorkDay.date;
+            const isFromPastDay = workDayDate < today;
+
+            // Check if it's today but past 20:00
+            const isTodayPastAutoStop = workDayDate === today &&
+              (now.getHours() > AUTO_STOP_HOUR ||
+               (now.getHours() === AUTO_STOP_HOUR && now.getMinutes() >= AUTO_STOP_MINUTE));
+
+            if (isFromPastDay || isTodayPastAutoStop) {
+              // Calculate the auto-stop time (20:00 of the work day's date)
+              const autoStopTime = new Date(`${workDayDate}T${String(AUTO_STOP_HOUR).padStart(2, '0')}:${String(AUTO_STOP_MINUTE).padStart(2, '0')}:00`);
+              const autoStopTimeISO = autoStopTime.toISOString();
+
+              // Close any active time entries for this work day
+              await (supabase
+                .from('time_entries') as any)
+                .update({
+                  end_time: autoStopTimeISO,
+                  status: 'completed',
+                })
+                .eq('work_day_id', openWorkDay.id)
+                .eq('status', 'active');
+
+              // Close the work day
+              await (supabase
+                .from('work_days') as any)
+                .update({
+                  end_time: autoStopTimeISO,
+                })
+                .eq('id', openWorkDay.id);
+
+              // Track auto-closed dates for notification
+              autoClosedDates.push(workDayDate);
+            }
+          }
+        }
+
+        // Now check for today's active work day (may have been auto-closed above)
         const { data: workDay } = await (supabase
           .from('work_days') as any)
           .select()
@@ -493,6 +547,8 @@ export const useTimerStore = create<TimerStore>()(
           // No active work day for this user - ensure state is clean
           set(initialState);
         }
+
+        return { autoClosedDates };
       },
 
       reset: () => {

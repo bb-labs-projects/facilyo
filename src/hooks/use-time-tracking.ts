@@ -11,9 +11,15 @@ import {
   selectCurrentEntryType,
 } from '@/stores/timer-store';
 import { swissFormat } from '@/lib/i18n';
+import { toast } from 'sonner';
+
+// Auto-stop time: 20:00 (8 PM)
+const AUTO_STOP_HOUR = 20;
+const AUTO_STOP_MINUTE = 0;
 
 export function useTimeTracking() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const autoStopRef = useRef<boolean>(false);
 
   const {
     workDay,
@@ -50,15 +56,52 @@ export function useTimeTracking() {
     return Math.max(0, elapsed);
   }, [activeEntry]);
 
+  // Check if current time is past the auto-stop time (20:00)
+  const checkAutoStop = useCallback(async () => {
+    if (!workDay || autoStopRef.current) return;
+
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+
+    // Check if it's 20:00 or later
+    if (currentHour > AUTO_STOP_HOUR ||
+        (currentHour === AUTO_STOP_HOUR && currentMinute >= AUTO_STOP_MINUTE)) {
+      // Prevent multiple auto-stops
+      autoStopRef.current = true;
+
+      try {
+        await endWorkDay();
+        toast.info('Arbeitstag automatisch beendet', {
+          description: 'Die Zeiterfassung wurde um 20:00 Uhr automatisch gestoppt.',
+        });
+      } catch (error) {
+        console.error('Auto-stop failed:', error);
+        autoStopRef.current = false;
+      }
+    }
+  }, [workDay, endWorkDay]);
+
+  // Reset auto-stop flag when work day changes (new day or manual restart)
+  useEffect(() => {
+    if (!workDay) {
+      autoStopRef.current = false;
+    }
+  }, [workDay]);
+
   // Update elapsed time every second when any entry is active
   useEffect(() => {
     if (isTimerActive) {
       timerRef.current = setInterval(() => {
         setElapsedSeconds(calculateElapsed());
+        // Check for auto-stop on each tick
+        checkAutoStop();
       }, 1000);
 
       // Initial calculation
       setElapsedSeconds(calculateElapsed());
+      // Initial auto-stop check
+      checkAutoStop();
     } else {
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -71,11 +114,31 @@ export function useTimeTracking() {
         clearInterval(timerRef.current);
       }
     };
-  }, [isTimerActive, calculateElapsed, setElapsedSeconds]);
+  }, [isTimerActive, calculateElapsed, setElapsedSeconds, checkAutoStop]);
 
-  // Initialize from server on mount
+  // Initialize from server on mount and handle auto-closed work days
   useEffect(() => {
-    initializeFromServer();
+    const initialize = async () => {
+      const result = await initializeFromServer();
+      if (result?.autoClosedDates && result.autoClosedDates.length > 0) {
+        // Format dates for display (DD.MM.YYYY)
+        const formattedDates = result.autoClosedDates.map(date => {
+          const [year, month, day] = date.split('-');
+          return `${day}.${month}.${year}`;
+        });
+
+        if (formattedDates.length === 1) {
+          toast.info('Arbeitstag automatisch beendet', {
+            description: `Der Arbeitstag vom ${formattedDates[0]} wurde automatisch um 20:00 Uhr beendet.`,
+          });
+        } else {
+          toast.info('Arbeitstage automatisch beendet', {
+            description: `Die Arbeitstage vom ${formattedDates.join(', ')} wurden automatisch um 20:00 Uhr beendet.`,
+          });
+        }
+      }
+    };
+    initialize();
   }, [initializeFromServer]);
 
   // Format elapsed time as HH:MM:SS
