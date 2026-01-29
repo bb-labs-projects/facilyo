@@ -4,6 +4,14 @@ import zxcvbn from 'zxcvbn';
 const MIN_PASSWORD_LENGTH = 12;
 const MIN_ZXCVBN_SCORE = 3; // 0-4 scale, 3 = "safely unguessable"
 
+// Password character requirements
+const PASSWORD_PATTERNS = {
+  uppercase: /[A-Z]/,
+  lowercase: /[a-z]/,
+  number: /[0-9]/,
+  special: /[!@#$%^&*(),.?":{}|<>\-_=+\[\]\\;'`~]/,
+};
+
 export interface PasswordValidationResult {
   isValid: boolean;
   score: number; // 0-4
@@ -74,6 +82,23 @@ export function validatePassword(
   // Check minimum length
   if (password.length < MIN_PASSWORD_LENGTH) {
     errors.push(`Mindestens ${MIN_PASSWORD_LENGTH} Zeichen erforderlich`);
+  }
+
+  // Check character requirements
+  if (!PASSWORD_PATTERNS.uppercase.test(password)) {
+    errors.push('Muss mindestens einen Grossbuchstaben enthalten');
+  }
+
+  if (!PASSWORD_PATTERNS.lowercase.test(password)) {
+    errors.push('Muss mindestens einen Kleinbuchstaben enthalten');
+  }
+
+  if (!PASSWORD_PATTERNS.number.test(password)) {
+    errors.push('Muss mindestens eine Zahl enthalten');
+  }
+
+  if (!PASSWORD_PATTERNS.special.test(password)) {
+    errors.push('Muss mindestens ein Sonderzeichen enthalten');
   }
 
   // Run zxcvbn analysis

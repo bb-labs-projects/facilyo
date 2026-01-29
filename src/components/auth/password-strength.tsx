@@ -89,7 +89,7 @@ export function PasswordRequirements({
       },
       {
         label: 'Enthält Sonderzeichen',
-        met: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+        met: /[!@#$%^&*(),.?":{}|<>\-_=+\[\]\\;'`~]/.test(password),
       },
     ];
 

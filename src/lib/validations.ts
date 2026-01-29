@@ -25,6 +25,14 @@ export const loginSchema = z.object({
 
 export type LoginFormData = z.infer<typeof loginSchema>;
 
+// Password validation regex patterns
+const passwordPatterns = {
+  uppercase: /[A-Z]/,
+  lowercase: /[a-z]/,
+  number: /[0-9]/,
+  special: /[!@#$%^&*(),.?":{}|<>\-_=+\[\]\\;'`~]/,
+};
+
 // Change password form schema
 export const changePasswordSchema = z.object({
   currentPassword: z
@@ -33,7 +41,19 @@ export const changePasswordSchema = z.object({
   newPassword: z
     .string()
     .min(1, messages.required)
-    .min(12, 'Mindestens 12 Zeichen erforderlich'),
+    .min(12, 'Mindestens 12 Zeichen erforderlich')
+    .refine((val) => passwordPatterns.uppercase.test(val), {
+      message: 'Muss mindestens einen Grossbuchstaben enthalten',
+    })
+    .refine((val) => passwordPatterns.lowercase.test(val), {
+      message: 'Muss mindestens einen Kleinbuchstaben enthalten',
+    })
+    .refine((val) => passwordPatterns.number.test(val), {
+      message: 'Muss mindestens eine Zahl enthalten',
+    })
+    .refine((val) => passwordPatterns.special.test(val), {
+      message: 'Muss mindestens ein Sonderzeichen enthalten',
+    }),
   confirmPassword: z
     .string()
     .min(1, messages.required),
