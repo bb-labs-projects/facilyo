@@ -20,6 +20,7 @@ const AUTO_STOP_MINUTE = 0;
 export function useTimeTracking() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const autoStopRef = useRef<boolean>(false);
+  const isInitializedRef = useRef<boolean>(false);
 
   const {
     workDay,
@@ -57,7 +58,12 @@ export function useTimeTracking() {
   }, [activeEntry]);
 
   // Check if current time is past the auto-stop time (20:00)
+  // This only handles LIVE auto-stop (when app is open at 20:00)
+  // For cases where app is opened AFTER 20:00, initializeFromServer handles it
   const checkAutoStop = useCallback(async () => {
+    // Don't run until initialization is complete
+    // This prevents race condition where checkAutoStop runs before initializeFromServer
+    if (!isInitializedRef.current) return;
     if (!workDay || autoStopRef.current) return;
 
     const now = new Date();
@@ -119,7 +125,14 @@ export function useTimeTracking() {
   // Initialize from server on mount and handle auto-closed work days
   useEffect(() => {
     const initialize = async () => {
+      // Reset initialization flag
+      isInitializedRef.current = false;
+
       const result = await initializeFromServer();
+
+      // Mark as initialized - now checkAutoStop can run for live auto-stop
+      isInitializedRef.current = true;
+
       if (result?.autoClosedDates && result.autoClosedDates.length > 0) {
         // Format dates for display (DD.MM.YYYY)
         const formattedDates = result.autoClosedDates.map(date => {
