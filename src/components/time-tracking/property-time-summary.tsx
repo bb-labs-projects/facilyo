@@ -44,7 +44,18 @@ const ENTRY_TYPE_CONFIG: Record<TimeEntryType, {
 
 export function PropertyTimeSummary({ entries, className }: PropertyTimeSummaryProps) {
   // Aggregate time entries by property (for property entries) or by type (for travel/break)
+  // Filter out zero-duration entries (e.g., from auto-stop at same time as start)
   const summaries = entries.reduce<Record<string, EntrySummary>>((acc, entry) => {
+    // Calculate duration first to filter zero-duration entries
+    const start = new Date(entry.start_time).getTime();
+    const end = entry.end_time ? new Date(entry.end_time).getTime() : Date.now();
+    const duration = Math.floor((end - start) / 1000) - (entry.pause_duration || 0);
+
+    // Skip entries with zero or negative duration (completed entries only)
+    if (entry.end_time && duration <= 0) {
+      return acc;
+    }
+
     const entryType = entry.entry_type || 'property';
     let key: string;
     let name: string;
@@ -68,11 +79,6 @@ export function PropertyTimeSummary({ entries, className }: PropertyTimeSummaryP
     }
 
     acc[key].entryCount += 1;
-
-    // Calculate duration
-    const start = new Date(entry.start_time).getTime();
-    const end = entry.end_time ? new Date(entry.end_time).getTime() : Date.now();
-    const duration = Math.floor((end - start) / 1000) - (entry.pause_duration || 0);
     acc[key].totalSeconds += Math.max(0, duration);
 
     return acc;
