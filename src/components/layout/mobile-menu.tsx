@@ -73,6 +73,7 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="left" className="w-[280px] bg-primary-900 p-0 text-slate-100 border-primary-800">
+        <SheetTitle className="sr-only">Navigation</SheetTitle>
         {/* Logo/Branding */}
         <div className="flex items-center justify-center border-b border-primary-800 p-4 bg-slate-50">
           <Image

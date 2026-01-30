@@ -86,7 +86,7 @@ export const useTimerStore = create<TimerStore>()(
           .select()
           .eq('user_id', user.id)
           .eq('date', today)
-          .single();
+          .maybeSingle();
 
         if (existingWorkDay) {
           // Re-open existing work day
@@ -513,7 +513,7 @@ export const useTimerStore = create<TimerStore>()(
           .eq('user_id', user.id)
           .eq('date', today)
           .is('end_time', null)
-          .single();
+          .maybeSingle();
 
         if (workDay) {
           set({ workDay });
@@ -524,7 +524,7 @@ export const useTimerStore = create<TimerStore>()(
             .select()
             .eq('work_day_id', workDay.id)
             .eq('status', 'active')
-            .single();
+            .maybeSingle();
 
           if (entry) {
             let property = null;
@@ -533,7 +533,7 @@ export const useTimerStore = create<TimerStore>()(
                 .from('properties') as any)
                 .select()
                 .eq('id', entry.property_id)
-                .single();
+                .maybeSingle();
               property = prop;
             }
 
