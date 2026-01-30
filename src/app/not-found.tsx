@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import { Home, ArrowLeft } from 'lucide-react';
 
@@ -21,7 +23,7 @@ export default function NotFound() {
             Zur Startseite
           </Link>
           <button
-            onClick={() => typeof window !== 'undefined' && window.history.back()}
+            onClick={() => window.history.back()}
             className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
