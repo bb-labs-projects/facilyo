@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, MoreVertical, Menu } from 'lucide-react';
+import { ChevronLeft, MoreVertical, Menu, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useMobileMenu } from '@/contexts/mobile-menu-context';
@@ -15,6 +16,8 @@ interface HeaderProps {
   className?: string;
   onMenuClick?: () => void;
   showMobileMenu?: boolean;
+  showRefresh?: boolean;
+  onRefresh?: () => void | Promise<void>;
 }
 
 export function Header({
@@ -26,15 +29,32 @@ export function Header({
   className,
   onMenuClick,
   showMobileMenu = true,
+  showRefresh = true,
+  onRefresh,
 }: HeaderProps) {
   const router = useRouter();
   const mobileMenu = useMobileMenu();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleBack = () => {
     if (backHref) {
       router.push(backHref);
     } else {
       router.back();
+    }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      if (onRefresh) {
+        await onRefresh();
+      } else {
+        window.location.reload();
+      }
+    } finally {
+      // Keep spinning for a moment to show feedback
+      setTimeout(() => setIsRefreshing(false), 500);
     }
   };
 
@@ -81,9 +101,22 @@ export function Header({
         </div>
 
         {/* Right section */}
-        {rightElement && (
-          <div className="flex items-center gap-2">{rightElement}</div>
-        )}
+        <div className="flex items-center gap-2">
+          {/* Refresh button - mobile only */}
+          {showRefresh && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="lg:hidden"
+              aria-label="Seite aktualisieren"
+            >
+              <RefreshCw className={cn('h-5 w-5', isRefreshing && 'animate-spin')} />
+            </Button>
+          )}
+          {rightElement}
+        </div>
       </div>
     </header>
   );

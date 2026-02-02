@@ -193,12 +193,21 @@ export function isPrivilegedRole(role: UserRole): boolean {
 
 // Check if a user can assign a specific role to another user
 export function canAssignRole(assignerRole: UserRole, targetRole: UserRole): boolean {
-  // Can only assign roles below your own level
+  // Admin can assign any role including admin
+  if (assignerRole === 'admin') {
+    return true;
+  }
+  // Others can only assign roles below their own level
   return roleHierarchy[assignerRole] > roleHierarchy[targetRole];
 }
 
 // Get assignable roles for a user
 export function getAssignableRoles(role: UserRole): UserRole[] {
+  // Admin can assign all roles
+  if (role === 'admin') {
+    return ['admin', 'owner', 'manager', 'employee'];
+  }
+  // Others can only assign roles below their level
   const level = roleHierarchy[role];
   return (Object.entries(roleHierarchy) as [UserRole, number][])
     .filter(([, lvl]) => lvl < level)
