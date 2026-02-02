@@ -60,14 +60,116 @@ interface CalendarEntry extends TimeEntryWithProperty {
   totalColumns: number;
 }
 
+// Merged entry for displaying grouped property entries
+interface MergedCalendarEntry {
+  id: string;
+  property_id: string | null;
+  property: TimeEntryWithProperty['property'];
+  entry_type: TimeEntryType;
+  start_time: string;
+  end_time: string | null;
+  entries: TimeEntryWithProperty[]; // Original entries that were merged
+  activities: Set<ActivityType>;
+  notes: string | null;
+  top: number;
+  height: number;
+  column: number;
+  totalColumns: number;
+}
+
 export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated }: DailyCalendarProps) {
   const [selectedEntry, setSelectedEntry] = useState<TimeEntryWithProperty | null>(null);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
 
+  // Type guard to check if entry is merged
+  const isMergedEntry = (entry: TimeEntryWithProperty | MergedCalendarEntry): entry is MergedCalendarEntry => {
+    return 'entries' in entry && Array.isArray(entry.entries);
+  };
+
+  // Merge consecutive property entries on the same property
+  const mergeConsecutivePropertyEntries = (dayEntries: TimeEntryWithProperty[]): (TimeEntryWithProperty | MergedCalendarEntry)[] => {
+    // Sort entries by start time
+    const sorted = [...dayEntries].sort(
+      (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+    );
+
+    const result: (TimeEntryWithProperty | MergedCalendarEntry)[] = [];
+    let currentMerged: MergedCalendarEntry | null = null;
+
+    for (const entry of sorted) {
+      // Only merge property entries with the same property_id
+      if (entry.entry_type === 'property' && entry.property_id) {
+        if (currentMerged &&
+            currentMerged.property_id === entry.property_id &&
+            currentMerged.entry_type === 'property') {
+          // Check if this entry is consecutive (within 1 minute gap)
+          const lastEndTime = currentMerged.end_time
+            ? new Date(currentMerged.end_time).getTime()
+            : Date.now();
+          const thisStartTime = new Date(entry.start_time).getTime();
+          const gap = thisStartTime - lastEndTime;
+
+          if (gap <= 60000) { // Within 1 minute = consecutive
+            // Merge into current
+            currentMerged.end_time = entry.end_time;
+            currentMerged.entries.push(entry);
+            if (entry.activity_type) {
+              currentMerged.activities.add(entry.activity_type);
+            }
+            if (entry.notes) {
+              currentMerged.notes = currentMerged.notes
+                ? `${currentMerged.notes}\n${entry.notes}`
+                : entry.notes;
+            }
+            continue;
+          }
+        }
+
+        // Start a new merged entry
+        if (currentMerged) {
+          result.push(currentMerged);
+        }
+
+        currentMerged = {
+          id: `merged-${entry.id}`,
+          property_id: entry.property_id,
+          property: entry.property,
+          entry_type: 'property',
+          start_time: entry.start_time,
+          end_time: entry.end_time,
+          entries: [entry],
+          activities: new Set(entry.activity_type ? [entry.activity_type] : []),
+          notes: entry.notes || null,
+          top: 0,
+          height: 0,
+          column: 0,
+          totalColumns: 1,
+        };
+      } else {
+        // Non-property entry or no property_id - push as is
+        if (currentMerged) {
+          result.push(currentMerged);
+          currentMerged = null;
+        }
+        result.push(entry);
+      }
+    }
+
+    // Don't forget the last merged entry
+    if (currentMerged) {
+      result.push(currentMerged);
+    }
+
+    return result;
+  };
+
   // Calculate entry dimensions with visual collision detection
   const entriesWithLayout = useMemo(() => {
+    // First merge consecutive property entries
+    const mergedEntries = mergeConsecutivePropertyEntries(entries);
+
     // First pass: calculate basic dimensions and sort by start time
-    const withDimensions = entries.map((entry) => {
+    const withDimensions = mergedEntries.map((entry) => {
       const startDate = new Date(entry.start_time);
       const endDate = entry.end_time ? new Date(entry.end_time) : new Date();
 
@@ -78,7 +180,10 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
       const calculatedHeight = (endHour - startHour) * HOUR_HEIGHT;
       const height = Math.max(calculatedHeight, MIN_ENTRY_HEIGHT);
 
-      return { ...entry, top, height, column: 0, totalColumns: 1, startTimestamp: startDate.getTime() };
+      if (isMergedEntry(entry)) {
+        return { ...entry, top, height, column: 0, totalColumns: 1, startTimestamp: startDate.getTime() };
+      }
+      return { ...entry, top, height, column: 0, totalColumns: 1, startTimestamp: startDate.getTime() } as CalendarEntry & { startTimestamp: number };
     });
 
     // Sort by start time (chronologically)
@@ -186,7 +291,7 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
   };
 
   // Calculate duration
-  const calculateDuration = (entry: TimeEntryWithProperty): number => {
+  const calculateDuration = (entry: TimeEntryWithProperty | MergedCalendarEntry): number => {
     const start = new Date(entry.start_time).getTime();
     const end = entry.end_time ? new Date(entry.end_time).getTime() : Date.now();
     return Math.floor((end - start) / 1000);
@@ -304,6 +409,7 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
                 : null;
               const isActive = !entry.end_time;
               const duration = calculateDuration(entry);
+              const merged = isMergedEntry(entry);
 
               // Determine layout based on height
               const isTiny = entry.height < 30;
@@ -316,10 +422,30 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
               const columnWidth = 100 / entry.totalColumns;
               const leftPercent = entry.column * columnWidth;
 
+              // For merged entries, click opens the first entry for editing
+              const handleClick = () => {
+                if (merged) {
+                  handleEntryClick(entry.entries[0]);
+                } else {
+                  handleEntryClick(entry as TimeEntryWithProperty);
+                }
+              };
+
+              // Get activity icons for merged entries
+              const getActivityIcons = (size: 'sm' | 'md' = 'md') => {
+                if (!merged) return null;
+                return Array.from(entry.activities).map(actType => {
+                  const config = ACTIVITY_ICONS[actType];
+                  const Icon = config.icon;
+                  const sizeClass = size === 'sm' ? 'h-3 w-3' : 'h-3.5 w-3.5';
+                  return <Icon key={actType} className={cn(sizeClass, config.color)} />;
+                });
+              };
+
               return (
                 <button
                   key={entry.id}
-                  onClick={() => handleEntryClick(entry)}
+                  onClick={handleClick}
                   className={cn(
                     'absolute rounded-lg border overflow-hidden',
                     'text-left transition-all hover:shadow-md cursor-pointer hover:z-20',
@@ -338,7 +464,15 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
                   {isTiny ? (
                     // Tiny single-line layout (minimal)
                     <div className={cn('flex items-center gap-1 h-full text-xs', colors.text)}>
-                      {entry.activity_type ? getActivityIcon(entry.activity_type, 'sm') : getEntryIcon(entry.entry_type || 'property')}
+                      {merged ? (
+                        <span className="flex items-center gap-0.5">
+                          {getActivityIcons('sm')?.length ? getActivityIcons('sm') : getEntryIcon('property')}
+                        </span>
+                      ) : (
+                        (entry as TimeEntryWithProperty).activity_type
+                          ? getActivityIcon((entry as TimeEntryWithProperty).activity_type, 'sm')
+                          : getEntryIcon(entry.entry_type || 'property')
+                      )}
                       <span className={cn('font-medium truncate flex-1', isOverlapping && 'hidden sm:inline')}>
                         {entry.property?.name || getEntryTypeLabel(entry.entry_type || 'property')}
                       </span>
@@ -364,7 +498,15 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
                   ) : isCompact ? (
                     // Compact single-line layout
                     <div className={cn('flex items-center gap-1.5 h-full text-sm', colors.text)}>
-                      {entry.activity_type ? getActivityIcon(entry.activity_type) : getEntryIcon(entry.entry_type || 'property')}
+                      {merged ? (
+                        <span className="flex items-center gap-0.5">
+                          {getActivityIcons()?.length ? getActivityIcons() : getEntryIcon('property')}
+                        </span>
+                      ) : (
+                        (entry as TimeEntryWithProperty).activity_type
+                          ? getActivityIcon((entry as TimeEntryWithProperty).activity_type)
+                          : getEntryIcon(entry.entry_type || 'property')
+                      )}
                       <span className={cn('font-semibold truncate flex-1', isOverlapping && 'hidden sm:inline')}>
                         {entry.property?.name || getEntryTypeLabel(entry.entry_type || 'property')}
                       </span>
@@ -398,7 +540,13 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
                           <span className="truncate">
                             {entry.property?.name || getEntryTypeLabel(entry.entry_type || 'property')}
                           </span>
-                          {entry.activity_type && getActivityIcon(entry.activity_type)}
+                          {merged ? (
+                            <span className="flex items-center gap-0.5">
+                              {getActivityIcons()}
+                            </span>
+                          ) : (
+                            (entry as TimeEntryWithProperty).activity_type && getActivityIcon((entry as TimeEntryWithProperty).activity_type)
+                          )}
                         </div>
                         <Pencil className={cn('h-3.5 w-3.5 opacity-50 shrink-0', colors.text)} />
                       </div>
