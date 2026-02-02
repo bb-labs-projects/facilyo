@@ -11,6 +11,9 @@ import {
   Activity,
   User,
   Users,
+  Building2,
+  Shield,
+  CalendarDays,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -28,6 +31,9 @@ interface NavItem {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   requireAdmin?: boolean;
+  requireOwner?: boolean;
+  requireRolePermissions?: boolean;
+  requireUserCalendar?: boolean;
 }
 
 const mainNavItems: NavItem[] = [
@@ -38,8 +44,13 @@ const mainNavItems: NavItem[] = [
 ];
 
 const adminNavItems: NavItem[] = [
+  { href: '/admin/users', label: 'Benutzer', icon: Users, requireAdmin: true, requireOwner: true },
+  { href: '/admin/properties', label: 'Liegenschaften', icon: Building2, requireAdmin: true },
+  { href: '/admin/checklists', label: 'Checklisten', icon: ClipboardList, requireAdmin: true },
   { href: '/admin/activity', label: 'Aktivitäten', icon: Activity, requireAdmin: true },
-  { href: '/admin/users', label: 'Benutzer', icon: Users, requireAdmin: true },
+  { href: '/admin/time-overview', label: 'Zeitübersicht', icon: Clock, requireAdmin: true },
+  { href: '/admin/calendar', label: 'Benutzerkalender', icon: CalendarDays, requireAdmin: true, requireUserCalendar: true },
+  { href: '/admin/roles', label: 'Rollen', icon: Shield, requireAdmin: true, requireRolePermissions: true },
 ];
 
 interface MobileMenuProps {
@@ -60,8 +71,19 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
   };
 
   const filteredAdminItems = adminNavItems.filter((item) => {
-    if (item.requireAdmin) {
-      return permissions.canAccessAdminPanel;
+    // First check if user has admin access at all
+    if (item.requireAdmin && !permissions.canAccessAdminPanel) {
+      return false;
+    }
+    // Check specific permission requirements
+    if (item.requireOwner && !permissions.canManageEmployees) {
+      return false;
+    }
+    if (item.requireRolePermissions && !permissions.canManageRolePermissions) {
+      return false;
+    }
+    if (item.requireUserCalendar && !permissions.canManageUserCalendar) {
+      return false;
     }
     return true;
   });
