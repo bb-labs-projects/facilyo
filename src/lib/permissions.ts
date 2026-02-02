@@ -21,6 +21,7 @@ const defaultPermissions: Record<UserRole, Record<PermissionName, boolean>> = {
     update_user_roles: true,
     access_admin_panel: true,
     manage_role_permissions: true,
+    manage_user_calendar: true,
   },
   owner: {
     manage_properties: true,
@@ -33,6 +34,7 @@ const defaultPermissions: Record<UserRole, Record<PermissionName, boolean>> = {
     update_user_roles: true,
     access_admin_panel: true,
     manage_role_permissions: true,
+    manage_user_calendar: true,
   },
   manager: {
     manage_properties: true,
@@ -45,6 +47,7 @@ const defaultPermissions: Record<UserRole, Record<PermissionName, boolean>> = {
     update_user_roles: true,
     access_admin_panel: true,
     manage_role_permissions: false,
+    manage_user_calendar: false,
   },
   employee: {
     manage_properties: false,
@@ -57,6 +60,7 @@ const defaultPermissions: Record<UserRole, Record<PermissionName, boolean>> = {
     update_user_roles: false,
     access_admin_panel: false,
     manage_role_permissions: false,
+    manage_user_calendar: false,
   },
 };
 
@@ -110,6 +114,7 @@ function buildDefaultPermissionsMap(): Map<string, boolean> {
     'update_user_roles',
     'access_admin_panel',
     'manage_role_permissions',
+    'manage_user_calendar',
   ];
 
   roles.forEach((role) => {
@@ -185,6 +190,10 @@ export function canAccessAdminPanel(role: UserRole): boolean {
 
 export function canManageRolePermissions(role: UserRole): boolean {
   return defaultPermissions[role]?.manage_role_permissions ?? false;
+}
+
+export function canManageUserCalendar(role: UserRole): boolean {
+  return defaultPermissions[role]?.manage_user_calendar ?? false;
 }
 
 export function isPrivilegedRole(role: UserRole): boolean {
@@ -266,6 +275,7 @@ export const permissionLabels: Record<PermissionName, string> = {
   update_user_roles: 'Benutzerrollen ändern',
   access_admin_panel: 'Admin-Panel Zugriff',
   manage_role_permissions: 'Rollen-Berechtigungen verwalten',
+  manage_user_calendar: 'Benutzerkalender verwalten',
 };
 
 // Get all permission names
@@ -280,6 +290,7 @@ export const allPermissions: PermissionName[] = [
   'update_user_roles',
   'access_admin_panel',
   'manage_role_permissions',
+  'manage_user_calendar',
 ];
 
 // Get display label for role

@@ -13,6 +13,7 @@ import {
   canUpdateUserRoles,
   canAccessAdminPanel,
   canManageRolePermissions,
+  canManageUserCalendar,
   isPrivilegedRole,
   canAssignRole,
   getAssignableRoles,
@@ -35,6 +36,7 @@ export interface Permissions {
   canUpdateUserRoles: boolean;
   canAccessAdminPanel: boolean;
   canManageRolePermissions: boolean;
+  canManageUserCalendar: boolean;
   isPrivileged: boolean;
 
   // Dynamic permission checks
@@ -63,6 +65,7 @@ export function usePermissions(): Permissions {
         canUpdateUserRoles: false,
         canAccessAdminPanel: false,
         canManageRolePermissions: false,
+        canManageUserCalendar: false,
         isPrivileged: false,
         canAssignRole: () => false,
         getAssignableRoles: () => [],
@@ -82,6 +85,7 @@ export function usePermissions(): Permissions {
       canUpdateUserRoles: canUpdateUserRoles(role),
       canAccessAdminPanel: canAccessAdminPanel(role),
       canManageRolePermissions: canManageRolePermissions(role),
+      canManageUserCalendar: canManageUserCalendar(role),
       isPrivileged: isPrivilegedRole(role),
       canAssignRole: (targetRole: UserRole) => canAssignRole(role, targetRole),
       getAssignableRoles: () => getAssignableRoles(role),

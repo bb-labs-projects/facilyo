@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Users, Building2, ClipboardList, ChevronRight, Settings, Activity, Shield, Clock } from 'lucide-react';
+import { Users, Building2, ClipboardList, ChevronRight, Settings, Activity, Shield, Clock, CalendarDays } from 'lucide-react';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -13,6 +13,7 @@ interface AdminMenuItem {
   icon: React.ComponentType<{ className?: string }>;
   requireOwner?: boolean;
   requireRolePermissions?: boolean;
+  requireUserCalendar?: boolean;
 }
 
 const adminMenuItems: AdminMenuItem[] = [
@@ -48,6 +49,13 @@ const adminMenuItems: AdminMenuItem[] = [
     icon: Clock,
   },
   {
+    href: '/admin/calendar',
+    label: 'Benutzerkalender',
+    description: 'Zeiteinträge von Mitarbeitern anzeigen und bearbeiten',
+    icon: CalendarDays,
+    requireUserCalendar: true,
+  },
+  {
     href: '/admin/roles',
     label: 'Rollen & Berechtigungen',
     description: 'Berechtigungen pro Rolle verwalten',
@@ -72,6 +80,9 @@ export default function AdminPage() {
     }
     if (item.requireRolePermissions) {
       return permissions.canManageRolePermissions;
+    }
+    if (item.requireUserCalendar) {
+      return permissions.canManageUserCalendar;
     }
     return true;
   });
