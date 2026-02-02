@@ -571,7 +571,13 @@ export default function TimeOverviewPage() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-3 mb-4">
-        <Card>
+        <Card
+          className={cn(
+            'cursor-pointer transition-all hover:ring-2 hover:ring-primary-300',
+            selectedEntryType === 'property' && 'ring-2 ring-primary-500'
+          )}
+          onClick={() => setSelectedEntryType(selectedEntryType === 'property' ? null : 'property')}
+        >
           <CardContent className="p-3">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <Building2 className="h-4 w-4" />
@@ -580,7 +586,13 @@ export default function TimeOverviewPage() {
             <p className="text-lg font-semibold">{formatDuration(totals.propertyTime)}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card
+          className={cn(
+            'cursor-pointer transition-all hover:ring-2 hover:ring-primary-300',
+            selectedEntryType === 'travel' && 'ring-2 ring-primary-500'
+          )}
+          onClick={() => setSelectedEntryType(selectedEntryType === 'travel' ? null : 'travel')}
+        >
           <CardContent className="p-3">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <Car className="h-4 w-4" />
@@ -589,7 +601,13 @@ export default function TimeOverviewPage() {
             <p className="text-lg font-semibold">{formatDuration(totals.travelTime)}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card
+          className={cn(
+            'cursor-pointer transition-all hover:ring-2 hover:ring-primary-300',
+            selectedEntryType === 'break' && 'ring-2 ring-primary-500'
+          )}
+          onClick={() => setSelectedEntryType(selectedEntryType === 'break' ? null : 'break')}
+        >
           <CardContent className="p-3">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <Coffee className="h-4 w-4" />
@@ -639,8 +657,18 @@ export default function TimeOverviewPage() {
                   {activityStats.map((stat) => {
                     const Icon = stat.icon;
                     const percentage = totals.propertyTime > 0 ? (stat.time / totals.propertyTime) * 100 : 0;
+                    const isSelected = selectedActivityType === stat.type;
                     return (
-                      <div key={stat.type} className="flex items-center gap-3">
+                      <div
+                        key={stat.type}
+                        onClick={() => setSelectedActivityType(isSelected ? null : stat.type)}
+                        className={cn(
+                          'flex items-center gap-3 p-2 -mx-2 rounded-lg cursor-pointer transition-all',
+                          isSelected
+                            ? 'bg-primary-100 ring-2 ring-primary-500'
+                            : 'hover:bg-muted'
+                        )}
+                      >
                         <Icon className={cn('h-4 w-4 flex-shrink-0', stat.color)} />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between text-sm mb-1">
@@ -675,8 +703,18 @@ export default function TimeOverviewPage() {
                 <div className="space-y-3">
                   {propertyStats.slice(0, 10).map((stat) => {
                     const percentage = totals.propertyTime > 0 ? (stat.totalTime / totals.propertyTime) * 100 : 0;
+                    const isSelected = selectedPropertyId === stat.id;
                     return (
-                      <div key={stat.id}>
+                      <div
+                        key={stat.id}
+                        onClick={() => setSelectedPropertyId(isSelected ? null : stat.id)}
+                        className={cn(
+                          'p-2 -mx-2 rounded-lg cursor-pointer transition-all',
+                          isSelected
+                            ? 'bg-primary-100 ring-2 ring-primary-500'
+                            : 'hover:bg-muted'
+                        )}
+                      >
                         <div className="flex items-center justify-between text-sm mb-1">
                           <span className="truncate font-medium">{stat.name}</span>
                           <span className="text-muted-foreground">{formatDuration(stat.totalTime)}</span>
@@ -724,38 +762,50 @@ export default function TimeOverviewPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {employeeStats.map((stat) => (
-                  <div key={stat.id} className="flex items-start gap-3 pb-3 border-b last:border-0 last:pb-0">
-                    <div className="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
-                      <User className="h-4 w-4 text-primary-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-medium truncate text-sm">{stat.name}</h3>
-                        <span className="text-sm font-semibold text-primary-600">
-                          {formatDuration(stat.propertyTime + stat.travelTime)}
-                        </span>
+                {employeeStats.map((stat) => {
+                  const isSelected = selectedEmployeeId === stat.id;
+                  return (
+                    <div
+                      key={stat.id}
+                      onClick={() => setSelectedEmployeeId(isSelected ? null : stat.id)}
+                      className={cn(
+                        'flex items-start gap-3 p-2 -mx-2 rounded-lg cursor-pointer transition-all',
+                        isSelected
+                          ? 'bg-primary-100 ring-2 ring-primary-500'
+                          : 'hover:bg-muted'
+                      )}
+                    >
+                      <div className="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+                        <User className="h-4 w-4 text-primary-600" />
                       </div>
-                      <p className="text-xs text-muted-foreground mb-2">
-                        {stat.workDays} Arbeitstage
-                      </p>
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-                        <span className="flex items-center gap-1">
-                          <Building2 className="h-3 w-3 text-muted-foreground" />
-                          {formatDuration(stat.propertyTime)}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Car className="h-3 w-3 text-muted-foreground" />
-                          {formatDuration(stat.travelTime)}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Coffee className="h-3 w-3 text-muted-foreground" />
-                          {formatDuration(stat.breakTime)}
-                        </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-medium truncate text-sm">{stat.name}</h3>
+                          <span className="text-sm font-semibold text-primary-600">
+                            {formatDuration(stat.propertyTime + stat.travelTime)}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          {stat.workDays} Arbeitstage
+                        </p>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                          <span className="flex items-center gap-1">
+                            <Building2 className="h-3 w-3 text-muted-foreground" />
+                            {formatDuration(stat.propertyTime)}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Car className="h-3 w-3 text-muted-foreground" />
+                            {formatDuration(stat.travelTime)}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Coffee className="h-3 w-3 text-muted-foreground" />
+                            {formatDuration(stat.breakTime)}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
