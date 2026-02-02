@@ -30,7 +30,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from '@/components/ui/select';
 import {
   Dialog,
@@ -354,7 +353,17 @@ export default function CalendarPage() {
                 onValueChange={(value) => setSelectedUserId(value || null)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Benutzer auswählen..." />
+                  {selectedUserId ? (
+                    <span className="flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      {(() => {
+                        const user = users.find(u => u.id === selectedUserId);
+                        return user ? `${user.first_name} ${user.last_name}` : 'Benutzer auswählen...';
+                      })()}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">Benutzer auswählen...</span>
+                  )}
                 </SelectTrigger>
                 <SelectContent>
                   {users.map((user) => (
