@@ -343,8 +343,183 @@ export default function TimeOverviewPage() {
   const activeFilterCount = [selectedEmployeeId, selectedPropertyId, selectedActivityType, selectedEntryType].filter(Boolean).length;
 
   const handleExportXLSX = () => {
-    // Prepare employee data for export
-    const exportData = employeeStats.map((stat) => ({
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+
+    // Activity type keys for columns
+    const activityKeys = Object.keys(ACTIVITY_CONFIG) as ActivityType[];
+
+    // Build detailed daily data per employee
+    const dailyData: Array<{
+      Mitarbeiter: string;
+      Datum: string;
+      Wochentag: string;
+      [key: string]: string | number;
+    }> = [];
+
+    // Group entries by employee and date
+    const employeeDailyStats = new Map<string, Map<string, {
+      activities: Map<ActivityType, number>;
+      travel: number;
+      break_time: number;
+    }>>();
+
+    filteredEntries.forEach((entry) => {
+      const employee = employees.find(e => e.id === entry.userId);
+      if (!employee) return;
+
+      const workDay = workDaysData.find(wd => wd.time_entries?.some(te => te.id === entry.id));
+      if (!workDay) return;
+
+      const employeeId = entry.userId;
+      const date = workDay.date;
+
+      if (!employeeDailyStats.has(employeeId)) {
+        employeeDailyStats.set(employeeId, new Map());
+      }
+
+      const employeeDays = employeeDailyStats.get(employeeId)!;
+      if (!employeeDays.has(date)) {
+        employeeDays.set(date, {
+          activities: new Map(),
+          travel: 0,
+          break_time: 0,
+        });
+      }
+
+      const dayStats = employeeDays.get(date)!;
+      const duration = calculateEntryDuration(entry);
+
+      switch (entry.entry_type) {
+        case 'property':
+          if (entry.activity_type) {
+            const current = dayStats.activities.get(entry.activity_type) || 0;
+            dayStats.activities.set(entry.activity_type, current + duration);
+          }
+          break;
+        case 'travel':
+          dayStats.travel += duration;
+          break;
+        case 'break':
+          dayStats.break_time += duration;
+          break;
+      }
+    });
+
+    // Convert to export format and calculate employee totals
+    const employeeTotals = new Map<string, {
+      name: string;
+      activities: Map<ActivityType, number>;
+      travel: number;
+      break_time: number;
+    }>();
+
+    employeeDailyStats.forEach((days, employeeId) => {
+      const employee = employees.find(e => e.id === employeeId);
+      const employeeName = employee
+        ? `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.email
+        : 'Unbekannt';
+
+      // Initialize totals for this employee
+      if (!employeeTotals.has(employeeId)) {
+        employeeTotals.set(employeeId, {
+          name: employeeName,
+          activities: new Map(),
+          travel: 0,
+          break_time: 0,
+        });
+      }
+      const empTotal = employeeTotals.get(employeeId)!;
+
+      // Sort days by date
+      const sortedDays = Array.from(days.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+
+      sortedDays.forEach(([date, stats]) => {
+        const parsedDate = parseISO(date);
+        const dayOfWeek = format(parsedDate, 'EEEE', { locale: de });
+        const formattedDate = format(parsedDate, 'dd.MM.yyyy', { locale: de });
+
+        // Calculate day total (activities + travel)
+        let dayPropertyTotal = 0;
+        stats.activities.forEach((time) => {
+          dayPropertyTotal += time;
+        });
+        const dayTotal = dayPropertyTotal + stats.travel;
+
+        // Build row with activities as columns
+        const row: Record<string, string | number> = {
+          'Mitarbeiter': employeeName,
+          'Datum': formattedDate,
+          'Wochentag': dayOfWeek,
+        };
+
+        // Add activity columns
+        activityKeys.forEach((activityType) => {
+          const time = stats.activities.get(activityType) || 0;
+          row[ACTIVITY_CONFIG[activityType].label] = time > 0 ? formatDurationForExport(time) : '';
+
+          // Add to employee total
+          const currentTotal = empTotal.activities.get(activityType) || 0;
+          empTotal.activities.set(activityType, currentTotal + time);
+        });
+
+        row['Fahrtzeit'] = stats.travel > 0 ? formatDurationForExport(stats.travel) : '';
+        row['Pause'] = stats.break_time > 0 ? formatDurationForExport(stats.break_time) : '';
+        row['Tagesgesamt'] = formatDurationForExport(dayTotal);
+
+        // Add to employee totals
+        empTotal.travel += stats.travel;
+        empTotal.break_time += stats.break_time;
+
+        dailyData.push(row as typeof dailyData[0]);
+      });
+
+      // Add employee total row
+      let empPropertyTotal = 0;
+      const totalRow: Record<string, string | number> = {
+        'Mitarbeiter': `${employeeName} - GESAMT`,
+        'Datum': '',
+        'Wochentag': '',
+      };
+
+      activityKeys.forEach((activityType) => {
+        const time = empTotal.activities.get(activityType) || 0;
+        totalRow[ACTIVITY_CONFIG[activityType].label] = time > 0 ? formatDurationForExport(time) : '';
+        empPropertyTotal += time;
+      });
+
+      totalRow['Fahrtzeit'] = empTotal.travel > 0 ? formatDurationForExport(empTotal.travel) : '';
+      totalRow['Pause'] = empTotal.break_time > 0 ? formatDurationForExport(empTotal.break_time) : '';
+      totalRow['Tagesgesamt'] = formatDurationForExport(empPropertyTotal + empTotal.travel);
+
+      dailyData.push(totalRow as typeof dailyData[0]);
+
+      // Add empty row between employees
+      dailyData.push({
+        'Mitarbeiter': '',
+        'Datum': '',
+        'Wochentag': '',
+      } as typeof dailyData[0]);
+    });
+
+    // Daily details sheet
+    if (dailyData.length > 0) {
+      const wsDaily = XLSX.utils.json_to_sheet(dailyData);
+      // Set column widths
+      wsDaily['!cols'] = [
+        { wch: 25 }, // Mitarbeiter
+        { wch: 12 }, // Datum
+        { wch: 12 }, // Wochentag
+        ...activityKeys.map(() => ({ wch: 14 })), // Activity columns
+        { wch: 10 }, // Fahrtzeit
+        { wch: 10 }, // Pause
+        { wch: 12 }, // Tagesgesamt
+      ];
+      XLSX.utils.book_append_sheet(wb, wsDaily, 'Tagesübersicht');
+    }
+
+    // Summary sheet (original format)
+    const summaryData = employeeStats.map((stat) => ({
       'Mitarbeiter': stat.name,
       'Arbeitszeit (Liegenschaft)': formatDurationForExport(stat.propertyTime),
       'Fahrtzeit': formatDurationForExport(stat.travelTime),
@@ -353,8 +528,7 @@ export default function TimeOverviewPage() {
       'Arbeitstage': stat.workDays,
     }));
 
-    // Add totals row
-    exportData.push({
+    summaryData.push({
       'Mitarbeiter': 'GESAMT',
       'Arbeitszeit (Liegenschaft)': formatDurationForExport(totals.propertyTime),
       'Fahrtzeit': formatDurationForExport(totals.travelTime),
@@ -363,15 +537,11 @@ export default function TimeOverviewPage() {
       'Arbeitstage': employeeStats.reduce((sum, d) => sum + d.workDays, 0),
     });
 
-    // Create workbook
-    const wb = XLSX.utils.book_new();
-
-    // Employee sheet
-    const wsEmployees = XLSX.utils.json_to_sheet(exportData);
-    wsEmployees['!cols'] = [
+    const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+    wsSummary['!cols'] = [
       { wch: 25 }, { wch: 22 }, { wch: 12 }, { wch: 12 }, { wch: 18 }, { wch: 12 },
     ];
-    XLSX.utils.book_append_sheet(wb, wsEmployees, 'Mitarbeiter');
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'Zusammenfassung');
 
     // Property sheet
     const propertyExport = propertyStats.map((stat) => ({
