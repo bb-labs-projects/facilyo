@@ -28,7 +28,7 @@ import { ResetPasswordDialog } from './components/reset-password-dialog';
 import { useAuthStore } from '@/stores/auth-store';
 import { usePermissions } from '@/hooks/use-permissions';
 import { getClient } from '@/lib/supabase/client';
-import { roleLabels, getAssignableRoles } from '@/lib/permissions';
+import { roleLabels, getAssignableRoles, canEditUser } from '@/lib/permissions';
 import { getInitials, cn } from '@/lib/utils';
 import type { Profile, Property, UserRole } from '@/types/database';
 
@@ -490,8 +490,8 @@ export default function AdminUsersPage() {
 
                     {/* Actions */}
                     <div className="flex gap-1 flex-shrink-0">
-                      {/* Activate/Deactivate button */}
-                      {user.id !== profile?.id && (
+                      {/* Activate/Deactivate button - only if can edit this user */}
+                      {user.id !== profile?.id && permissions.role && canEditUser(permissions.role, user.role) && (
                         <Button
                           variant="ghost"
                           size="icon"
@@ -512,8 +512,8 @@ export default function AdminUsersPage() {
                           <Power className={cn('h-4 w-4', inactive ? 'text-green-500' : 'text-gray-400')} />
                         </Button>
                       )}
-                      {/* Unlock button */}
-                      {locked && (
+                      {/* Unlock button - only if can edit this user */}
+                      {locked && permissions.role && canEditUser(permissions.role, user.role) && (
                         <Button
                           variant="ghost"
                           size="icon"
@@ -527,8 +527,8 @@ export default function AdminUsersPage() {
                           <Unlock className="h-4 w-4 text-red-500" />
                         </Button>
                       )}
-                      {/* Reset password button */}
-                      {user.id !== profile?.id && username && (
+                      {/* Reset password button - only if can edit this user */}
+                      {user.id !== profile?.id && username && permissions.role && canEditUser(permissions.role, user.role) && (
                         <Button
                           variant="ghost"
                           size="icon"
@@ -542,8 +542,8 @@ export default function AdminUsersPage() {
                           <KeyRound className="h-4 w-4" />
                         </Button>
                       )}
-                      {/* Only show role change if can assign */}
-                      {user.id !== profile?.id && assignableRoles.includes(user.role) && (
+                      {/* Only show role change if can edit this user and can assign roles */}
+                      {user.id !== profile?.id && permissions.role && canEditUser(permissions.role, user.role) && assignableRoles.length > 0 && (
                         <Button
                           variant="ghost"
                           size="icon"

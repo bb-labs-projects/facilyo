@@ -14,18 +14,31 @@ import {
   permissionLabels,
   allPermissions,
   clearPermissionsCache,
+  canEditRolePermissions,
 } from '@/lib/permissions';
 import { cn } from '@/lib/utils';
 import type { UserRole, PermissionName, RolePermission } from '@/types/database';
 
-const roles: UserRole[] = ['admin', 'owner', 'manager', 'employee'];
+const allRoles: UserRole[] = ['admin', 'owner', 'manager', 'employee'];
 
 export default function AdminRolesPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const permissions = usePermissions();
 
-  const [selectedRole, setSelectedRole] = useState<UserRole>('admin');
+  // Filter roles based on what the current user can edit
+  const editableRoles = permissions.role
+    ? allRoles.filter((role) => canEditRolePermissions(permissions.role!, role))
+    : [];
+
+  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
+
+  // Set initial selected role to first editable role
+  useEffect(() => {
+    if (editableRoles.length > 0 && !selectedRole) {
+      setSelectedRole(editableRoles[0]);
+    }
+  }, [editableRoles, selectedRole]);
 
   // Fetch all role permissions
   const { data: rolePermissions = [], isLoading } = useQuery({
@@ -93,6 +106,7 @@ export default function AdminRolesPage() {
   }
 
   const handleTogglePermission = (permission: PermissionName) => {
+    if (!selectedRole) return;
     const currentEnabled = getPermissionEnabled(selectedRole, permission);
     updatePermissionMutation.mutate({
       role: selectedRole,
@@ -107,7 +121,7 @@ export default function AdminRolesPage() {
     >
       {/* Role Tabs */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-        {roles.map((role) => (
+        {editableRoles.map((role) => (
           <button
             key={role}
             onClick={() => setSelectedRole(role)}
@@ -127,6 +141,10 @@ export default function AdminRolesPage() {
       {isLoading ? (
         <div className="text-center py-12 text-muted-foreground">
           Wird geladen...
+        </div>
+      ) : !selectedRole ? (
+        <div className="text-center py-12 text-muted-foreground">
+          Keine bearbeitbaren Rollen verfügbar.
         </div>
       ) : (
         <Card>

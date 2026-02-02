@@ -32,7 +32,7 @@ const defaultPermissions: Record<UserRole, Record<PermissionName, boolean>> = {
     view_all_users: true,
     update_user_roles: true,
     access_admin_panel: true,
-    manage_role_permissions: true,
+    manage_role_permissions: false,
   },
   manager: {
     manage_properties: true,
@@ -212,6 +212,38 @@ export function getAssignableRoles(role: UserRole): UserRole[] {
   return (Object.entries(roleHierarchy) as [UserRole, number][])
     .filter(([, lvl]) => lvl < level)
     .map(([r]) => r);
+}
+
+// Check if a user can edit another user's role (considering their current role)
+export function canEditUser(editorRole: UserRole, targetUserRole: UserRole): boolean {
+  // Admin can edit anyone
+  if (editorRole === 'admin') {
+    return true;
+  }
+  // Owner cannot edit admins
+  if (editorRole === 'owner' && targetUserRole === 'admin') {
+    return false;
+  }
+  // Can edit users at or below your level (but not admin)
+  return roleHierarchy[editorRole] >= roleHierarchy[targetUserRole];
+}
+
+// Check if a user can edit permissions for a specific role
+export function canEditRolePermissions(editorRole: UserRole, targetRole: UserRole): boolean {
+  // Only admin can edit admin permissions
+  if (targetRole === 'admin') {
+    return editorRole === 'admin';
+  }
+  // Admin can edit any role's permissions
+  if (editorRole === 'admin') {
+    return true;
+  }
+  // Owner can edit permissions for roles below admin
+  if (editorRole === 'owner') {
+    return targetRole !== 'admin';
+  }
+  // Others cannot edit permissions
+  return false;
 }
 
 // Role labels in German
