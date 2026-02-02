@@ -3,10 +3,10 @@
 import { useMemo, useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { Car, Building2, Coffee, MapPin, Clock, FileText, Pencil } from 'lucide-react';
+import { Car, Building2, Coffee, MapPin, Clock, FileText, Pencil, Wrench, Trees, Scissors, ClipboardList } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { swissFormat } from '@/lib/i18n';
-import type { TimeEntryWithProperty, TimeEntryType } from '@/types/database';
+import type { TimeEntryWithProperty, TimeEntryType, ActivityType } from '@/types/database';
 import { TimeEntryEditSheet } from './time-entry-edit-sheet';
 
 interface DailyCalendarProps {
@@ -43,6 +43,14 @@ const ENTRY_COLORS: Record<TimeEntryType, { bg: string; border: string; text: st
     text: 'text-orange-800',
     icon: 'text-orange-600',
   },
+};
+
+// Activity type icons
+const ACTIVITY_ICONS: Record<ActivityType, { icon: typeof Wrench; color: string }> = {
+  hauswartung: { icon: Wrench, color: 'text-blue-600' },
+  rasen_maehen: { icon: Trees, color: 'text-green-600' },
+  hecken_schneiden: { icon: Scissors, color: 'text-emerald-600' },
+  regie: { icon: ClipboardList, color: 'text-purple-600' },
 };
 
 interface CalendarEntry extends TimeEntryWithProperty {
@@ -166,6 +174,15 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
       case 'property':
         return <Building2 className={cn('h-4 w-4', colors.icon)} />;
     }
+  };
+
+  // Get activity icon for property entries
+  const getActivityIcon = (activityType: ActivityType | null, size: 'sm' | 'md' = 'md') => {
+    if (!activityType) return null;
+    const config = ACTIVITY_ICONS[activityType];
+    const ActivityIcon = config.icon;
+    const sizeClass = size === 'sm' ? 'h-3 w-3' : 'h-3.5 w-3.5';
+    return <ActivityIcon className={cn(sizeClass, config.color)} />;
   };
 
   // Calculate duration
@@ -321,7 +338,7 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
                   {isTiny ? (
                     // Tiny single-line layout (minimal)
                     <div className={cn('flex items-center gap-1 h-full text-xs', colors.text)}>
-                      {getEntryIcon(entry.entry_type || 'property')}
+                      {entry.activity_type ? getActivityIcon(entry.activity_type, 'sm') : getEntryIcon(entry.entry_type || 'property')}
                       <span className={cn('font-medium truncate flex-1', isOverlapping && 'hidden sm:inline')}>
                         {entry.property?.name || getEntryTypeLabel(entry.entry_type || 'property')}
                       </span>
@@ -347,7 +364,7 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
                   ) : isCompact ? (
                     // Compact single-line layout
                     <div className={cn('flex items-center gap-1.5 h-full text-sm', colors.text)}>
-                      {getEntryIcon(entry.entry_type || 'property')}
+                      {entry.activity_type ? getActivityIcon(entry.activity_type) : getEntryIcon(entry.entry_type || 'property')}
                       <span className={cn('font-semibold truncate flex-1', isOverlapping && 'hidden sm:inline')}>
                         {entry.property?.name || getEntryTypeLabel(entry.entry_type || 'property')}
                       </span>
@@ -381,6 +398,7 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
                           <span className="truncate">
                             {entry.property?.name || getEntryTypeLabel(entry.entry_type || 'property')}
                           </span>
+                          {entry.activity_type && getActivityIcon(entry.activity_type)}
                         </div>
                         <Pencil className={cn('h-3.5 w-3.5 opacity-50 shrink-0', colors.text)} />
                       </div>

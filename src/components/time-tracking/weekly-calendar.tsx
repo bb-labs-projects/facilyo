@@ -3,9 +3,9 @@
 import { useMemo, useState } from 'react';
 import { format, startOfWeek, addDays, isSameDay, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { Car, Building2, Coffee, Pencil } from 'lucide-react';
+import { Car, Building2, Coffee, Pencil, Wrench, Trees, Scissors, ClipboardList } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { TimeEntryWithProperty, TimeEntryType } from '@/types/database';
+import type { TimeEntryWithProperty, TimeEntryType, ActivityType } from '@/types/database';
 import { TimeEntryEditSheet } from './time-entry-edit-sheet';
 
 interface WeeklyCalendarProps {
@@ -39,6 +39,14 @@ const ENTRY_COLORS: Record<TimeEntryType, { bg: string; border: string; text: st
     border: 'border-orange-300',
     text: 'text-orange-800',
   },
+};
+
+// Activity type icons
+const ACTIVITY_ICONS: Record<ActivityType, { icon: typeof Wrench; color: string }> = {
+  hauswartung: { icon: Wrench, color: 'text-blue-600' },
+  rasen_maehen: { icon: Trees, color: 'text-green-600' },
+  hecken_schneiden: { icon: Scissors, color: 'text-emerald-600' },
+  regie: { icon: ClipboardList, color: 'text-purple-600' },
 };
 
 interface CalendarEntry extends TimeEntryWithProperty {
@@ -231,6 +239,14 @@ export function WeeklyCalendar({ entries, selectedDate, className, onEntryUpdate
     }
   };
 
+  // Get activity icon for property entries
+  const getActivityIcon = (activityType: ActivityType | null) => {
+    if (!activityType) return null;
+    const config = ACTIVITY_ICONS[activityType];
+    const ActivityIcon = config.icon;
+    return <ActivityIcon className={cn('h-3 w-3', config.color)} />;
+  };
+
   const totalCalendarHeight = HOURS.length * HOUR_HEIGHT;
 
   return (
@@ -352,7 +368,7 @@ export function WeeklyCalendar({ entries, selectedDate, className, onEntryUpdate
                           isTiny ? 'text-[10px]' : 'text-xs',
                           isOverlapping && 'justify-center'
                         )}>
-                          {getEntryIcon(entry.entry_type || 'property')}
+                          {entry.activity_type ? getActivityIcon(entry.activity_type) : getEntryIcon(entry.entry_type || 'property')}
                           <span className={cn(
                             'truncate flex-1 min-w-0 font-medium',
                             isOverlapping && 'hidden lg:inline'
