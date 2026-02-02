@@ -238,9 +238,9 @@ export function canEditRolePermissions(editorRole: UserRole, targetRole: UserRol
   if (editorRole === 'admin') {
     return true;
   }
-  // Owner can edit permissions for roles below admin
+  // Owner can edit permissions for non-admin roles (already checked above)
   if (editorRole === 'owner') {
-    return targetRole !== 'admin';
+    return true;
   }
   // Others cannot edit permissions
   return false;
