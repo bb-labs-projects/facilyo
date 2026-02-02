@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { swissFormat } from '@/lib/i18n';
 import type { TimeEntryWithProperty, TimeEntryType, ActivityType } from '@/types/database';
 import { TimeEntryEditSheet } from './time-entry-edit-sheet';
+import { MergedEntryEditSheet } from './merged-entry-edit-sheet';
 
 interface DailyCalendarProps {
   entries: TimeEntryWithProperty[];
@@ -80,6 +81,8 @@ interface MergedCalendarEntry {
 export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated }: DailyCalendarProps) {
   const [selectedEntry, setSelectedEntry] = useState<TimeEntryWithProperty | null>(null);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
+  const [selectedMergedEntry, setSelectedMergedEntry] = useState<MergedCalendarEntry | null>(null);
+  const [mergedSheetOpen, setMergedSheetOpen] = useState(false);
 
   // Type guard to check if entry is merged
   const isMergedEntry = (entry: TimeEntryWithProperty | MergedCalendarEntry): entry is MergedCalendarEntry => {
@@ -313,6 +316,11 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
     setEditSheetOpen(true);
   };
 
+  const handleMergedEntryClick = (merged: MergedCalendarEntry) => {
+    setSelectedMergedEntry(merged);
+    setMergedSheetOpen(true);
+  };
+
   const handleEditSheetClose = () => {
     setEditSheetOpen(false);
     setSelectedEntry(null);
@@ -422,10 +430,10 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
               const columnWidth = 100 / entry.totalColumns;
               const leftPercent = entry.column * columnWidth;
 
-              // For merged entries, click opens the first entry for editing
+              // For merged entries, open the merged sheet; for regular entries, open edit sheet
               const handleClick = () => {
                 if (merged) {
-                  handleEntryClick(entry.entries[0]);
+                  handleMergedEntryClick(entry);
                 } else {
                   handleEntryClick(entry as TimeEntryWithProperty);
                 }
@@ -598,7 +606,7 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
         </div>
       </div>
 
-      {/* Edit Sheet */}
+      {/* Edit Sheet for single entries */}
       <TimeEntryEditSheet
         entry={selectedEntry}
         open={editSheetOpen}
@@ -608,6 +616,26 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
         onSaved={handleEntrySaved}
         onDeleted={handleEntryDeleted}
       />
+
+      {/* Edit Sheet for merged entries */}
+      {selectedMergedEntry && (
+        <MergedEntryEditSheet
+          entries={selectedMergedEntry.entries}
+          propertyName={selectedMergedEntry.property?.name || 'Liegenschaft'}
+          open={mergedSheetOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setMergedSheetOpen(false);
+              setSelectedMergedEntry(null);
+            }
+          }}
+          onEntryUpdated={() => {
+            setMergedSheetOpen(false);
+            setSelectedMergedEntry(null);
+            onEntryUpdated?.();
+          }}
+        />
+      )}
     </>
   );
 }

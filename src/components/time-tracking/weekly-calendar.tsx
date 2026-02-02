@@ -3,10 +3,11 @@
 import { useMemo, useState } from 'react';
 import { format, startOfWeek, addDays, isSameDay, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { Car, Building2, Coffee, Pencil, Wrench, Trees, Scissors, ClipboardList } from 'lucide-react';
+import { Car, Building2, Coffee, Wrench, Trees, Scissors, ClipboardList } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { TimeEntryWithProperty, TimeEntryType, ActivityType } from '@/types/database';
 import { TimeEntryEditSheet } from './time-entry-edit-sheet';
+import { MergedEntryEditSheet } from './merged-entry-edit-sheet';
 
 interface WeeklyCalendarProps {
   entries: TimeEntryWithProperty[];
@@ -75,10 +76,17 @@ interface MergedCalendarEntry {
 export function WeeklyCalendar({ entries, selectedDate, className, onEntryUpdated }: WeeklyCalendarProps) {
   const [selectedEntry, setSelectedEntry] = useState<TimeEntryWithProperty | null>(null);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
+  const [selectedMergedEntry, setSelectedMergedEntry] = useState<MergedCalendarEntry | null>(null);
+  const [mergedSheetOpen, setMergedSheetOpen] = useState(false);
 
   const handleEntryClick = (entry: TimeEntryWithProperty) => {
     setSelectedEntry(entry);
     setEditSheetOpen(true);
+  };
+
+  const handleMergedEntryClick = (merged: MergedCalendarEntry) => {
+    setSelectedMergedEntry(merged);
+    setMergedSheetOpen(true);
   };
 
   const handleEditSheetClose = () => {
@@ -441,12 +449,12 @@ export function WeeklyCalendar({ entries, selectedDate, className, onEntryUpdate
                     const columnWidth = 100 / entry.totalColumns;
                     const leftPercent = entry.column * columnWidth;
 
-                    // For merged entries, click opens the first entry for editing
+                    // For merged entries, open the merged sheet; for regular entries, open edit sheet
                     const handleClick = () => {
                       if (merged) {
-                        handleEntryClick(entry.entries[0]);
+                        handleMergedEntryClick(entry);
                       } else {
-                        handleEntryClick(entry);
+                        handleEntryClick(entry as TimeEntryWithProperty);
                       }
                     };
 
@@ -530,7 +538,7 @@ export function WeeklyCalendar({ entries, selectedDate, className, onEntryUpdate
         </div>
       </div>
 
-      {/* Edit Sheet */}
+      {/* Edit Sheet for single entries */}
       <TimeEntryEditSheet
         entry={selectedEntry}
         open={editSheetOpen}
@@ -540,6 +548,26 @@ export function WeeklyCalendar({ entries, selectedDate, className, onEntryUpdate
         onSaved={handleEntrySaved}
         onDeleted={handleEntryDeleted}
       />
+
+      {/* Edit Sheet for merged entries */}
+      {selectedMergedEntry && (
+        <MergedEntryEditSheet
+          entries={selectedMergedEntry.entries}
+          propertyName={selectedMergedEntry.property?.name || 'Liegenschaft'}
+          open={mergedSheetOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setMergedSheetOpen(false);
+              setSelectedMergedEntry(null);
+            }
+          }}
+          onEntryUpdated={() => {
+            setMergedSheetOpen(false);
+            setSelectedMergedEntry(null);
+            onEntryUpdated?.();
+          }}
+        />
+      )}
     </>
   );
 }
