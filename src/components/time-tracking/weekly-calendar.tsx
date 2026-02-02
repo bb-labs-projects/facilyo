@@ -503,26 +503,25 @@ export function WeeklyCalendar({ entries, selectedDate, className, onEntryUpdate
                               ? getActivityIcon((entry as TimeEntryWithProperty).activity_type)
                               : getEntryIcon(entry.entry_type || 'property')
                           )}
-                          <span className={cn(
-                            'truncate flex-1 min-w-0 font-medium',
-                            isOverlapping && 'hidden lg:inline'
-                          )}>
-                            {entry.property?.name || getEntryTypeLabel(entry.entry_type || 'property')}
-                          </span>
-                          <span className={cn(
-                            'text-[10px] opacity-75 shrink-0 flex items-center gap-0.5',
-                            isOverlapping && 'hidden lg:flex'
-                          )}>
-                            {startTime}-{endTime || ''}
-                            {isActive && (
-                              <span className="relative flex h-1.5 w-1.5">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500" />
+                          {/* Hide text and time when overlapping - only show icon */}
+                          {!isOverlapping && (
+                            <>
+                              <span className="truncate flex-1 min-w-0 font-medium">
+                                {entry.property?.name || getEntryTypeLabel(entry.entry_type || 'property')}
                               </span>
-                            )}
-                          </span>
+                              <span className="text-[10px] opacity-75 shrink-0 flex items-center gap-0.5">
+                                {startTime}-{endTime || ''}
+                                {isActive && (
+                                  <span className="relative flex h-1.5 w-1.5">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500" />
+                                  </span>
+                                )}
+                              </span>
+                            </>
+                          )}
                           {isOverlapping && isActive && (
-                            <span className="relative flex h-1.5 w-1.5 lg:hidden">
+                            <span className="relative flex h-1.5 w-1.5">
                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
                               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500" />
                             </span>
