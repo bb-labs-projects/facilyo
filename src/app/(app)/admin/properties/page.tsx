@@ -59,6 +59,10 @@ export default function AdminPropertiesPage() {
   const [longitude, setLongitude] = useState('');
   const [geofenceRadius, setGeofenceRadius] = useState('100');
 
+  // Validation state
+  const [latitudeError, setLatitudeError] = useState<string | null>(null);
+  const [longitudeError, setLongitudeError] = useState<string | null>(null);
+
   // Fetch properties
   const { data: properties = [], isLoading } = useQuery({
     queryKey: ['admin-properties'],
@@ -182,6 +186,8 @@ export default function AdminPropertiesPage() {
     setLatitude('');
     setLongitude('');
     setGeofenceRadius('100');
+    setLatitudeError(null);
+    setLongitudeError(null);
     setEditingProperty(null);
     setShowForm(false);
   };
@@ -195,22 +201,78 @@ export default function AdminPropertiesPage() {
     setLatitude(property.latitude?.toString() || '');
     setLongitude(property.longitude?.toString() || '');
     setGeofenceRadius(property.geofence_radius.toString());
+    setLatitudeError(null);
+    setLongitudeError(null);
     setEditingProperty(property);
     setShowForm(true);
+  };
+
+  // Parse and validate coordinate value
+  const parseCoordinate = (value: string, min: number, max: number): number | null => {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const num = parseFloat(trimmed);
+    if (isNaN(num)) return null;
+    if (num < min || num > max) return null;
+    return num;
+  };
+
+  // Validate latitude on blur
+  const validateLatitude = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      setLatitudeError(null);
+      return;
+    }
+    const num = parseFloat(trimmed);
+    if (isNaN(num)) {
+      setLatitudeError('Ungültige Zahl');
+    } else if (num < -90 || num > 90) {
+      setLatitudeError('Muss zwischen -90 und 90 liegen');
+    } else {
+      setLatitudeError(null);
+    }
+  };
+
+  // Validate longitude on blur
+  const validateLongitude = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      setLongitudeError(null);
+      return;
+    }
+    const num = parseFloat(trimmed);
+    if (isNaN(num)) {
+      setLongitudeError('Ungültige Zahl');
+    } else if (num < -180 || num > 180) {
+      setLongitudeError('Muss zwischen -180 und 180 liegen');
+    } else {
+      setLongitudeError(null);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    const parsedLatitude = parseCoordinate(latitude, -90, 90);
+    const parsedLongitude = parseCoordinate(longitude, -180, 180);
+
+    // Validate: if one coordinate is set, both must be set
+    if ((parsedLatitude !== null) !== (parsedLongitude !== null)) {
+      toast.error('Bitte geben Sie sowohl Breitengrad als auch Längengrad an, oder lassen Sie beide leer.');
+      return;
+    }
+
+    const parsedRadius = parseInt(geofenceRadius.trim());
     const data: PropertyInsert | PropertyUpdate = {
       name: name.trim(),
       address: address.trim(),
       city: city.trim(),
       postal_code: postalCode.trim(),
       type,
-      latitude: latitude ? parseFloat(latitude) : null,
-      longitude: longitude ? parseFloat(longitude) : null,
-      geofence_radius: parseInt(geofenceRadius) || 100,
+      latitude: parsedLatitude,
+      longitude: parsedLongitude,
+      geofence_radius: isNaN(parsedRadius) || parsedRadius < 0 ? 100 : parsedRadius,
     };
 
     if (editingProperty) {
@@ -444,9 +506,17 @@ export default function AdminPropertiesPage() {
                   inputMode="decimal"
                   step="any"
                   value={latitude}
-                  onChange={(e) => setLatitude(e.target.value)}
+                  onChange={(e) => {
+                    setLatitude(e.target.value);
+                    if (latitudeError) validateLatitude(e.target.value);
+                  }}
+                  onBlur={(e) => validateLatitude(e.target.value)}
                   placeholder="47.3769"
+                  className={latitudeError ? 'border-red-500 focus-visible:ring-red-500' : ''}
                 />
+                {latitudeError && (
+                  <p className="text-xs text-red-500">{latitudeError}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Längengrad</label>
@@ -455,9 +525,17 @@ export default function AdminPropertiesPage() {
                   inputMode="decimal"
                   step="any"
                   value={longitude}
-                  onChange={(e) => setLongitude(e.target.value)}
+                  onChange={(e) => {
+                    setLongitude(e.target.value);
+                    if (longitudeError) validateLongitude(e.target.value);
+                  }}
+                  onBlur={(e) => validateLongitude(e.target.value)}
                   placeholder="8.5417"
+                  className={longitudeError ? 'border-red-500 focus-visible:ring-red-500' : ''}
                 />
+                {longitudeError && (
+                  <p className="text-xs text-red-500">{longitudeError}</p>
+                )}
               </div>
             </div>
 
@@ -484,7 +562,7 @@ export default function AdminPropertiesPage() {
               <Button
                 type="submit"
                 className="flex-1"
-                disabled={isSubmitting || !name.trim() || !address.trim() || !city.trim() || !postalCode.trim()}
+                disabled={isSubmitting || !name.trim() || !address.trim() || !city.trim() || !postalCode.trim() || !!latitudeError || !!longitudeError}
               >
                 {isSubmitting
                   ? 'Wird gespeichert...'
