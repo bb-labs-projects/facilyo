@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Calendar, Clock, MapPin, Car, Coffee, Building2, Trash2 } from 'lucide-react';
+import { Calendar, Clock, MapPin, Car, Coffee, Building2, Trash2, ChevronDown, ChevronUp, Wrench, Trees, Scissors, ClipboardList } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,7 +14,19 @@ import {
 } from '@/components/ui/dialog';
 import { swissFormat } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
-import type { WorkDay, TimeEntryWithProperty, TimeEntryType } from '@/types/database';
+import type { WorkDay, TimeEntryWithProperty, TimeEntryType, ActivityType } from '@/types/database';
+
+// Activity type display configuration
+const ACTIVITY_TYPE_CONFIG: Record<ActivityType, {
+  label: string;
+  icon: typeof Wrench;
+  color: string;
+}> = {
+  hauswartung: { label: 'Hauswartung', icon: Wrench, color: 'text-blue-600' },
+  rasen_maehen: { label: 'Rasen mähen', icon: Trees, color: 'text-green-600' },
+  hecken_schneiden: { label: 'Hecken schneiden', icon: Scissors, color: 'text-emerald-600' },
+  regie: { label: 'Regie', icon: ClipboardList, color: 'text-purple-600' },
+};
 
 // Entry type display configuration
 const ENTRY_TYPE_CONFIG: Record<TimeEntryType, {
@@ -228,11 +240,31 @@ export function TimeEntryCard({
             </div>
           </div>
 
-          {/* Property address for property entries */}
-          {entryType === 'property' && entry.property && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              {entry.property.address}, {entry.property.city}
-            </p>
+          {/* Activity type and property address for property entries */}
+          {entryType === 'property' && (
+            <div className="mt-2 space-y-1">
+              {entry.activity_type && (
+                <div className="flex items-center gap-1.5">
+                  {(() => {
+                    const actConfig = ACTIVITY_TYPE_CONFIG[entry.activity_type];
+                    const ActivityIcon = actConfig.icon;
+                    return (
+                      <>
+                        <ActivityIcon className={cn('h-3.5 w-3.5', actConfig.color)} />
+                        <span className={cn('text-xs font-medium', actConfig.color)}>
+                          {actConfig.label}
+                        </span>
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
+              {entry.property && (
+                <p className="text-xs text-muted-foreground">
+                  {entry.property.address}, {entry.property.city}
+                </p>
+              )}
+            </div>
           )}
 
           {/* Notes preview */}
@@ -317,4 +349,279 @@ export function TimeEntryList({
       ))}
     </div>
   );
+}
+
+// Grouped view by property with activity breakdown
+interface PropertyGroupedEntriesProps {
+  entries: TimeEntryWithProperty[];
+  onEntryDelete?: (entry: TimeEntryWithProperty) => void;
+  className?: string;
+}
+
+interface PropertyGroup {
+  property: TimeEntryWithProperty['property'];
+  propertyId: string | null;
+  entries: TimeEntryWithProperty[];
+  totalSeconds: number;
+  activityBreakdown: Map<ActivityType, number>;
+}
+
+export function PropertyGroupedEntries({
+  entries,
+  onEntryDelete,
+  className,
+}: PropertyGroupedEntriesProps) {
+  const [expandedProperties, setExpandedProperties] = useState<Set<string>>(new Set());
+
+  // Group entries by property
+  const propertyGroups = entries.reduce<Map<string, PropertyGroup>>((groups, entry) => {
+    // Only group property entries, skip travel and break
+    if (entry.entry_type !== 'property') {
+      // Create a special group for non-property entries
+      const key = entry.entry_type;
+      if (!groups.has(key)) {
+        groups.set(key, {
+          property: null,
+          propertyId: null,
+          entries: [],
+          totalSeconds: 0,
+          activityBreakdown: new Map(),
+        });
+      }
+      const group = groups.get(key)!;
+      group.entries.push(entry);
+
+      const duration = calculateDuration(entry);
+      group.totalSeconds += duration;
+      return groups;
+    }
+
+    const key = entry.property_id || 'unknown';
+    if (!groups.has(key)) {
+      groups.set(key, {
+        property: entry.property,
+        propertyId: entry.property_id,
+        entries: [],
+        totalSeconds: 0,
+        activityBreakdown: new Map(),
+      });
+    }
+
+    const group = groups.get(key)!;
+    group.entries.push(entry);
+
+    const duration = calculateDuration(entry);
+    group.totalSeconds += duration;
+
+    // Track activity breakdown
+    if (entry.activity_type) {
+      const currentDuration = group.activityBreakdown.get(entry.activity_type) || 0;
+      group.activityBreakdown.set(entry.activity_type, currentDuration + duration);
+    }
+
+    return groups;
+  }, new Map());
+
+  const toggleExpanded = (propertyId: string) => {
+    setExpandedProperties(prev => {
+      const next = new Set(prev);
+      if (next.has(propertyId)) {
+        next.delete(propertyId);
+      } else {
+        next.add(propertyId);
+      }
+      return next;
+    });
+  };
+
+  // Sort: property entries first (by total time desc), then travel, then break
+  const sortedGroups = Array.from(propertyGroups.entries()).sort((a, b) => {
+    const [keyA, groupA] = a;
+    const [keyB, groupB] = b;
+
+    // Non-property entries go last
+    if (keyA === 'travel' || keyA === 'break') return 1;
+    if (keyB === 'travel' || keyB === 'break') return -1;
+
+    // Sort by total time descending
+    return groupB.totalSeconds - groupA.totalSeconds;
+  });
+
+  if (entries.length === 0) {
+    return (
+      <div className={cn('text-center py-8 text-muted-foreground', className)}>
+        Keine Einträge vorhanden
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn('space-y-3', className)}>
+      {sortedGroups.map(([key, group]) => {
+        // Render travel/break entries as simple cards
+        if (key === 'travel' || key === 'break') {
+          return group.entries.map((entry) => (
+            <TimeEntryCard
+              key={entry.id}
+              entry={entry}
+              onDelete={onEntryDelete}
+            />
+          ));
+        }
+
+        const isExpanded = expandedProperties.has(key);
+        const hasMultipleActivities = group.activityBreakdown.size > 1;
+        const hasActiveEntry = group.entries.some(e => e.status === 'active');
+
+        return (
+          <Card
+            key={key}
+            className={cn(
+              'border-l-4',
+              ENTRY_TYPE_CONFIG.property.bgColor,
+              ENTRY_TYPE_CONFIG.property.borderColor,
+              hasActiveEntry && 'ring-2 ring-success-300'
+            )}
+          >
+            <CardContent className="p-4">
+              {/* Header with property name and total time */}
+              <div
+                className="flex items-start justify-between cursor-pointer"
+                onClick={() => toggleExpanded(key)}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <Building2 className={cn('h-4 w-4', ENTRY_TYPE_CONFIG.property.textColor)} />
+                    <h3 className="font-medium truncate">
+                      {group.property?.name || 'Unbekannte Liegenschaft'}
+                    </h3>
+                  </div>
+                  {group.property && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {group.property.address}, {group.property.city}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="text-right">
+                    <span className="font-mono text-lg font-semibold">
+                      {swissFormat.duration(group.totalSeconds)}
+                    </span>
+                    {hasActiveEntry && (
+                      <span className="badge badge-success ml-2">Aktiv</span>
+                    )}
+                  </div>
+                  {(hasMultipleActivities || group.entries.length > 1) && (
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      {isExpanded ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Activity breakdown summary */}
+              {group.activityBreakdown.size > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {Array.from(group.activityBreakdown.entries())
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([activityType, seconds]) => {
+                      const actConfig = ACTIVITY_TYPE_CONFIG[activityType];
+                      const ActivityIcon = actConfig.icon;
+                      return (
+                        <div
+                          key={activityType}
+                          className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-white/60 border text-xs"
+                        >
+                          <ActivityIcon className={cn('h-3.5 w-3.5', actConfig.color)} />
+                          <span className={cn('font-medium', actConfig.color)}>
+                            {actConfig.label}
+                          </span>
+                          <span className="text-muted-foreground font-mono">
+                            {swissFormat.duration(seconds)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+
+              {/* Expanded detail view */}
+              {isExpanded && (
+                <div className="mt-4 pt-4 border-t space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">
+                    Einzelne Einträge ({group.entries.length})
+                  </p>
+                  {group.entries
+                    .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
+                    .map((entry) => {
+                      const duration = calculateDuration(entry);
+                      const actConfig = entry.activity_type ? ACTIVITY_TYPE_CONFIG[entry.activity_type] : null;
+                      const ActivityIcon = actConfig?.icon;
+
+                      return (
+                        <div
+                          key={entry.id}
+                          className="flex items-center justify-between py-2 px-3 rounded-lg bg-white/50"
+                        >
+                          <div className="flex items-center gap-2">
+                            {ActivityIcon && (
+                              <ActivityIcon className={cn('h-3.5 w-3.5', actConfig?.color)} />
+                            )}
+                            <div>
+                              <span className={cn('text-sm font-medium', actConfig?.color)}>
+                                {actConfig?.label || 'Keine Tätigkeit'}
+                              </span>
+                              <p className="text-xs text-muted-foreground">
+                                {swissFormat.time(entry.start_time)}
+                                {entry.end_time && ` – ${swissFormat.time(entry.end_time)}`}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-sm">
+                              {swissFormat.duration(duration)}
+                            </span>
+                            {entry.status === 'active' && (
+                              <span className="badge badge-success text-xs">Aktiv</span>
+                            )}
+                            {onEntryDelete && entry.status !== 'active' && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onEntryDelete(entry);
+                                }}
+                                className="h-6 w-6 text-slate-400 hover:text-red-600 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+// Helper function to calculate entry duration
+function calculateDuration(entry: TimeEntryWithProperty): number {
+  const start = new Date(entry.start_time).getTime();
+  const end = entry.end_time
+    ? new Date(entry.end_time).getTime()
+    : Date.now();
+  const duration = Math.floor((end - start) / 1000);
+  return Math.max(0, duration - (entry.pause_duration || 0));
 }

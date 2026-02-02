@@ -308,24 +308,59 @@ export const useTimerStore = create<TimerStore>()(
         await get().startTravelTime();
       },
 
-      // Update activity type for current property work
+      // Update activity type for current property work - creates a new entry to track time per activity
       updateActivityType: async (activityType) => {
         const supabase = getClient();
-        const { activeEntry, currentEntryType } = get();
+        const { workDay, activeEntry, currentEntryType, activeProperty } = get();
 
-        if (!activeEntry || currentEntryType !== 'property') {
+        if (!activeEntry || currentEntryType !== 'property' || !activeProperty) {
           throw new Error('Keine aktive Liegenschaftsarbeit');
         }
 
-        const { error } = await (supabase
+        // Refresh session first
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          throw new Error('Sitzung abgelaufen - bitte Seite neu laden');
+        }
+
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) throw new Error('Nicht authentifiziert - bitte Seite neu laden');
+        if (!workDay) throw new Error('Kein aktiver Arbeitstag');
+
+        const now = new Date().toISOString();
+
+        // Stop current entry
+        await (supabase
           .from('time_entries') as any)
-          .update({ activity_type: activityType })
+          .update({
+            end_time: now,
+            status: 'completed',
+          })
           .eq('id', activeEntry.id);
+
+        // Create new entry with new activity type on same property
+        const { data: newEntry, error } = await (supabase
+          .from('time_entries') as any)
+          .insert({
+            work_day_id: workDay.id,
+            user_id: user.id,
+            property_id: activeProperty.id,
+            entry_type: 'property',
+            activity_type: activityType,
+            start_time: now,
+            status: 'active',
+            pause_duration: 0,
+          })
+          .select()
+          .single();
 
         if (error) throw error;
 
         set({
-          activeEntry: { ...activeEntry, activity_type: activityType },
+          activeEntry: newEntry,
           currentActivityType: activityType,
         });
       },

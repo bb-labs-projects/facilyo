@@ -15,7 +15,7 @@ import {
   WorkDayControls,
 } from '@/components/time-tracking/control-buttons';
 import { PropertySelector } from '@/components/time-tracking/property-selector';
-import { TimeEntryList } from '@/components/time-tracking/work-day-card';
+import { TimeEntryList, PropertyGroupedEntries } from '@/components/time-tracking/work-day-card';
 import { PropertyTimeSummary } from '@/components/time-tracking/property-time-summary';
 import { ActiveChecklists } from '@/components/time-tracking/active-checklists';
 import { ActiveAufgaben } from '@/components/time-tracking/active-aufgaben';
@@ -440,13 +440,12 @@ export default function HomePage() {
             <PropertyTimeSummary entries={todayEntries} className="mb-6" />
           )}
 
-          {/* Today's Entries */}
+          {/* Today's Entries - Grouped by Property */}
           {todayEntries.length > 0 && (
             <div className="mb-6">
               <h2 className="text-lg font-semibold mb-3">Heutige Einträge</h2>
-              <TimeEntryList
+              <PropertyGroupedEntries
                 entries={todayEntries}
-                emptyMessage="Noch keine Einträge heute"
                 onEntryDelete={handleDeleteEntry}
               />
             </div>
