@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import {
   Clock,
-  Calendar,
   Download,
   ChevronLeft,
   ChevronRight,
@@ -13,6 +12,15 @@ import {
   Car,
   Coffee,
   Building2,
+  Filter,
+  X,
+  Wrench,
+  Trees,
+  Scissors,
+  ClipboardList,
+  BarChart3,
+  Users,
+  TrendingUp,
 } from 'lucide-react';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,7 +42,7 @@ import {
   parseISO,
 } from 'date-fns';
 import { de } from 'date-fns/locale';
-import type { Profile, TimeEntry, WorkDay } from '@/types/database';
+import type { Profile, TimeEntry, WorkDay, Property, ActivityType, TimeEntryType } from '@/types/database';
 import * as XLSX from 'xlsx';
 
 type ViewMode = 'weekly' | 'monthly';
@@ -50,14 +58,13 @@ interface WorkDayWithEntries extends WorkDay {
   time_entries: TimeEntryWithProperty[];
 }
 
-interface EmployeeTimeData {
-  profile: Profile;
-  workDays: WorkDayWithEntries[];
-  totalPropertyTime: number;
-  totalTravelTime: number;
-  totalBreakTime: number;
-  totalWorkTime: number;
-}
+// Activity type display configuration
+const ACTIVITY_CONFIG: Record<ActivityType, { label: string; icon: typeof Wrench; color: string }> = {
+  hauswartung: { label: 'Hauswartung', icon: Wrench, color: 'text-blue-600' },
+  rasen_maehen: { label: 'Rasen mähen', icon: Trees, color: 'text-green-600' },
+  hecken_schneiden: { label: 'Hecken schneiden', icon: Scissors, color: 'text-emerald-600' },
+  regie: { label: 'Regie', icon: ClipboardList, color: 'text-purple-600' },
+};
 
 function formatDuration(seconds: number): string {
   const hours = Math.floor(seconds / 3600);
@@ -85,6 +92,13 @@ export default function TimeOverviewPage() {
   const permissions = usePermissions();
   const [viewMode, setViewMode] = useState<ViewMode>('weekly');
   const [currentDate, setCurrentDate] = useState(new Date());
+
+  // Filter states
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
+  const [selectedActivityType, setSelectedActivityType] = useState<ActivityType | null>(null);
+  const [selectedEntryType, setSelectedEntryType] = useState<TimeEntryType | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
 
   const dateRange = useMemo(() => {
     if (viewMode === 'weekly') {
@@ -126,6 +140,22 @@ export default function TimeOverviewPage() {
     },
   });
 
+  // Fetch all properties
+  const { data: properties = [] } = useQuery({
+    queryKey: ['all-properties'],
+    queryFn: async () => {
+      const supabase = getClient();
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      return data as Property[];
+    },
+  });
+
   // Fetch work days with time entries for all employees in date range
   const { data: workDaysData = [], isLoading } = useQuery({
     queryKey: ['admin-time-overview', format(dateRange.start, 'yyyy-MM-dd'), format(dateRange.end, 'yyyy-MM-dd')],
@@ -149,55 +179,143 @@ export default function TimeOverviewPage() {
     },
   });
 
-  // Process data by employee
-  const employeeTimeData: EmployeeTimeData[] = useMemo(() => {
-    return employees.map((employee) => {
-      const employeeWorkDays = workDaysData.filter((wd) => wd.user_id === employee.id);
+  // Filter entries based on selected filters
+  const filteredEntries = useMemo(() => {
+    const allEntries: (TimeEntryWithProperty & { userId: string })[] = [];
 
-      let totalPropertyTime = 0;
-      let totalTravelTime = 0;
-      let totalBreakTime = 0;
+    workDaysData.forEach((workDay) => {
+      workDay.time_entries?.forEach((entry) => {
+        // Apply employee filter
+        if (selectedEmployeeId && workDay.user_id !== selectedEmployeeId) return;
 
-      employeeWorkDays.forEach((workDay) => {
-        workDay.time_entries?.forEach((entry) => {
-          const duration = calculateEntryDuration(entry);
-          switch (entry.entry_type) {
-            case 'property':
-              totalPropertyTime += duration;
-              break;
-            case 'travel':
-              totalTravelTime += duration;
-              break;
-            case 'break':
-              totalBreakTime += duration;
-              break;
-          }
-        });
+        // Apply property filter
+        if (selectedPropertyId && entry.property_id !== selectedPropertyId) return;
+
+        // Apply activity type filter
+        if (selectedActivityType && entry.activity_type !== selectedActivityType) return;
+
+        // Apply entry type filter
+        if (selectedEntryType && entry.entry_type !== selectedEntryType) return;
+
+        allEntries.push({ ...entry, userId: workDay.user_id });
       });
+    });
 
-      return {
-        profile: employee,
-        workDays: employeeWorkDays,
-        totalPropertyTime,
-        totalTravelTime,
-        totalBreakTime,
-        totalWorkTime: totalPropertyTime + totalTravelTime,
-      };
-    }).filter((data) => data.workDays.length > 0 || data.totalWorkTime > 0);
-  }, [employees, workDaysData]);
+    return allEntries;
+  }, [workDaysData, selectedEmployeeId, selectedPropertyId, selectedActivityType, selectedEntryType]);
 
-  // Calculate totals
+  // Calculate totals from filtered entries
   const totals = useMemo(() => {
-    return employeeTimeData.reduce(
-      (acc, data) => ({
-        propertyTime: acc.propertyTime + data.totalPropertyTime,
-        travelTime: acc.travelTime + data.totalTravelTime,
-        breakTime: acc.breakTime + data.totalBreakTime,
-        workTime: acc.workTime + data.totalWorkTime,
-      }),
-      { propertyTime: 0, travelTime: 0, breakTime: 0, workTime: 0 }
-    );
-  }, [employeeTimeData]);
+    let propertyTime = 0;
+    let travelTime = 0;
+    let breakTime = 0;
+
+    filteredEntries.forEach((entry) => {
+      const duration = calculateEntryDuration(entry);
+      switch (entry.entry_type) {
+        case 'property':
+          propertyTime += duration;
+          break;
+        case 'travel':
+          travelTime += duration;
+          break;
+        case 'break':
+          breakTime += duration;
+          break;
+      }
+    });
+
+    return {
+      propertyTime,
+      travelTime,
+      breakTime,
+      workTime: propertyTime + travelTime,
+    };
+  }, [filteredEntries]);
+
+  // Group data by employee
+  const employeeStats = useMemo(() => {
+    const stats = new Map<string, { name: string; propertyTime: number; travelTime: number; breakTime: number; workDays: Set<string> }>();
+
+    filteredEntries.forEach((entry) => {
+      const employee = employees.find(e => e.id === entry.userId);
+      if (!employee) return;
+
+      const name = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.email;
+
+      if (!stats.has(entry.userId)) {
+        stats.set(entry.userId, { name, propertyTime: 0, travelTime: 0, breakTime: 0, workDays: new Set() });
+      }
+
+      const stat = stats.get(entry.userId)!;
+      const duration = calculateEntryDuration(entry);
+
+      // Track work day
+      const workDay = workDaysData.find(wd => wd.time_entries?.some(te => te.id === entry.id));
+      if (workDay) stat.workDays.add(workDay.date);
+
+      switch (entry.entry_type) {
+        case 'property':
+          stat.propertyTime += duration;
+          break;
+        case 'travel':
+          stat.travelTime += duration;
+          break;
+        case 'break':
+          stat.breakTime += duration;
+          break;
+      }
+    });
+
+    return Array.from(stats.entries())
+      .map(([id, stat]) => ({ id, ...stat, workDays: stat.workDays.size }))
+      .sort((a, b) => (b.propertyTime + b.travelTime) - (a.propertyTime + a.travelTime));
+  }, [filteredEntries, employees, workDaysData]);
+
+  // Group data by property
+  const propertyStats = useMemo(() => {
+    const stats = new Map<string, { name: string; totalTime: number; activities: Map<ActivityType, number> }>();
+
+    filteredEntries.forEach((entry) => {
+      if (entry.entry_type !== 'property' || !entry.property_id) return;
+
+      const propertyName = entry.property?.name || 'Unbekannt';
+
+      if (!stats.has(entry.property_id)) {
+        stats.set(entry.property_id, { name: propertyName, totalTime: 0, activities: new Map() });
+      }
+
+      const stat = stats.get(entry.property_id)!;
+      const duration = calculateEntryDuration(entry);
+      stat.totalTime += duration;
+
+      if (entry.activity_type) {
+        const currentActivity = stat.activities.get(entry.activity_type) || 0;
+        stat.activities.set(entry.activity_type, currentActivity + duration);
+      }
+    });
+
+    return Array.from(stats.entries())
+      .map(([id, stat]) => ({ id, ...stat, activities: Array.from(stat.activities.entries()) }))
+      .sort((a, b) => b.totalTime - a.totalTime);
+  }, [filteredEntries]);
+
+  // Group data by activity
+  const activityStats = useMemo(() => {
+    const stats = new Map<ActivityType, number>();
+
+    filteredEntries.forEach((entry) => {
+      if (entry.entry_type !== 'property' || !entry.activity_type) return;
+
+      const duration = calculateEntryDuration(entry);
+      const current = stats.get(entry.activity_type) || 0;
+      stats.set(entry.activity_type, current + duration);
+    });
+
+    return Array.from(stats.entries())
+      .map(([type, time]) => ({ type, time, ...ACTIVITY_CONFIG[type] }))
+      .sort((a, b) => b.time - a.time);
+  }, [filteredEntries]);
 
   const handlePrevious = () => {
     if (viewMode === 'weekly') {
@@ -215,15 +333,24 @@ export default function TimeOverviewPage() {
     }
   };
 
+  const clearFilters = () => {
+    setSelectedEmployeeId(null);
+    setSelectedPropertyId(null);
+    setSelectedActivityType(null);
+    setSelectedEntryType(null);
+  };
+
+  const activeFilterCount = [selectedEmployeeId, selectedPropertyId, selectedActivityType, selectedEntryType].filter(Boolean).length;
+
   const handleExportXLSX = () => {
-    // Prepare data for export
-    const exportData = employeeTimeData.map((data) => ({
-      'Mitarbeiter': `${data.profile.first_name || ''} ${data.profile.last_name || ''}`.trim() || data.profile.email,
-      'Arbeitszeit (Liegenschaft)': formatDurationForExport(data.totalPropertyTime),
-      'Fahrtzeit': formatDurationForExport(data.totalTravelTime),
-      'Pausenzeit': formatDurationForExport(data.totalBreakTime),
-      'Gesamtarbeitszeit': formatDurationForExport(data.totalWorkTime),
-      'Arbeitstage': data.workDays.length,
+    // Prepare employee data for export
+    const exportData = employeeStats.map((stat) => ({
+      'Mitarbeiter': stat.name,
+      'Arbeitszeit (Liegenschaft)': formatDurationForExport(stat.propertyTime),
+      'Fahrtzeit': formatDurationForExport(stat.travelTime),
+      'Pausenzeit': formatDurationForExport(stat.breakTime),
+      'Gesamtarbeitszeit': formatDurationForExport(stat.propertyTime + stat.travelTime),
+      'Arbeitstage': stat.workDays,
     }));
 
     // Add totals row
@@ -233,31 +360,46 @@ export default function TimeOverviewPage() {
       'Fahrtzeit': formatDurationForExport(totals.travelTime),
       'Pausenzeit': formatDurationForExport(totals.breakTime),
       'Gesamtarbeitszeit': formatDurationForExport(totals.workTime),
-      'Arbeitstage': employeeTimeData.reduce((sum, d) => sum + d.workDays.length, 0),
+      'Arbeitstage': employeeStats.reduce((sum, d) => sum + d.workDays, 0),
     });
 
-    // Create workbook and worksheet
+    // Create workbook
     const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.json_to_sheet(exportData);
 
-    // Set column widths
-    ws['!cols'] = [
-      { wch: 25 },
-      { wch: 22 },
-      { wch: 12 },
-      { wch: 12 },
-      { wch: 18 },
-      { wch: 12 },
+    // Employee sheet
+    const wsEmployees = XLSX.utils.json_to_sheet(exportData);
+    wsEmployees['!cols'] = [
+      { wch: 25 }, { wch: 22 }, { wch: 12 }, { wch: 12 }, { wch: 18 }, { wch: 12 },
     ];
+    XLSX.utils.book_append_sheet(wb, wsEmployees, 'Mitarbeiter');
 
-    XLSX.utils.book_append_sheet(wb, ws, 'Zeitübersicht');
+    // Property sheet
+    const propertyExport = propertyStats.map((stat) => ({
+      'Liegenschaft': stat.name,
+      'Gesamtzeit': formatDurationForExport(stat.totalTime),
+      ...Object.fromEntries(stat.activities.map(([type, time]) => [ACTIVITY_CONFIG[type].label, formatDurationForExport(time)])),
+    }));
+    if (propertyExport.length > 0) {
+      const wsProperties = XLSX.utils.json_to_sheet(propertyExport);
+      XLSX.utils.book_append_sheet(wb, wsProperties, 'Liegenschaften');
+    }
+
+    // Activity sheet
+    const activityExport = activityStats.map((stat) => ({
+      'Aktivität': stat.label,
+      'Gesamtzeit': formatDurationForExport(stat.time),
+    }));
+    if (activityExport.length > 0) {
+      const wsActivities = XLSX.utils.json_to_sheet(activityExport);
+      XLSX.utils.book_append_sheet(wb, wsActivities, 'Aktivitäten');
+    }
 
     // Generate filename
+    const filterSuffix = activeFilterCount > 0 ? '_gefiltert' : '';
     const filename = viewMode === 'weekly'
-      ? `Zeitübersicht_KW${format(dateRange.start, 'w')}_${format(dateRange.start, 'yyyy')}.xlsx`
-      : `Zeitübersicht_${format(dateRange.start, 'MMMM_yyyy', { locale: de })}.xlsx`;
+      ? `Zeitübersicht_KW${format(dateRange.start, 'w')}_${format(dateRange.start, 'yyyy')}${filterSuffix}.xlsx`
+      : `Zeitübersicht_${format(dateRange.start, 'MMMM_yyyy', { locale: de })}${filterSuffix}.xlsx`;
 
-    // Download
     XLSX.writeFile(wb, filename);
   };
 
@@ -274,18 +416,116 @@ export default function TimeOverviewPage() {
           title="Zeitübersicht"
           showBack
           rightElement={
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleExportXLSX}
-              disabled={employeeTimeData.length === 0}
-            >
-              <Download className="h-5 w-5" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowFilters(!showFilters)}
+                className={cn(activeFilterCount > 0 && 'text-primary-600')}
+              >
+                <Filter className="h-5 w-5" />
+                {activeFilterCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary-600 text-[10px] text-white flex items-center justify-center">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleExportXLSX}
+                disabled={filteredEntries.length === 0}
+              >
+                <Download className="h-5 w-5" />
+              </Button>
+            </div>
           }
         />
       }
     >
+      {/* Filters Panel */}
+      {showFilters && (
+        <Card className="mb-4">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                Filter
+              </CardTitle>
+              {activeFilterCount > 0 && (
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="h-7 text-xs">
+                  <X className="h-3 w-3 mr-1" />
+                  Zurücksetzen
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {/* Employee Filter */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Mitarbeiter</label>
+              <select
+                value={selectedEmployeeId || ''}
+                onChange={(e) => setSelectedEmployeeId(e.target.value || null)}
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="">Alle Mitarbeiter</option>
+                {employees.map((emp) => (
+                  <option key={emp.id} value={emp.id}>
+                    {`${emp.first_name || ''} ${emp.last_name || ''}`.trim() || emp.email}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Property Filter */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Liegenschaft</label>
+              <select
+                value={selectedPropertyId || ''}
+                onChange={(e) => setSelectedPropertyId(e.target.value || null)}
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="">Alle Liegenschaften</option>
+                {properties.map((prop) => (
+                  <option key={prop.id} value={prop.id}>{prop.name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Activity Type Filter */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Aktivität</label>
+              <select
+                value={selectedActivityType || ''}
+                onChange={(e) => setSelectedActivityType((e.target.value as ActivityType) || null)}
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="">Alle Aktivitäten</option>
+                {Object.entries(ACTIVITY_CONFIG).map(([key, config]) => (
+                  <option key={key} value={key}>{config.label}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Entry Type Filter */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Eintragstyp</label>
+              <select
+                value={selectedEntryType || ''}
+                onChange={(e) => setSelectedEntryType((e.target.value as TimeEntryType) || null)}
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="">Alle Typen</option>
+                <option value="property">Liegenschaft</option>
+                <option value="travel">Fahrzeit</option>
+                <option value="break">Pause</option>
+              </select>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* View Mode Toggle */}
       <div className="flex gap-2 mb-4">
         <button
@@ -369,57 +609,156 @@ export default function TimeOverviewPage() {
         </Card>
       </div>
 
-      {/* Employee List */}
       {isLoading ? (
         <div className="text-center py-12 text-muted-foreground">
           Wird geladen...
         </div>
-      ) : employeeTimeData.length === 0 ? (
+      ) : filteredEntries.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
           <p>Keine Zeiteinträge im ausgewählten Zeitraum</p>
+          {activeFilterCount > 0 && (
+            <Button variant="ghost" onClick={clearFilters} className="mt-2">
+              Filter zurücksetzen
+            </Button>
+          )}
         </div>
       ) : (
-        <div className="space-y-3">
-          {employeeTimeData.map((data) => {
-            const name = `${data.profile.first_name || ''} ${data.profile.last_name || ''}`.trim() || data.profile.email;
-            return (
-              <Card key={data.profile.id}>
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
-                      <User className="h-5 w-5 text-primary-600" />
+        <div className="space-y-6">
+          {/* Activity Breakdown */}
+          {activityStats.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  Nach Aktivität
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {activityStats.map((stat) => {
+                    const Icon = stat.icon;
+                    const percentage = totals.propertyTime > 0 ? (stat.time / totals.propertyTime) * 100 : 0;
+                    return (
+                      <div key={stat.type} className="flex items-center gap-3">
+                        <Icon className={cn('h-4 w-4 flex-shrink-0', stat.color)} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between text-sm mb-1">
+                            <span className="truncate">{stat.label}</span>
+                            <span className="font-medium">{formatDuration(stat.time)}</span>
+                          </div>
+                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-primary-500 rounded-full transition-all"
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Property Breakdown */}
+          {propertyStats.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Nach Liegenschaft
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {propertyStats.slice(0, 10).map((stat) => {
+                    const percentage = totals.propertyTime > 0 ? (stat.totalTime / totals.propertyTime) * 100 : 0;
+                    return (
+                      <div key={stat.id}>
+                        <div className="flex items-center justify-between text-sm mb-1">
+                          <span className="truncate font-medium">{stat.name}</span>
+                          <span className="text-muted-foreground">{formatDuration(stat.totalTime)}</span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden mb-1">
+                          <div
+                            className="h-full bg-primary-500 rounded-full transition-all"
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                        {stat.activities.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {stat.activities.map(([type, time]) => {
+                              const config = ACTIVITY_CONFIG[type];
+                              const Icon = config.icon;
+                              return (
+                                <span key={type} className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                                  <Icon className={cn('h-3 w-3', config.color)} />
+                                  {formatDuration(time)}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {propertyStats.length > 10 && (
+                    <p className="text-xs text-muted-foreground text-center">
+                      +{propertyStats.length - 10} weitere Liegenschaften
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Employee List */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Nach Mitarbeiter
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {employeeStats.map((stat) => (
+                  <div key={stat.id} className="flex items-start gap-3 pb-3 border-b last:border-0 last:pb-0">
+                    <div className="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+                      <User className="h-4 w-4 text-primary-600" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium truncate">{name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {data.workDays.length} Arbeitstage
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium truncate text-sm">{stat.name}</h3>
+                        <span className="text-sm font-semibold text-primary-600">
+                          {formatDuration(stat.propertyTime + stat.travelTime)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        {stat.workDays} Arbeitstage
                       </p>
-
-                      <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-                        <div className="flex items-center gap-2">
-                          <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span>{formatDuration(data.totalPropertyTime)}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Car className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span>{formatDuration(data.totalTravelTime)}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Coffee className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span>{formatDuration(data.totalBreakTime)}</span>
-                        </div>
-                        <div className="flex items-center gap-2 font-medium text-primary-600">
-                          <Clock className="h-3.5 w-3.5" />
-                          <span>{formatDuration(data.totalWorkTime)}</span>
-                        </div>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                        <span className="flex items-center gap-1">
+                          <Building2 className="h-3 w-3 text-muted-foreground" />
+                          {formatDuration(stat.propertyTime)}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Car className="h-3 w-3 text-muted-foreground" />
+                          {formatDuration(stat.travelTime)}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Coffee className="h-3 w-3 text-muted-foreground" />
+                          {formatDuration(stat.breakTime)}
+                        </span>
                       </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
     </PageContainer>
