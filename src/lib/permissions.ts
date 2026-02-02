@@ -32,7 +32,7 @@ const defaultPermissions: Record<UserRole, Record<PermissionName, boolean>> = {
     view_all_users: true,
     update_user_roles: true,
     access_admin_panel: true,
-    manage_role_permissions: false,
+    manage_role_permissions: true,
   },
   manager: {
     manage_properties: true,
