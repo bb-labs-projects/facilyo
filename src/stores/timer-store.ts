@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { TimeEntry, WorkDay, Property, TimeEntryType } from '@/types/database';
+import type { TimeEntry, WorkDay, Property, TimeEntryType, ActivityType } from '@/types/database';
 import { getClient } from '@/lib/supabase/client';
 
 interface TimerState {
@@ -10,8 +10,12 @@ interface TimerState {
   workDay: WorkDay | null;
   // Current tracking mode
   currentEntryType: TimeEntryType | null;
+  // Current activity type (for property work)
+  currentActivityType: ActivityType | null;
   // Previous entry type (for resuming after break)
   previousEntryType: TimeEntryType | null;
+  // Previous activity type (for resuming after break)
+  previousActivityType: ActivityType | null;
   // Previous property (for resuming property work after break)
   previousPropertyId: string | null;
   // Active time entry (travel, property, or break)
@@ -28,8 +32,9 @@ interface TimerActions {
   setWorkDay: (workDay: WorkDay | null) => void;
   // Entry type actions
   startTravelTime: () => Promise<TimeEntry>;
-  startPropertyWork: (propertyId: string, coords?: { lat: number; lng: number }) => Promise<TimeEntry>;
+  startPropertyWork: (propertyId: string, activityType: ActivityType, coords?: { lat: number; lng: number }) => Promise<TimeEntry>;
   stopPropertyWork: (coords?: { lat: number; lng: number }) => Promise<void>;
+  updateActivityType: (activityType: ActivityType) => Promise<void>;
   startBreak: () => Promise<TimeEntry>;
   endBreak: () => Promise<void>;
   // Internal helpers
@@ -39,6 +44,7 @@ interface TimerActions {
   setActiveProperty: (property: Property | null) => void;
   setElapsedSeconds: (seconds: number) => void;
   setCurrentEntryType: (type: TimeEntryType | null) => void;
+  setCurrentActivityType: (type: ActivityType | null) => void;
   // Initialization
   initializeFromServer: () => Promise<{ autoClosedDates: string[] }>;
   reset: () => void;
@@ -49,7 +55,9 @@ type TimerStore = TimerState & TimerActions;
 const initialState: TimerState = {
   workDay: null,
   currentEntryType: null,
+  currentActivityType: null,
   previousEntryType: null,
+  previousActivityType: null,
   previousPropertyId: null,
   activeEntry: null,
   activeProperty: null,
@@ -221,7 +229,7 @@ export const useTimerStore = create<TimerStore>()(
       },
 
       // Start working on a property (stops any current entry first)
-      startPropertyWork: async (propertyId, coords) => {
+      startPropertyWork: async (propertyId, activityType, coords) => {
         const supabase = getClient();
         const { workDay, activeEntry } = get();
 
@@ -252,6 +260,7 @@ export const useTimerStore = create<TimerStore>()(
             user_id: user.id,
             property_id: propertyId,
             entry_type: 'property',
+            activity_type: activityType,
             start_time: now,
             status: 'active',
             start_latitude: coords?.lat ?? null,
@@ -274,6 +283,7 @@ export const useTimerStore = create<TimerStore>()(
           activeEntry: entry,
           activeProperty: property,
           currentEntryType: 'property',
+          currentActivityType: activityType,
           elapsedSeconds: 0,
         });
 
@@ -291,14 +301,39 @@ export const useTimerStore = create<TimerStore>()(
         // Stop the property entry
         await get().stopCurrentEntry(coords);
 
+        // Clear activity type
+        set({ currentActivityType: null });
+
         // Automatically start travel time
         await get().startTravelTime();
+      },
+
+      // Update activity type for current property work
+      updateActivityType: async (activityType) => {
+        const supabase = getClient();
+        const { activeEntry, currentEntryType } = get();
+
+        if (!activeEntry || currentEntryType !== 'property') {
+          throw new Error('Keine aktive Liegenschaftsarbeit');
+        }
+
+        const { error } = await (supabase
+          .from('time_entries') as any)
+          .update({ activity_type: activityType })
+          .eq('id', activeEntry.id);
+
+        if (error) throw error;
+
+        set({
+          activeEntry: { ...activeEntry, activity_type: activityType },
+          currentActivityType: activityType,
+        });
       },
 
       // Start break (remembers previous state)
       startBreak: async () => {
         const supabase = getClient();
-        const { workDay, activeEntry, currentEntryType, activeProperty } = get();
+        const { workDay, activeEntry, currentEntryType, currentActivityType, activeProperty } = get();
 
         // Refresh session first
         const { data: sessionData } = await supabase.auth.getSession();
@@ -315,6 +350,7 @@ export const useTimerStore = create<TimerStore>()(
 
         // Remember previous state for resuming after break
         const prevType = currentEntryType;
+        const prevActivityType = currentActivityType;
         const prevPropertyId = activeProperty?.id || null;
 
         // Stop current entry if any
@@ -344,7 +380,9 @@ export const useTimerStore = create<TimerStore>()(
           activeEntry: entry,
           activeProperty: null,
           currentEntryType: 'break',
+          currentActivityType: null,
           previousEntryType: prevType,
+          previousActivityType: prevActivityType,
           previousPropertyId: prevPropertyId,
           elapsedSeconds: 0,
         });
@@ -355,7 +393,7 @@ export const useTimerStore = create<TimerStore>()(
       // End break (resumes previous state)
       endBreak: async () => {
         const supabase = getClient();
-        const { activeEntry, currentEntryType, previousEntryType, previousPropertyId } = get();
+        const { activeEntry, currentEntryType, previousEntryType, previousActivityType, previousPropertyId } = get();
 
         // Refresh session first
         const { data: sessionData } = await supabase.auth.getSession();
@@ -371,9 +409,9 @@ export const useTimerStore = create<TimerStore>()(
         await get().stopCurrentEntry();
 
         // Resume previous state
-        if (previousEntryType === 'property' && previousPropertyId) {
-          // Resume property work on the same property
-          await get().startPropertyWork(previousPropertyId);
+        if (previousEntryType === 'property' && previousPropertyId && previousActivityType) {
+          // Resume property work on the same property with same activity
+          await get().startPropertyWork(previousPropertyId, previousActivityType);
         } else {
           // Default to travel time
           await get().startTravelTime();
@@ -382,6 +420,7 @@ export const useTimerStore = create<TimerStore>()(
         // Clear previous state
         set({
           previousEntryType: null,
+          previousActivityType: null,
           previousPropertyId: null,
         });
       },
@@ -433,6 +472,10 @@ export const useTimerStore = create<TimerStore>()(
 
       setCurrentEntryType: (type) => {
         set({ currentEntryType: type });
+      },
+
+      setCurrentActivityType: (type) => {
+        set({ currentActivityType: type });
       },
 
       initializeFromServer: async () => {
@@ -541,6 +584,7 @@ export const useTimerStore = create<TimerStore>()(
               activeEntry: entry,
               activeProperty: property,
               currentEntryType: entry.entry_type,
+              currentActivityType: entry.activity_type || null,
             });
           }
         } else {
@@ -562,7 +606,9 @@ export const useTimerStore = create<TimerStore>()(
         activeEntry: state.activeEntry,
         activeProperty: state.activeProperty,
         currentEntryType: state.currentEntryType,
+        currentActivityType: state.currentActivityType,
         previousEntryType: state.previousEntryType,
+        previousActivityType: state.previousActivityType,
         previousPropertyId: state.previousPropertyId,
       }),
     }

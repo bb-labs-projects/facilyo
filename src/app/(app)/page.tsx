@@ -19,22 +19,26 @@ import { TimeEntryList } from '@/components/time-tracking/work-day-card';
 import { PropertyTimeSummary } from '@/components/time-tracking/property-time-summary';
 import { ActiveChecklists } from '@/components/time-tracking/active-checklists';
 import { ActiveAufgaben } from '@/components/time-tracking/active-aufgaben';
+import { ActivityTypeSelector, ActivityTypeBadge } from '@/components/time-tracking/activity-type-selector';
 import { useTimeTracking } from '@/hooks/use-time-tracking';
 import { useGeolocation } from '@/hooks/use-geolocation';
 import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
 import { swissFormat } from '@/lib/i18n';
-import type { Property, TimeEntryWithProperty } from '@/types/database';
+import type { Property, TimeEntryWithProperty, ActivityType } from '@/types/database';
 
 export default function HomePage() {
   const profile = useAuthStore((state) => state.profile);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [selectedActivityType, setSelectedActivityType] = useState<ActivityType | null>(null);
+  const [isChangingActivity, setIsChangingActivity] = useState(false);
 
   const {
     workDay,
     activeEntry,
     activeProperty,
     currentEntryType,
+    currentActivityType,
     isTimerActive,
     isWorkDayActive,
     isOnBreak,
@@ -45,6 +49,7 @@ export default function HomePage() {
     endWorkDay,
     startPropertyWork,
     stopPropertyWork,
+    updateActivityType,
     startBreak,
     endBreak,
   } = useTimeTracking();
@@ -156,12 +161,28 @@ export default function HomePage() {
       return;
     }
 
+    if (!selectedActivityType) {
+      toast.error('Bitte wählen Sie eine Tätigkeit');
+      return;
+    }
+
     try {
-      await startPropertyWork(selectedProperty.id, coords || undefined);
+      await startPropertyWork(selectedProperty.id, selectedActivityType, coords || undefined);
       toast.success(`Arbeit auf ${selectedProperty.name} gestartet`);
+      setSelectedActivityType(null);
       refetchEntries();
     } catch (error: any) {
       toast.error(error.message || 'Fehler beim Starten der Arbeit');
+    }
+  };
+
+  const handleChangeActivity = async (newActivity: ActivityType) => {
+    try {
+      await updateActivityType(newActivity);
+      setIsChangingActivity(false);
+      toast.success('Tätigkeit geändert');
+    } catch (error: any) {
+      toast.error(error.message || 'Fehler beim Ändern der Tätigkeit');
     }
   };
 
@@ -320,23 +341,61 @@ export default function HomePage() {
                     isLoadingLocation={isLoadingLocation}
                     onRequestLocation={handleRequestLocation}
                     autoSelectNearest={true}
-                    className="mb-6"
+                    className="mb-4"
                   />
+
+                  {/* Activity Type Selector - only show when property is selected */}
+                  {selectedProperty && (
+                    <ActivityTypeSelector
+                      selectedActivity={selectedActivityType}
+                      onSelect={setSelectedActivityType}
+                      className="mb-6"
+                    />
+                  )}
+
                   <TravelControls
                     onStartProperty={handleStartPropertyWork}
                     onStartBreak={handleStartBreak}
                     onEndWorkDay={handleEndWorkDay}
                     showPropertyButton={!!selectedProperty}
-                    propertyDisabled={!selectedProperty}
+                    propertyDisabled={!selectedProperty || !selectedActivityType}
                   />
                 </>
               )}
 
               {isWorkingOnProperty && (
-                <PropertyControls
-                  onStopProperty={handleStopPropertyWork}
-                  onStartBreak={handleStartBreak}
-                />
+                <>
+                  {/* Current Activity Type */}
+                  {currentActivityType && !isChangingActivity && (
+                    <div className="flex justify-center mb-4">
+                      <ActivityTypeBadge
+                        activity={currentActivityType}
+                        onChangeClick={() => setIsChangingActivity(true)}
+                      />
+                    </div>
+                  )}
+
+                  {/* Activity Change Selector */}
+                  {isChangingActivity && (
+                    <div className="mb-4">
+                      <ActivityTypeSelector
+                        selectedActivity={currentActivityType}
+                        onSelect={handleChangeActivity}
+                      />
+                      <button
+                        onClick={() => setIsChangingActivity(false)}
+                        className="mt-2 w-full text-sm text-muted-foreground hover:text-foreground"
+                      >
+                        Abbrechen
+                      </button>
+                    </div>
+                  )}
+
+                  <PropertyControls
+                    onStopProperty={handleStopPropertyWork}
+                    onStartBreak={handleStartBreak}
+                  />
+                </>
               )}
 
               {isOnBreak && (

@@ -22,6 +22,7 @@ export type PermissionName =
 export type PropertyType = 'residential' | 'commercial' | 'industrial' | 'mixed';
 export type TimeEntryStatus = 'active' | 'paused' | 'completed';
 export type TimeEntryType = 'property' | 'travel' | 'break';
+export type ActivityType = 'hauswartung' | 'rasen_maehen' | 'hecken_schneiden' | 'regie';
 export type IssuePriority = 'low' | 'medium' | 'high' | 'urgent';
 export type IssueStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
 export type IssueCategory = 'damage' | 'cleaning' | 'safety' | 'maintenance' | 'other';
@@ -177,6 +178,7 @@ export interface Database {
           user_id: string;
           property_id: string | null;
           entry_type: TimeEntryType;
+          activity_type: ActivityType | null;
           start_time: string;
           end_time: string | null;
           pause_duration: number;
@@ -195,6 +197,7 @@ export interface Database {
           user_id: string;
           property_id?: string | null;
           entry_type?: TimeEntryType;
+          activity_type?: ActivityType | null;
           start_time: string;
           end_time?: string | null;
           pause_duration?: number;
@@ -213,6 +216,7 @@ export interface Database {
           user_id?: string;
           property_id?: string | null;
           entry_type?: TimeEntryType;
+          activity_type?: ActivityType | null;
           start_time?: string;
           end_time?: string | null;
           pause_duration?: number;
