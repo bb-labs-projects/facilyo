@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Building2, Plus, MapPin, Edit, Trash2, Search, Power } from 'lucide-react';
+import { Building2, Plus, MapPin, Edit, Trash2, Search, Power, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
@@ -26,7 +26,8 @@ import {
 import { usePermissions } from '@/hooks/use-permissions';
 import { getClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
-import type { Property, PropertyInsert, PropertyUpdate, PropertyType } from '@/types/database';
+import type { Property, PropertyInsert, PropertyUpdate, PropertyType, Profile } from '@/types/database';
+import { getInitials } from '@/lib/utils';
 
 const propertyTypeLabels: Record<PropertyType, string> = {
   residential: 'Wohngebäude',
@@ -48,6 +49,8 @@ export default function AdminPropertiesPage() {
   const [deletingProperty, setDeletingProperty] = useState<Property | null>(null);
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
   const [deactivatingProperty, setDeactivatingProperty] = useState<Property | null>(null);
+  const [showUsersSheet, setShowUsersSheet] = useState(false);
+  const [assigningProperty, setAssigningProperty] = useState<Property | null>(null);
 
   // Form state
   const [name, setName] = useState('');
@@ -76,6 +79,39 @@ export default function AdminPropertiesPage() {
       if (error) throw error;
       return data as Property[];
     },
+  });
+
+  // Fetch all users (employees)
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ['all-users-for-assignment'],
+    queryFn: async () => {
+      const supabase = getClient();
+      const { data, error } = await (supabase as any)
+        .from('profiles')
+        .select('*')
+        .eq('is_active', true)
+        .order('first_name');
+
+      if (error) throw error;
+      return data as Profile[];
+    },
+  });
+
+  // Fetch property assignments for the selected property
+  const { data: propertyAssignments = [] } = useQuery({
+    queryKey: ['property-assignments', assigningProperty?.id],
+    queryFn: async () => {
+      if (!assigningProperty) return [];
+      const supabase = getClient();
+      const { data, error } = await (supabase as any)
+        .from('property_assignments')
+        .select('user_id')
+        .eq('property_id', assigningProperty.id);
+
+      if (error) throw error;
+      return data.map((a: { user_id: string }) => a.user_id) as string[];
+    },
+    enabled: !!assigningProperty,
   });
 
   // Helper to ensure valid session before database operations
@@ -250,6 +286,70 @@ export default function AdminPropertiesPage() {
       queryClient.invalidateQueries({ queryKey: ['admin-properties'] });
       setShowDeactivateDialog(false);
       setDeactivatingProperty(null);
+    },
+    onError: (error: Error) => {
+      toast.error(`Fehler: ${error.message}`);
+    },
+  });
+
+  // Toggle user assignment to property
+  const toggleUserAssignmentMutation = useMutation({
+    mutationFn: async ({ propertyId, userId, assign }: { propertyId: string; userId: string; assign: boolean }) => {
+      const supabase = getClient();
+      await ensureValidSession();
+
+      if (assign) {
+        const { error } = await (supabase as any)
+          .from('property_assignments')
+          .insert({ property_id: propertyId, user_id: userId });
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase as any)
+          .from('property_assignments')
+          .delete()
+          .eq('property_id', propertyId)
+          .eq('user_id', userId);
+        if (error) throw error;
+      }
+      return { propertyId, userId, assign };
+    },
+    onSuccess: () => {
+      toast.success('Zuweisung aktualisiert');
+      queryClient.invalidateQueries({ queryKey: ['property-assignments', assigningProperty?.id] });
+    },
+    onError: (error: Error) => {
+      toast.error(`Fehler: ${error.message}`);
+    },
+  });
+
+  // Assign/unassign all users to property
+  const toggleAllUsersMutation = useMutation({
+    mutationFn: async ({ propertyId, assign }: { propertyId: string; assign: boolean }) => {
+      const supabase = getClient();
+      await ensureValidSession();
+
+      if (assign) {
+        // Get currently assigned user IDs
+        const unassignedUsers = allUsers.filter(u => !propertyAssignments.includes(u.id));
+        if (unassignedUsers.length > 0) {
+          const { error } = await (supabase as any)
+            .from('property_assignments')
+            .insert(unassignedUsers.map(u => ({ property_id: propertyId, user_id: u.id })));
+          if (error) throw error;
+        }
+      } else {
+        // Remove all assignments for this property
+        const { error } = await (supabase as any)
+          .from('property_assignments')
+          .delete()
+          .eq('property_id', propertyId);
+        if (error) throw error;
+      }
+      return { propertyId, assign };
+    },
+    onSuccess: (_, { assign }) => {
+      toast.success(assign ? 'Allen Mitarbeitern zugewiesen' : 'Alle Zuweisungen entfernt');
+      queryClient.invalidateQueries({ queryKey: ['property-assignments', assigningProperty?.id] });
     },
     onError: (error: Error) => {
       toast.error(`Fehler: ${error.message}`);
@@ -481,7 +581,19 @@ export default function AdminPropertiesPage() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        onClick={() => {
+                          setAssigningProperty(property);
+                          setShowUsersSheet(true);
+                        }}
+                        title="Mitarbeiter zuweisen"
+                      >
+                        <Users className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => openEditForm(property)}
+                        title="Bearbeiten"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -492,6 +604,7 @@ export default function AdminPropertiesPage() {
                           setDeletingProperty(property);
                           setShowDeleteDialog(true);
                         }}
+                        title="Löschen"
                       >
                         <Trash2 className="h-4 w-4 text-error-600" />
                       </Button>
@@ -711,6 +824,95 @@ export default function AdminPropertiesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* User assignments sheet */}
+      <Sheet open={showUsersSheet} onOpenChange={(open) => {
+        setShowUsersSheet(open);
+        if (!open) setAssigningProperty(null);
+      }}>
+        <SheetContent side="bottom" className="h-[70vh]">
+          <SheetHeader>
+            <SheetTitle>
+              Mitarbeiter für {assigningProperty?.name}
+            </SheetTitle>
+          </SheetHeader>
+
+          {/* Bulk action buttons */}
+          <div className="mt-4 flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => assigningProperty && toggleAllUsersMutation.mutate({ propertyId: assigningProperty.id, assign: true })}
+              disabled={toggleAllUsersMutation.isPending || !assigningProperty || propertyAssignments.length === allUsers.length}
+            >
+              Allen zuweisen
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => assigningProperty && toggleAllUsersMutation.mutate({ propertyId: assigningProperty.id, assign: false })}
+              disabled={toggleAllUsersMutation.isPending || !assigningProperty || propertyAssignments.length === 0}
+            >
+              Alle entfernen
+            </Button>
+          </div>
+
+          <div className="mt-4 space-y-2 overflow-y-auto max-h-[calc(70vh-160px)]">
+            {allUsers.map((user) => {
+              const isAssigned = propertyAssignments.includes(user.id);
+              const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') || 'Kein Name';
+              const initials = getInitials(user.first_name, user.last_name);
+
+              return (
+                <button
+                  key={user.id}
+                  onClick={() =>
+                    assigningProperty &&
+                    toggleUserAssignmentMutation.mutate({
+                      propertyId: assigningProperty.id,
+                      userId: user.id,
+                      assign: !isAssigned,
+                    })
+                  }
+                  className={cn(
+                    'w-full p-3 text-left rounded-lg border transition-colors flex items-center justify-between',
+                    isAssigned
+                      ? 'border-primary-500 bg-primary-50'
+                      : 'border-muted hover:border-primary-300'
+                  )}
+                  disabled={toggleUserAssignmentMutation.isPending}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm font-semibold text-primary-700">
+                        {initials}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="font-medium">{fullName}</p>
+                      <p className="text-sm text-muted-foreground">{user.email}</p>
+                    </div>
+                  </div>
+                  <div
+                    className={cn(
+                      'w-5 h-5 rounded border-2 flex items-center justify-center',
+                      isAssigned
+                        ? 'bg-primary-600 border-primary-600'
+                        : 'border-muted-foreground'
+                    )}
+                  >
+                    {isAssigned && (
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </SheetContent>
+      </Sheet>
     </PageContainer>
   );
 }

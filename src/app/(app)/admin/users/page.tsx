@@ -193,6 +193,55 @@ export default function AdminUsersPage() {
     },
   });
 
+  // Assign/unassign all properties mutation
+  const toggleAllPropertiesMutation = useMutation({
+    mutationFn: async ({ userId, assign }: { userId: string; assign: boolean }) => {
+      const supabase = getClient();
+      if (assign) {
+        // Get currently assigned property IDs
+        const currentAssignments = selectedUser?.property_assignments.map(a => a.property_id) || [];
+        // Filter to only unassigned properties
+        const unassignedProperties = allProperties.filter(p => !currentAssignments.includes(p.id));
+
+        if (unassignedProperties.length > 0) {
+          const { error } = await (supabase as any)
+            .from('property_assignments')
+            .insert(unassignedProperties.map(p => ({ user_id: userId, property_id: p.id })));
+          if (error) throw error;
+        }
+      } else {
+        // Remove all assignments for this user
+        const { error } = await (supabase as any)
+          .from('property_assignments')
+          .delete()
+          .eq('user_id', userId);
+        if (error) throw error;
+      }
+      return { userId, assign };
+    },
+    onSuccess: (_, { assign }) => {
+      toast.success(assign ? 'Alle Liegenschaften zugewiesen' : 'Alle Zuweisungen entfernt');
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      // Update selectedUser state
+      if (selectedUser) {
+        if (assign) {
+          setSelectedUser({
+            ...selectedUser,
+            property_assignments: allProperties.map(p => ({ property_id: p.id, property: p }))
+          });
+        } else {
+          setSelectedUser({
+            ...selectedUser,
+            property_assignments: []
+          });
+        }
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(`Fehler: ${error.message}`);
+    },
+  });
+
   // Create user mutation
   const createUserMutation = useMutation({
     mutationFn: async ({ username, email, firstName, lastName, role }: {
@@ -625,7 +674,27 @@ export default function AdminUsersPage() {
             </SheetTitle>
           </SheetHeader>
 
-          <div className="mt-4 space-y-2 overflow-y-auto max-h-[calc(70vh-100px)]">
+          {/* Bulk action buttons */}
+          <div className="mt-4 flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => selectedUser && toggleAllPropertiesMutation.mutate({ userId: selectedUser.id, assign: true })}
+              disabled={toggleAllPropertiesMutation.isPending || !selectedUser || selectedUser.property_assignments.length === allProperties.length}
+            >
+              Alle zuweisen
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => selectedUser && toggleAllPropertiesMutation.mutate({ userId: selectedUser.id, assign: false })}
+              disabled={toggleAllPropertiesMutation.isPending || !selectedUser || selectedUser.property_assignments.length === 0}
+            >
+              Alle entfernen
+            </Button>
+          </div>
+
+          <div className="mt-4 space-y-2 overflow-y-auto max-h-[calc(70vh-160px)]">
             {allProperties.map((property) => {
               const isAssigned = selectedUser
                 ? getUserAssignedPropertyIds(selectedUser).includes(property.id)
