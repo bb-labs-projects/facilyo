@@ -78,17 +78,50 @@ export default function AdminPropertiesPage() {
     },
   });
 
+  // Helper to ensure valid session before database operations
+  const ensureValidSession = async () => {
+    const supabase = getClient();
+    const { data: { session }, error } = await supabase.auth.getSession();
+
+    if (error || !session) {
+      // Try to refresh the session
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
+        throw new Error('Sitzung abgelaufen. Bitte melden Sie sich erneut an.');
+      }
+    }
+  };
+
   // Create mutation
   const createMutation = useMutation({
     mutationFn: async (data: PropertyInsert) => {
       const supabase = getClient();
+
+      // Ensure valid session before insert
+      await ensureValidSession();
+
       const { data: result, error } = await (supabase as any)
         .from('properties')
         .insert(data)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Check if it's a permission/auth error
+        if (error.code === '42501' || error.message?.includes('permission') || error.code === 'PGRST301') {
+          // Try refreshing session and retry once
+          await supabase.auth.refreshSession();
+          const { data: retryResult, error: retryError } = await (supabase as any)
+            .from('properties')
+            .insert(data)
+            .select()
+            .single();
+
+          if (retryError) throw retryError;
+          return retryResult as Property;
+        }
+        throw error;
+      }
       return result as Property;
     },
     onSuccess: () => {
@@ -105,6 +138,10 @@ export default function AdminPropertiesPage() {
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: PropertyUpdate }) => {
       const supabase = getClient();
+
+      // Ensure valid session before update
+      await ensureValidSession();
+
       const { data: result, error } = await (supabase as any)
         .from('properties')
         .update(data)
@@ -112,7 +149,22 @@ export default function AdminPropertiesPage() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Check if it's a permission/auth error
+        if (error.code === '42501' || error.message?.includes('permission') || error.code === 'PGRST301') {
+          await supabase.auth.refreshSession();
+          const { data: retryResult, error: retryError } = await (supabase as any)
+            .from('properties')
+            .update(data)
+            .eq('id', id)
+            .select()
+            .single();
+
+          if (retryError) throw retryError;
+          return retryResult as Property;
+        }
+        throw error;
+      }
       return result as Property;
     },
     onSuccess: () => {
@@ -129,12 +181,29 @@ export default function AdminPropertiesPage() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const supabase = getClient();
+
+      // Ensure valid session before delete
+      await ensureValidSession();
+
       const { error } = await (supabase as any)
         .from('properties')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        // Check if it's a permission/auth error
+        if (error.code === '42501' || error.message?.includes('permission') || error.code === 'PGRST301') {
+          await supabase.auth.refreshSession();
+          const { error: retryError } = await (supabase as any)
+            .from('properties')
+            .delete()
+            .eq('id', id);
+
+          if (retryError) throw retryError;
+          return;
+        }
+        throw error;
+      }
     },
     onSuccess: () => {
       toast.success('Liegenschaft wurde gelöscht');
@@ -151,12 +220,29 @@ export default function AdminPropertiesPage() {
   const toggleActiveMutation = useMutation({
     mutationFn: async ({ propertyId, isActive }: { propertyId: string; isActive: boolean }) => {
       const supabase = getClient();
+
+      // Ensure valid session before toggle
+      await ensureValidSession();
+
       const { error } = await (supabase as any)
         .from('properties')
         .update({ is_active: isActive })
         .eq('id', propertyId);
 
-      if (error) throw error;
+      if (error) {
+        // Check if it's a permission/auth error
+        if (error.code === '42501' || error.message?.includes('permission') || error.code === 'PGRST301') {
+          await supabase.auth.refreshSession();
+          const { error: retryError } = await (supabase as any)
+            .from('properties')
+            .update({ is_active: isActive })
+            .eq('id', propertyId);
+
+          if (retryError) throw retryError;
+          return { propertyId, isActive };
+        }
+        throw error;
+      }
       return { propertyId, isActive };
     },
     onSuccess: (_, { isActive }) => {
