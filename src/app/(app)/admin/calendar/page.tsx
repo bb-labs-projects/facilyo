@@ -856,7 +856,9 @@ function EditEntryDialog({ entry, properties, onClose, onSave, isLoading }: Edit
             <Label>Eintragstyp</Label>
             <Select value={entryType} onValueChange={(v) => setEntryType(v as TimeEntryType)}>
               <SelectTrigger>
-                <SelectValue />
+                <span>
+                  {entryType === 'property' ? 'Liegenschaft' : entryType === 'travel' ? 'Fahrzeit' : 'Pause'}
+                </span>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="property">Liegenschaft</SelectItem>
@@ -876,7 +878,11 @@ function EditEntryDialog({ entry, properties, onClose, onSave, isLoading }: Edit
                   onValueChange={(v) => setPropertyId(v || null)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Liegenschaft wählen..." />
+                    <span className={!propertyId ? 'text-muted-foreground' : ''}>
+                      {propertyId
+                        ? properties.find(p => p.id === propertyId)?.name || 'Liegenschaft wählen...'
+                        : 'Liegenschaft wählen...'}
+                    </span>
                   </SelectTrigger>
                   <SelectContent>
                     {properties.map((property) => (
@@ -895,7 +901,14 @@ function EditEntryDialog({ entry, properties, onClose, onSave, isLoading }: Edit
                   onValueChange={(v) => setActivityType((v as ActivityType) || null)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Tätigkeit wählen..." />
+                    <span className={!activityType ? 'text-muted-foreground' : ''}>
+                      {activityType
+                        ? activityType === 'hauswartung' ? 'Hauswartung'
+                          : activityType === 'rasen_maehen' ? 'Rasen mähen'
+                          : activityType === 'hecken_schneiden' ? 'Hecken schneiden'
+                          : 'Regie'
+                        : 'Tätigkeit wählen...'}
+                    </span>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="hauswartung">Hauswartung</SelectItem>
