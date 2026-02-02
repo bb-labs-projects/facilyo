@@ -1,10 +1,10 @@
 'use client';
 
-import { Building2, Car, Coffee } from 'lucide-react';
+import { Building2, Car, Coffee, Wrench, Trees, Scissors, ClipboardList } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { swissFormat } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
-import type { TimeEntryWithProperty, TimeEntryType } from '@/types/database';
+import type { TimeEntryWithProperty, TimeEntryType, ActivityType } from '@/types/database';
 
 interface PropertyTimeSummaryProps {
   entries: TimeEntryWithProperty[];
@@ -17,6 +17,7 @@ interface EntrySummary {
   type: TimeEntryType;
   entryCount: number;
   totalSeconds: number;
+  activityBreakdown: Map<ActivityType, number>;
 }
 
 // Entry type display configuration
@@ -40,6 +41,18 @@ const ENTRY_TYPE_CONFIG: Record<TimeEntryType, {
     icon: Coffee,
     color: 'text-orange-600',
   },
+};
+
+// Activity type display configuration
+const ACTIVITY_TYPE_CONFIG: Record<ActivityType, {
+  label: string;
+  icon: typeof Wrench;
+  color: string;
+}> = {
+  hauswartung: { label: 'Hauswartung', icon: Wrench, color: 'text-blue-600' },
+  rasen_maehen: { label: 'Rasen', icon: Trees, color: 'text-green-600' },
+  hecken_schneiden: { label: 'Hecken', icon: Scissors, color: 'text-emerald-600' },
+  regie: { label: 'Regie', icon: ClipboardList, color: 'text-purple-600' },
 };
 
 export function PropertyTimeSummary({ entries, className }: PropertyTimeSummaryProps) {
@@ -75,11 +88,18 @@ export function PropertyTimeSummary({ entries, className }: PropertyTimeSummaryP
         type: entryType,
         entryCount: 0,
         totalSeconds: 0,
+        activityBreakdown: new Map(),
       };
     }
 
     acc[key].entryCount += 1;
     acc[key].totalSeconds += Math.max(0, duration);
+
+    // Track activity breakdown for property entries
+    if (entryType === 'property' && entry.activity_type) {
+      const currentActivityTime = acc[key].activityBreakdown.get(entry.activity_type) || 0;
+      acc[key].activityBreakdown.set(entry.activity_type, currentActivityTime + Math.max(0, duration));
+    }
 
     return acc;
   }, {});
@@ -104,6 +124,12 @@ export function PropertyTimeSummary({ entries, className }: PropertyTimeSummaryP
     return null;
   }
 
+  // Helper to format minutes
+  const formatMinutes = (seconds: number): string => {
+    const minutes = Math.round(seconds / 60);
+    return `${minutes}m`;
+  };
+
   return (
     <Card className={className}>
       <CardHeader className="pb-2">
@@ -115,22 +141,46 @@ export function PropertyTimeSummary({ entries, className }: PropertyTimeSummaryP
         {sortedSummaries.map((summary) => {
           const config = ENTRY_TYPE_CONFIG[summary.type];
           const Icon = config.icon;
+          const hasActivities = summary.activityBreakdown.size > 0;
 
           return (
             <div
               key={summary.id}
-              className="flex items-center justify-between py-2 border-b last:border-0"
+              className="py-2 border-b last:border-0"
             >
-              <div className="flex items-center gap-2 min-w-0 flex-1">
-                <Icon className={cn('h-4 w-4 flex-shrink-0', config.color)} />
-                <span className="font-medium truncate">{summary.name}</span>
-                <span className="text-xs text-muted-foreground flex-shrink-0">
-                  {summary.entryCount} {summary.entryCount === 1 ? 'Eintrag' : 'Einträge'}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <Icon className={cn('h-4 w-4 flex-shrink-0', config.color)} />
+                  <span className="font-medium truncate">{summary.name}</span>
+                </div>
+                <span className="font-mono text-sm font-medium ml-2">
+                  {swissFormat.durationHuman(summary.totalSeconds)}
                 </span>
               </div>
-              <span className="font-mono text-sm font-medium ml-2">
-                {swissFormat.durationHuman(summary.totalSeconds)}
-              </span>
+
+              {/* Activity breakdown for property entries */}
+              {hasActivities && (
+                <div className="flex flex-wrap gap-2 mt-2 ml-6">
+                  {Array.from(summary.activityBreakdown.entries())
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([activityType, seconds]) => {
+                      const actConfig = ACTIVITY_TYPE_CONFIG[activityType];
+                      const ActivityIcon = actConfig.icon;
+                      return (
+                        <div
+                          key={activityType}
+                          className="flex items-center gap-1 text-xs"
+                          title={actConfig.label}
+                        >
+                          <ActivityIcon className={cn('h-3.5 w-3.5', actConfig.color)} />
+                          <span className="font-mono text-muted-foreground">
+                            {formatMinutes(seconds)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
             </div>
           );
         })}
