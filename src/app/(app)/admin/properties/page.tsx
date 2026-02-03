@@ -34,6 +34,8 @@ const propertyTypeLabels: Record<PropertyType, string> = {
   commercial: 'Gewerbe',
   industrial: 'Industrie',
   mixed: 'Gemischt',
+  office: 'Büro',
+  private_maintenance: 'Privatunterhalt',
 };
 
 export default function AdminPropertiesPage() {

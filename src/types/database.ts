@@ -21,7 +21,7 @@ export type PermissionName =
   | 'manage_role_permissions'
   | 'manage_user_calendar'
   | 'delete_activity';
-export type PropertyType = 'residential' | 'commercial' | 'industrial' | 'mixed';
+export type PropertyType = 'residential' | 'commercial' | 'industrial' | 'mixed' | 'office' | 'private_maintenance';
 export type TimeEntryStatus = 'active' | 'paused' | 'completed';
 export type TimeEntryType = 'property' | 'travel' | 'break';
 export type ActivityType = 'hauswartung' | 'rasen_maehen' | 'hecken_schneiden' | 'regie' | 'privatunterhalt' | 'buero';
