@@ -179,11 +179,15 @@ export const useAuthStore = create<AuthStore>()(
           if (error) throw error;
           const profileData = data as Profile;
           set({ profile: profileData });
-        } catch (error) {
-          // Ignore AbortError - happens when switching tabs quickly
-          if (error instanceof Error && error.message?.includes('AbortError')) {
+        } catch (error: unknown) {
+          // Ignore AbortError - happens when switching tabs quickly or rapid actions
+          const errorMessage = error instanceof Error
+            ? error.message
+            : (error as { message?: string })?.message || '';
+          if (errorMessage.includes('AbortError') || errorMessage.includes('aborted')) {
             return;
           }
+          // Only log non-abort errors
           console.error('Failed to fetch profile:', error);
         } finally {
           isRefreshingProfile = false;
