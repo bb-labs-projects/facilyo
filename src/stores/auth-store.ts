@@ -143,9 +143,21 @@ export const useAuthStore = create<AuthStore>()(
 
       refreshProfile: async () => {
         const supabase = getClient();
-        const { user } = get();
+        let { user } = get();
 
-        if (!user) return;
+        console.log('refreshProfile called, user:', user?.id);
+
+        if (!user) {
+          // Try to get user from session
+          const { data: { user: sessionUser } } = await supabase.auth.getUser();
+          if (sessionUser) {
+            set({ user: sessionUser, isAuthenticated: true });
+            user = sessionUser;
+          } else {
+            console.log('No user found in session');
+            return;
+          }
+        }
 
         try {
           const { data, error } = await supabase
@@ -155,8 +167,9 @@ export const useAuthStore = create<AuthStore>()(
             .single();
 
           if (error) throw error;
-
-          set({ profile: data });
+          const profileData = data as Profile;
+          console.log('Profile loaded:', profileData?.id);
+          set({ profile: profileData });
         } catch (error) {
           console.error('Failed to fetch profile:', error);
         }

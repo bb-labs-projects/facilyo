@@ -17,7 +17,8 @@ export default function AppLayout({
 }) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { isAuthenticated, isLoading } = useAuthStore();
+  const { isAuthenticated, isLoading, profile } = useAuthStore();
+  const refreshProfile = useAuthStore((state) => state.refreshProfile);
   const initializeTimer = useTimerStore((state) => state.initializeFromServer);
 
   // Prevent duplicate refresh calls
@@ -66,7 +67,12 @@ export default function AppLayout({
         }
       }
 
+      // Refresh profile first (queries depend on profile?.id)
+      console.log('Refreshing profile...');
+      await refreshProfile();
+
       // Cancel any stuck queries and refetch all data
+      console.log('Invalidating queries...');
       queryClient.cancelQueries();
       queryClient.invalidateQueries();
 
@@ -89,7 +95,7 @@ export default function AppLayout({
     } finally {
       isRefreshing.current = false;
     }
-  }, [isAuthenticated, initializeTimer, router, queryClient]);
+  }, [isAuthenticated, initializeTimer, refreshProfile, router, queryClient]);
 
   // Initialize timer state on mount
   useEffect(() => {
