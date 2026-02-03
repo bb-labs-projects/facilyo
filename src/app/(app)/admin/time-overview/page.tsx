@@ -35,7 +35,11 @@ import {
   endOfWeek,
   startOfMonth,
   endOfMonth,
+  startOfDay,
+  endOfDay,
   format,
+  addDays,
+  subDays,
   addWeeks,
   subWeeks,
   addMonths,
@@ -47,7 +51,7 @@ import { de } from 'date-fns/locale';
 import type { Profile, TimeEntry, WorkDay, Property, ActivityType, TimeEntryType } from '@/types/database';
 import * as XLSX from 'xlsx';
 
-type ViewMode = 'weekly' | 'monthly';
+type ViewMode = 'daily' | 'weekly' | 'monthly';
 
 interface TimeEntryWithProperty extends TimeEntry {
   property?: {
@@ -105,7 +109,12 @@ export default function TimeOverviewPage() {
   const [showFilters, setShowFilters] = useState(false);
 
   const dateRange = useMemo(() => {
-    if (viewMode === 'weekly') {
+    if (viewMode === 'daily') {
+      return {
+        start: startOfDay(currentDate),
+        end: endOfDay(currentDate),
+      };
+    } else if (viewMode === 'weekly') {
       return {
         start: startOfWeek(currentDate, { weekStartsOn: 1 }),
         end: endOfWeek(currentDate, { weekStartsOn: 1 }),
@@ -119,7 +128,9 @@ export default function TimeOverviewPage() {
   }, [viewMode, currentDate]);
 
   const dateRangeLabel = useMemo(() => {
-    if (viewMode === 'weekly') {
+    if (viewMode === 'daily') {
+      return format(dateRange.start, 'EEEE, dd. MMMM yyyy', { locale: de });
+    } else if (viewMode === 'weekly') {
       const start = format(dateRange.start, 'dd.MM.', { locale: de });
       const end = format(dateRange.end, 'dd.MM.yyyy', { locale: de });
       return `KW ${format(dateRange.start, 'w', { locale: de })} (${start} - ${end})`;
@@ -327,7 +338,9 @@ export default function TimeOverviewPage() {
   }, [filteredEntries]);
 
   const handlePrevious = () => {
-    if (viewMode === 'weekly') {
+    if (viewMode === 'daily') {
+      setCurrentDate(subDays(currentDate, 1));
+    } else if (viewMode === 'weekly') {
       setCurrentDate(subWeeks(currentDate, 1));
     } else {
       setCurrentDate(subMonths(currentDate, 1));
@@ -335,7 +348,9 @@ export default function TimeOverviewPage() {
   };
 
   const handleNext = () => {
-    if (viewMode === 'weekly') {
+    if (viewMode === 'daily') {
+      setCurrentDate(addDays(currentDate, 1));
+    } else if (viewMode === 'weekly') {
       setCurrentDate(addWeeks(currentDate, 1));
     } else {
       setCurrentDate(addMonths(currentDate, 1));
@@ -575,9 +590,14 @@ export default function TimeOverviewPage() {
 
     // Generate filename
     const filterSuffix = activeFilterCount > 0 ? '_gefiltert' : '';
-    const filename = viewMode === 'weekly'
-      ? `Zeitübersicht_KW${format(dateRange.start, 'w')}_${format(dateRange.start, 'yyyy')}${filterSuffix}.xlsx`
-      : `Zeitübersicht_${format(dateRange.start, 'MMMM_yyyy', { locale: de })}${filterSuffix}.xlsx`;
+    let filename: string;
+    if (viewMode === 'daily') {
+      filename = `Zeitübersicht_${format(dateRange.start, 'dd-MM-yyyy')}${filterSuffix}.xlsx`;
+    } else if (viewMode === 'weekly') {
+      filename = `Zeitübersicht_KW${format(dateRange.start, 'w')}_${format(dateRange.start, 'yyyy')}${filterSuffix}.xlsx`;
+    } else {
+      filename = `Zeitübersicht_${format(dateRange.start, 'MMMM_yyyy', { locale: de })}${filterSuffix}.xlsx`;
+    }
 
     XLSX.writeFile(wb, filename);
   };
@@ -707,6 +727,17 @@ export default function TimeOverviewPage() {
 
       {/* View Mode Toggle */}
       <div className="flex gap-2 mb-4">
+        <button
+          onClick={() => setViewMode('daily')}
+          className={cn(
+            'flex-1 py-2.5 px-4 rounded-lg text-sm font-medium transition-colors',
+            viewMode === 'daily'
+              ? 'bg-primary-600 text-white'
+              : 'bg-muted text-muted-foreground hover:bg-muted/80'
+          )}
+        >
+          Täglich
+        </button>
         <button
           onClick={() => setViewMode('weekly')}
           className={cn(
