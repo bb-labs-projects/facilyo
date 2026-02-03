@@ -325,7 +325,7 @@ export default function AdminChecklistsPage() {
     <PageContainer
       header={
         <Header
-          title="Checklisten-Vorlagen"
+          title="Checklisten"
           showBack
           rightElement={
             <Button size="icon" onClick={() => setShowForm(true)}>
@@ -343,10 +343,10 @@ export default function AdminChecklistsPage() {
       ) : Object.keys(templatesByProperty).length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <ClipboardList className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p>Keine Checklisten-Vorlagen vorhanden</p>
+          <p>Keine Checklisten vorhanden</p>
           <Button className="mt-4" onClick={() => setShowForm(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Erste Vorlage erstellen
+            Erste Checkliste erstellen
           </Button>
         </div>
       ) : (
