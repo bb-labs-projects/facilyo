@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { BottomNav } from '@/components/layout/bottom-nav';
 import { Sidebar } from '@/components/layout/sidebar';
@@ -18,9 +18,22 @@ export default function AppLayout({
   const { isAuthenticated, isLoading } = useAuthStore();
   const initializeTimer = useTimerStore((state) => state.initializeFromServer);
 
-  // Refresh session and timer state
+  // Prevent duplicate refresh calls
+  const isRefreshing = useRef(false);
+  const lastRefreshTime = useRef(0);
+
+  // Refresh session and timer state with debouncing
   const refreshState = useCallback(async () => {
     if (!isAuthenticated) return;
+
+    // Prevent duplicate calls within 1 second
+    const now = Date.now();
+    if (isRefreshing.current || now - lastRefreshTime.current < 1000) {
+      return;
+    }
+
+    isRefreshing.current = true;
+    lastRefreshTime.current = now;
 
     try {
       // Refresh Supabase session
@@ -30,7 +43,13 @@ export default function AppLayout({
       // Reinitialize timer from server
       await initializeTimer();
     } catch (error) {
+      // Ignore abort errors - they happen when switching tabs quickly
+      if (error instanceof Error && error.name === 'AbortError') {
+        return;
+      }
       console.error('Failed to refresh state:', error);
+    } finally {
+      isRefreshing.current = false;
     }
   }, [isAuthenticated, initializeTimer]);
 
@@ -49,14 +68,11 @@ export default function AppLayout({
       }
     };
 
+    // Only use visibilitychange - it's more reliable and prevents duplicate calls
     document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // Also refresh on focus (for browsers that don't fire visibilitychange)
-    window.addEventListener('focus', refreshState);
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', refreshState);
     };
   }, [refreshState]);
 
