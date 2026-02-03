@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Calendar, Clock, MapPin, Car, Coffee, Building2, Trash2, ChevronDown, ChevronUp, Wrench, Trees, Scissors, ClipboardList, Home, Briefcase } from 'lucide-react';
+import { Calendar, Clock, MapPin, Car, Coffee, Building2, Trash2, ChevronDown, ChevronUp, Wrench, Trees, Scissors, ClipboardList, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,8 +26,7 @@ const ACTIVITY_TYPE_CONFIG: Record<ActivityType, {
   rasen_maehen: { label: 'Rasen mähen', icon: Trees, color: 'text-green-600' },
   hecken_schneiden: { label: 'Hecken schneiden', icon: Scissors, color: 'text-emerald-600' },
   regie: { label: 'Regie', icon: ClipboardList, color: 'text-purple-600' },
-  privatunterhalt: { label: 'Privatunterhalt', icon: Home, color: 'text-rose-600' },
-  buero: { label: 'Büro', icon: Briefcase, color: 'text-slate-600' },
+  reinigung: { label: 'Reinigung', icon: Sparkles, color: 'text-cyan-600' },
 };
 
 // Entry type display configuration

@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { Car, Building2, Coffee, MapPin, Clock, FileText, Pencil, Wrench, Trees, Scissors, ClipboardList, Home, Briefcase } from 'lucide-react';
+import { Car, Building2, Coffee, MapPin, Clock, FileText, Pencil, Wrench, Trees, Scissors, ClipboardList, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { swissFormat } from '@/lib/i18n';
 import type { TimeEntryWithProperty, TimeEntryType, ActivityType } from '@/types/database';
@@ -52,8 +52,7 @@ const ACTIVITY_ICONS: Record<ActivityType, { icon: typeof Wrench; color: string 
   rasen_maehen: { icon: Trees, color: 'text-green-600' },
   hecken_schneiden: { icon: Scissors, color: 'text-emerald-600' },
   regie: { icon: ClipboardList, color: 'text-purple-600' },
-  privatunterhalt: { icon: Home, color: 'text-rose-600' },
-  buero: { icon: Briefcase, color: 'text-slate-600' },
+  reinigung: { icon: Sparkles, color: 'text-cyan-600' },
 };
 
 interface CalendarEntry extends TimeEntryWithProperty {

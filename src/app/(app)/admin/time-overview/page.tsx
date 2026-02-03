@@ -18,8 +18,7 @@ import {
   Trees,
   Scissors,
   ClipboardList,
-  Home,
-  Briefcase,
+  Sparkles,
   BarChart3,
   Users,
   TrendingUp,
@@ -70,8 +69,7 @@ const ACTIVITY_CONFIG: Record<ActivityType, { label: string; icon: typeof Wrench
   rasen_maehen: { label: 'Rasen mähen', icon: Trees, color: 'text-green-600' },
   hecken_schneiden: { label: 'Hecken schneiden', icon: Scissors, color: 'text-emerald-600' },
   regie: { label: 'Regie', icon: ClipboardList, color: 'text-purple-600' },
-  privatunterhalt: { label: 'Privatunterhalt', icon: Home, color: 'text-rose-600' },
-  buero: { label: 'Büro', icon: Briefcase, color: 'text-slate-600' },
+  reinigung: { label: 'Reinigung', icon: Sparkles, color: 'text-cyan-600' },
 };
 
 function formatDuration(seconds: number): string {

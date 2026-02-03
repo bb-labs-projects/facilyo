@@ -349,6 +349,7 @@ export default function HomePage() {
                     <ActivityTypeSelector
                       selectedActivity={selectedActivityType}
                       onSelect={setSelectedActivityType}
+                      propertyType={selectedProperty.type}
                       className="mb-6"
                     />
                   )}
@@ -381,6 +382,7 @@ export default function HomePage() {
                       <ActivityTypeSelector
                         selectedActivity={currentActivityType}
                         onSelect={handleChangeActivity}
+                        propertyType={activeProperty?.type}
                       />
                       <button
                         onClick={() => setIsChangingActivity(false)}

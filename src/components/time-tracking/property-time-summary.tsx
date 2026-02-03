@@ -1,6 +1,6 @@
 'use client';
 
-import { Building2, Car, Coffee, Wrench, Trees, Scissors, ClipboardList, Home, Briefcase } from 'lucide-react';
+import { Building2, Car, Coffee, Wrench, Trees, Scissors, ClipboardList, Sparkles } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { swissFormat } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
@@ -53,8 +53,7 @@ const ACTIVITY_TYPE_CONFIG: Record<ActivityType, {
   rasen_maehen: { label: 'Rasen', icon: Trees, color: 'text-green-600' },
   hecken_schneiden: { label: 'Hecken', icon: Scissors, color: 'text-emerald-600' },
   regie: { label: 'Regie', icon: ClipboardList, color: 'text-purple-600' },
-  privatunterhalt: { label: 'Privat', icon: Home, color: 'text-rose-600' },
-  buero: { label: 'Büro', icon: Briefcase, color: 'text-slate-600' },
+  reinigung: { label: 'Reinigung', icon: Sparkles, color: 'text-cyan-600' },
 };
 
 export function PropertyTimeSummary({ entries, className }: PropertyTimeSummaryProps) {

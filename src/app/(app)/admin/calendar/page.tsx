@@ -17,8 +17,7 @@ import {
   Trees,
   Scissors,
   ClipboardList,
-  Home,
-  Briefcase,
+  Sparkles,
   Plus,
   Pencil,
   Trash2,
@@ -87,8 +86,7 @@ const ACTIVITY_CONFIG: Record<ActivityType, { label: string; icon: typeof Wrench
   rasen_maehen: { label: 'Rasen mähen', icon: Trees, color: 'text-green-600 bg-green-50' },
   hecken_schneiden: { label: 'Hecken schneiden', icon: Scissors, color: 'text-emerald-600 bg-emerald-50' },
   regie: { label: 'Regie', icon: ClipboardList, color: 'text-purple-600 bg-purple-50' },
-  privatunterhalt: { label: 'Privatunterhalt', icon: Home, color: 'text-rose-600 bg-rose-50' },
-  buero: { label: 'Büro', icon: Briefcase, color: 'text-slate-600 bg-slate-50' },
+  reinigung: { label: 'Reinigung', icon: Sparkles, color: 'text-cyan-600 bg-cyan-50' },
 };
 
 // Entry type display configuration
