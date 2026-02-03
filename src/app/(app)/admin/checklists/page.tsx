@@ -8,6 +8,7 @@ import {
   Plus,
   Edit,
   Trash2,
+  Copy,
   GripVertical,
   Check,
   Type,
@@ -224,6 +225,21 @@ export default function AdminChecklistsPage() {
     setShowForm(true);
   };
 
+  const openCopyForm = (template: ChecklistTemplateWithProperty) => {
+    setName(`${template.name} (Kopie)`);
+    setPropertyId(template.property_id);
+    setIsActive(template.is_active);
+    // Create new IDs for copied items
+    const copiedItems = ((template.items as unknown as ChecklistItem[]) || []).map((item, index) => ({
+      ...item,
+      id: crypto.randomUUID(),
+      order: index,
+    }));
+    setItems(copiedItems);
+    setEditingTemplate(null); // null means create new
+    setShowForm(true);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -366,7 +382,16 @@ export default function AdminChecklistsPage() {
                             <Button
                               variant="ghost"
                               size="icon"
+                              onClick={() => openCopyForm(template)}
+                              title="Kopieren"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               onClick={() => openEditForm(template)}
+                              title="Bearbeiten"
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -377,6 +402,7 @@ export default function AdminChecklistsPage() {
                                 setDeletingTemplate(template);
                                 setShowDeleteDialog(true);
                               }}
+                              title="Löschen"
                             >
                               <Trash2 className="h-4 w-4 text-error-600" />
                             </Button>
