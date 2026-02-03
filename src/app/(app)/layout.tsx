@@ -67,8 +67,9 @@ export default function AppLayout({
       // Refresh profile (queries depend on profile?.id)
       await refreshProfile();
 
-      // Invalidate queries to refetch fresh data
-      queryClient.invalidateQueries();
+      // Note: Don't call queryClient.invalidateQueries() here!
+      // It's too aggressive and can interfere with ongoing mutations.
+      // Individual pages will refetch their data on mount/focus via their own query configs.
 
       // Reinitialize timer from server
       await initializeTimer();

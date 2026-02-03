@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { Building2, Wrench, Trees, Scissors, ClipboardList, Clock, Pencil } from 'lucide-react';
+import { Building2, Wrench, Trees, Scissors, ClipboardList, Home, Briefcase, Clock, Pencil } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -23,6 +23,8 @@ const ACTIVITY_CONFIG: Record<ActivityType, { label: string; icon: typeof Wrench
   rasen_maehen: { label: 'Rasen mähen', icon: Trees, color: 'text-green-600', bgColor: 'bg-green-50' },
   hecken_schneiden: { label: 'Hecken schneiden', icon: Scissors, color: 'text-emerald-600', bgColor: 'bg-emerald-50' },
   regie: { label: 'Regie', icon: ClipboardList, color: 'text-purple-600', bgColor: 'bg-purple-50' },
+  privatunterhalt: { label: 'Privatunterhalt', icon: Home, color: 'text-rose-600', bgColor: 'bg-rose-50' },
+  buero: { label: 'Büro', icon: Briefcase, color: 'text-slate-600', bgColor: 'bg-slate-50' },
 };
 
 interface MergedEntryEditSheetProps {

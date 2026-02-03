@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Building2, Plus, MapPin, Edit, Trash2, Search, Power, Users } from 'lucide-react';
@@ -114,17 +114,40 @@ export default function AdminPropertiesPage() {
     enabled: !!assigningProperty,
   });
 
+  // Lock to prevent concurrent session refreshes
+  const sessionRefreshLock = useRef(false);
+  const lastSessionCheck = useRef(0);
+
   // Helper to ensure valid session before database operations
   const ensureValidSession = async () => {
-    const supabase = getClient();
-    const { data: { session }, error } = await supabase.auth.getSession();
+    // Skip if we checked recently (within 5 seconds)
+    const now = Date.now();
+    if (now - lastSessionCheck.current < 5000) {
+      return;
+    }
 
-    if (error || !session) {
-      // Try to refresh the session
-      const { error: refreshError } = await supabase.auth.refreshSession();
-      if (refreshError) {
-        throw new Error('Sitzung abgelaufen. Bitte melden Sie sich erneut an.');
+    // Wait if another refresh is in progress
+    if (sessionRefreshLock.current) {
+      // Wait for the other refresh to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+      return;
+    }
+
+    sessionRefreshLock.current = true;
+    try {
+      const supabase = getClient();
+      const { data: { session }, error } = await supabase.auth.getSession();
+
+      if (error || !session) {
+        // Try to refresh the session
+        const { error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) {
+          throw new Error('Sitzung abgelaufen. Bitte melden Sie sich erneut an.');
+        }
       }
+      lastSessionCheck.current = now;
+    } finally {
+      sessionRefreshLock.current = false;
     }
   };
 

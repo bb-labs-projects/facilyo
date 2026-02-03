@@ -1,6 +1,6 @@
 'use client';
 
-import { Wrench, Trees, Scissors, ClipboardList } from 'lucide-react';
+import { Wrench, Trees, Scissors, ClipboardList, Home, Briefcase } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn, hapticFeedback } from '@/lib/utils';
 import type { ActivityType } from '@/types/database';
@@ -17,6 +17,8 @@ const ACTIVITY_TYPES: { value: ActivityType; label: string; icon: typeof Wrench 
   { value: 'rasen_maehen', label: 'Rasen mähen', icon: Trees },
   { value: 'hecken_schneiden', label: 'Hecken schneiden', icon: Scissors },
   { value: 'regie', label: 'Regie', icon: ClipboardList },
+  { value: 'privatunterhalt', label: 'Privatunterhalt', icon: Home },
+  { value: 'buero', label: 'Büro', icon: Briefcase },
 ];
 
 export function ActivityTypeSelector({
