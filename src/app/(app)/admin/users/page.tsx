@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueries, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Users, Shield, Building2, Search, UserPlus, KeyRound, Unlock, AlertCircle, Power } from 'lucide-react';
 import { toast } from 'sonner';
 import { Header, PageContainer } from '@/components/layout/header';
@@ -75,49 +75,55 @@ export default function AdminUsersPage() {
   const [newUserLastName, setNewUserLastName] = useState('');
   const [newUserRole, setNewUserRole] = useState<UserRole>('employee');
 
-  // Fetch all users with their auth credentials
-  const { data: users = [], isLoading } = useQuery({
-    queryKey: ['admin-users'],
-    queryFn: async () => {
-      const supabase = getClient();
-      const { data, error } = await (supabase as any)
-        .from('profiles')
-        .select(`
-          *,
-          property_assignments (
-            property_id,
-            property:properties (*)
-          ),
-          auth_credentials (
-            id,
-            user_id,
-            username,
-            must_change_password,
-            locked_until,
-            failed_attempts
-          )
-        `)
-        .order('first_name');
+  // Fetch users and properties in parallel for better performance
+  const [usersQuery, propertiesQuery] = useQueries({
+    queries: [
+      {
+        queryKey: ['admin-users'],
+        queryFn: async () => {
+          const supabase = getClient();
+          const { data, error } = await (supabase as any)
+            .from('profiles')
+            .select(`
+              *,
+              property_assignments (
+                property_id,
+                property:properties (*)
+              ),
+              auth_credentials (
+                id,
+                user_id,
+                username,
+                must_change_password,
+                locked_until,
+                failed_attempts
+              )
+            `)
+            .order('first_name');
 
-      if (error) throw error;
-      return data as UserWithAssignments[];
-    },
+          if (error) throw error;
+          return data as UserWithAssignments[];
+        },
+      },
+      {
+        queryKey: ['all-properties'],
+        queryFn: async () => {
+          const supabase = getClient();
+          const { data, error } = await (supabase as any)
+            .from('properties')
+            .select('*')
+            .order('name');
+
+          if (error) throw error;
+          return data as Property[];
+        },
+      },
+    ],
   });
 
-  // Fetch all properties
-  const { data: allProperties = [] } = useQuery({
-    queryKey: ['all-properties'],
-    queryFn: async () => {
-      const supabase = getClient();
-      const { data, error } = await (supabase as any)
-        .from('properties')
-        .select('*')
-        .order('name');
-
-      if (error) throw error;
-      return data as Property[];
-    },
-  });
+  const users = usersQuery.data ?? [];
+  const allProperties = propertiesQuery.data ?? [];
+  const isLoading = usersQuery.isLoading || propertiesQuery.isLoading;
 
   // Update role mutation
   const updateRoleMutation = useMutation({

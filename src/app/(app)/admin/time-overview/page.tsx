@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQueries } from '@tanstack/react-query';
 import {
   Clock,
   Download,
@@ -124,60 +124,65 @@ export default function TimeOverviewPage() {
     }
   }, [viewMode, dateRange]);
 
-  // Fetch all employees
-  const { data: employees = [] } = useQuery({
-    queryKey: ['all-employees'],
-    queryFn: async () => {
-      const supabase = getClient();
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('is_active', true)
-        .order('last_name');
+  // Fetch employees, properties, and work days in parallel for better performance
+  const [employeesQuery, propertiesQuery, workDaysQuery] = useQueries({
+    queries: [
+      {
+        queryKey: ['all-employees'],
+        queryFn: async () => {
+          const supabase = getClient();
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('is_active', true)
+            .order('last_name');
 
-      if (error) throw error;
-      return data as Profile[];
-    },
+          if (error) throw error;
+          return data as Profile[];
+        },
+      },
+      {
+        queryKey: ['all-properties'],
+        queryFn: async () => {
+          const supabase = getClient();
+          const { data, error } = await supabase
+            .from('properties')
+            .select('*')
+            .eq('is_active', true)
+            .order('name');
+
+          if (error) throw error;
+          return data as Property[];
+        },
+      },
+      {
+        queryKey: ['admin-time-overview', format(dateRange.start, 'yyyy-MM-dd'), format(dateRange.end, 'yyyy-MM-dd')],
+        queryFn: async () => {
+          const supabase = getClient();
+          const { data, error } = await supabase
+            .from('work_days')
+            .select(`
+              *,
+              time_entries (
+                *,
+                property:properties (id, name)
+              )
+            `)
+            .gte('date', format(dateRange.start, 'yyyy-MM-dd'))
+            .lte('date', format(dateRange.end, 'yyyy-MM-dd'))
+            .order('date', { ascending: false });
+
+          if (error) throw error;
+          return data as WorkDayWithEntries[];
+        },
+      },
+    ],
   });
 
-  // Fetch all properties
-  const { data: properties = [] } = useQuery({
-    queryKey: ['all-properties'],
-    queryFn: async () => {
-      const supabase = getClient();
-      const { data, error } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('is_active', true)
-        .order('name');
-
-      if (error) throw error;
-      return data as Property[];
-    },
-  });
-
-  // Fetch work days with time entries for all employees in date range
-  const { data: workDaysData = [], isLoading } = useQuery({
-    queryKey: ['admin-time-overview', format(dateRange.start, 'yyyy-MM-dd'), format(dateRange.end, 'yyyy-MM-dd')],
-    queryFn: async () => {
-      const supabase = getClient();
-      const { data, error } = await supabase
-        .from('work_days')
-        .select(`
-          *,
-          time_entries (
-            *,
-            property:properties (id, name)
-          )
-        `)
-        .gte('date', format(dateRange.start, 'yyyy-MM-dd'))
-        .lte('date', format(dateRange.end, 'yyyy-MM-dd'))
-        .order('date', { ascending: false });
-
-      if (error) throw error;
-      return data as WorkDayWithEntries[];
-    },
-  });
+  const employees = employeesQuery.data ?? [];
+  const properties = propertiesQuery.data ?? [];
+  const workDaysData = workDaysQuery.data ?? [];
+  const isLoading = workDaysQuery.isLoading;
 
   // Filter entries based on selected filters
   const filteredEntries = useMemo(() => {

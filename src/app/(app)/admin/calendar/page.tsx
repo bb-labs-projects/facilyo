@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   Calendar as CalendarIcon,
@@ -121,39 +121,44 @@ export default function CalendarPage() {
   // Check permission
   const hasPermission = permissions.canManageUserCalendar;
 
-  // Fetch all users
-  const { data: users = [] } = useQuery({
-    queryKey: ['users-for-calendar'],
-    queryFn: async () => {
-      const supabase = getClient();
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('is_active', true)
-        .order('last_name');
+  // Fetch users and properties in parallel for better performance
+  const [usersQuery, propertiesQuery] = useQueries({
+    queries: [
+      {
+        queryKey: ['users-for-calendar'],
+        queryFn: async () => {
+          const supabase = getClient();
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('is_active', true)
+            .order('last_name');
 
-      if (error) throw error;
-      return data as Profile[];
-    },
-    enabled: hasPermission,
+          if (error) throw error;
+          return data as Profile[];
+        },
+        enabled: hasPermission,
+      },
+      {
+        queryKey: ['properties-for-calendar'],
+        queryFn: async () => {
+          const supabase = getClient();
+          const { data, error } = await supabase
+            .from('properties')
+            .select('*')
+            .eq('is_active', true)
+            .order('name');
+
+          if (error) throw error;
+          return data as Property[];
+        },
+        enabled: hasPermission,
+      },
+    ],
   });
 
-  // Fetch properties for editing
-  const { data: properties = [] } = useQuery({
-    queryKey: ['properties-for-calendar'],
-    queryFn: async () => {
-      const supabase = getClient();
-      const { data, error } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('is_active', true)
-        .order('name');
-
-      if (error) throw error;
-      return data as Property[];
-    },
-    enabled: hasPermission,
-  });
+  const users = usersQuery.data ?? [];
+  const properties = propertiesQuery.data ?? [];
 
   // Calculate date range based on view mode
   const dateRange = useMemo(() => {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQueries } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import {
   ClipboardList,
@@ -60,96 +60,101 @@ export default function TasksPage() {
   const [activeTab, setActiveTab] = useState<TabType>('aufgaben');
   const [selectedChecklist, setSelectedChecklist] = useState<ChecklistWithProperty | null>(null);
 
-  // Fetch aufgaben
-  const { data: aufgaben = [], refetch: refetchAufgaben } = useQuery({
-    queryKey: ['aufgaben', profile?.id, permissions.isPrivileged],
-    queryFn: async () => {
-      const supabase = getClient();
+  // Fetch aufgaben and checklists in parallel for better performance
+  const [aufgabenQuery, checklistsQuery] = useQueries({
+    queries: [
+      {
+        queryKey: ['aufgaben', profile?.id, permissions.isPrivileged],
+        queryFn: async () => {
+          const supabase = getClient();
 
-      // Privileged users (admin, owner, manager) see all open aufgaben
-      if (permissions.isPrivileged) {
-        const { data, error } = await supabase
-          .from('aufgaben')
-          .select(`
-            *,
-            property:properties (*),
-            creator:profiles!aufgaben_created_by_fkey (*),
-            assignee:profiles!aufgaben_assigned_to_fkey (*)
-          `)
-          .in('status', ['open', 'in_progress'])
-          .order('due_date', { ascending: true, nullsFirst: false })
-          .order('priority', { ascending: false })
-          .order('created_at', { ascending: false });
+          // Privileged users (admin, owner, manager) see all open aufgaben
+          if (permissions.isPrivileged) {
+            const { data, error } = await supabase
+              .from('aufgaben')
+              .select(`
+                *,
+                property:properties (*),
+                creator:profiles!aufgaben_created_by_fkey (*),
+                assignee:profiles!aufgaben_assigned_to_fkey (*)
+              `)
+              .in('status', ['open', 'in_progress'])
+              .order('due_date', { ascending: true, nullsFirst: false })
+              .order('priority', { ascending: false })
+              .order('created_at', { ascending: false });
 
-        if (error) throw error;
-        return data as AufgabeWithRelations[];
-      }
+            if (error) throw error;
+            return data as AufgabeWithRelations[];
+          }
 
-      // Non-privileged users see aufgaben for their assigned properties
-      const { data: assignments } = await supabase
-        .from('property_assignments')
-        .select('property_id')
-        .eq('user_id', profile!.id);
+          // Non-privileged users see aufgaben for their assigned properties
+          const { data: assignments } = await supabase
+            .from('property_assignments')
+            .select('property_id')
+            .eq('user_id', profile!.id);
 
-      if (!assignments || assignments.length === 0) return [];
+          if (!assignments || assignments.length === 0) return [];
 
-      const propertyIds = assignments.map((a: { property_id: string }) => a.property_id);
+          const propertyIds = assignments.map((a: { property_id: string }) => a.property_id);
 
-      const { data, error } = await supabase
-        .from('aufgaben')
-        .select(`
-          *,
-          property:properties (*),
-          creator:profiles!aufgaben_created_by_fkey (*),
-          assignee:profiles!aufgaben_assigned_to_fkey (*)
-        `)
-        .in('property_id', propertyIds)
-        .in('status', ['open', 'in_progress'])
-        .order('due_date', { ascending: true, nullsFirst: false })
-        .order('priority', { ascending: false })
-        .order('created_at', { ascending: false });
+          const { data, error } = await supabase
+            .from('aufgaben')
+            .select(`
+              *,
+              property:properties (*),
+              creator:profiles!aufgaben_created_by_fkey (*),
+              assignee:profiles!aufgaben_assigned_to_fkey (*)
+            `)
+            .in('property_id', propertyIds)
+            .in('status', ['open', 'in_progress'])
+            .order('due_date', { ascending: true, nullsFirst: false })
+            .order('priority', { ascending: false })
+            .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data as AufgabeWithRelations[];
-    },
-    enabled: !!profile?.id,
+          if (error) throw error;
+          return data as AufgabeWithRelations[];
+        },
+        enabled: !!profile?.id,
+      },
+      {
+        queryKey: ['checklists', profile?.id],
+        queryFn: async () => {
+          const supabase = getClient();
+
+          // First get assigned property IDs
+          const { data: assignments } = await supabase
+            .from('property_assignments')
+            .select('property_id')
+            .eq('user_id', profile!.id);
+
+          if (!assignments || assignments.length === 0) return [];
+
+          const propertyIds = (assignments as { property_id: string }[]).map((a) => a.property_id);
+
+          // Then fetch checklists for those properties
+          const { data, error } = await supabase
+            .from('checklist_templates')
+            .select(`
+              *,
+              property:properties (*)
+            `)
+            .in('property_id', propertyIds)
+            .eq('is_active', true)
+            .order('name');
+
+          if (error) throw error;
+          return data as ChecklistWithProperty[];
+        },
+        enabled: !!profile?.id,
+      },
+    ],
   });
 
-  // Fetch checklists for assigned properties
-  const { data: checklists = [], refetch: refetchChecklists } = useQuery({
-    queryKey: ['checklists', profile?.id],
-    queryFn: async () => {
-      const supabase = getClient();
-
-      // First get assigned property IDs
-      const { data: assignments } = await supabase
-        .from('property_assignments')
-        .select('property_id')
-        .eq('user_id', profile!.id);
-
-      if (!assignments || assignments.length === 0) return [];
-
-      const propertyIds = (assignments as { property_id: string }[]).map((a) => a.property_id);
-
-      // Then fetch checklists for those properties
-      const { data, error } = await supabase
-        .from('checklist_templates')
-        .select(`
-          *,
-          property:properties (*)
-        `)
-        .in('property_id', propertyIds)
-        .eq('is_active', true)
-        .order('name');
-
-      if (error) throw error;
-      return data as ChecklistWithProperty[];
-    },
-    enabled: !!profile?.id,
-  });
+  const aufgaben = aufgabenQuery.data ?? [];
+  const checklists = checklistsQuery.data ?? [];
 
   const handleRefresh = async () => {
-    await Promise.all([refetchAufgaben(), refetchChecklists()]);
+    await Promise.all([aufgabenQuery.refetch(), checklistsQuery.refetch()]);
   };
 
   // Group checklists by property (memoized)

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQueries } from '@tanstack/react-query';
 import {
   CheckCircle2,
   ClipboardList,
@@ -113,83 +113,89 @@ export default function AdminActivityPage() {
   const [selectedChecklist, setSelectedChecklist] = useState<ChecklistInstanceWithRelations | null>(null);
   const [selectedAufgabe, setSelectedAufgabe] = useState<AufgabeWithRelations | null>(null);
 
-  // Fetch all properties for filter
-  const { data: properties = [] } = useQuery({
-    queryKey: ['all-properties'],
-    queryFn: async () => {
-      const supabase = getClient();
-      const { data, error } = await supabase
-        .from('properties')
-        .select('*')
-        .order('name');
+  // Fetch properties, aufgaben, and checklists in parallel for better performance
+  const [propertiesQuery, aufgabenQuery, checklistsQuery] = useQueries({
+    queries: [
+      {
+        queryKey: ['all-properties'],
+        queryFn: async () => {
+          const supabase = getClient();
+          const { data, error } = await supabase
+            .from('properties')
+            .select('*')
+            .order('name');
 
-      if (error) throw error;
-      return data as Property[];
-    },
+          if (error) throw error;
+          return data as Property[];
+        },
+      },
+      {
+        queryKey: ['admin-completed-aufgaben', selectedPropertyId],
+        queryFn: async () => {
+          const supabase = getClient();
+          let query = (supabase as any)
+            .from('aufgaben')
+            .select(`
+              *,
+              property:properties (*),
+              completer:profiles!aufgaben_completed_by_fkey (*),
+              source_meldung:issues (*)
+            `)
+            .eq('status', 'resolved')
+            .not('completed_at', 'is', null)
+            .order('completed_at', { ascending: false });
+
+          if (selectedPropertyId) {
+            query = query.eq('property_id', selectedPropertyId);
+          }
+
+          const { data, error } = await query;
+          if (error) throw error;
+          return data as AufgabeWithRelations[];
+        },
+      },
+      {
+        queryKey: ['admin-checklist-instances', selectedPropertyId],
+        queryFn: async () => {
+          const supabase = getClient();
+          const { data, error } = await (supabase as any)
+            .from('checklist_instances')
+            .select(`
+              *,
+              template:checklist_templates (
+                name,
+                items,
+                property:properties (*)
+              ),
+              time_entry:time_entries (
+                user_id,
+                user:profiles (*),
+                property:properties (*)
+              )
+            `)
+            .order('updated_at', { ascending: false });
+
+          if (error) throw error;
+
+          // Filter by property if selected
+          let results = data as ChecklistInstanceWithRelations[];
+          if (selectedPropertyId) {
+            results = results.filter(
+              (instance) => instance.template?.property?.id === selectedPropertyId
+            );
+          }
+
+          return results;
+        },
+      },
+    ],
   });
 
-  // Fetch completed Aufgaben
-  const { data: aufgaben = [], isLoading: isLoadingAufgaben } = useQuery({
-    queryKey: ['admin-completed-aufgaben', selectedPropertyId],
-    queryFn: async () => {
-      const supabase = getClient();
-      let query = (supabase as any)
-        .from('aufgaben')
-        .select(`
-          *,
-          property:properties (*),
-          completer:profiles!aufgaben_completed_by_fkey (*),
-          source_meldung:issues (*)
-        `)
-        .eq('status', 'resolved')
-        .not('completed_at', 'is', null)
-        .order('completed_at', { ascending: false });
-
-      if (selectedPropertyId) {
-        query = query.eq('property_id', selectedPropertyId);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data as AufgabeWithRelations[];
-    },
-  });
-
-  // Fetch checklist instances
-  const { data: checklistInstances = [], isLoading: isLoadingChecklists } = useQuery({
-    queryKey: ['admin-checklist-instances', selectedPropertyId],
-    queryFn: async () => {
-      const supabase = getClient();
-      const { data, error } = await (supabase as any)
-        .from('checklist_instances')
-        .select(`
-          *,
-          template:checklist_templates (
-            name,
-            items,
-            property:properties (*)
-          ),
-          time_entry:time_entries (
-            user_id,
-            user:profiles (*),
-            property:properties (*)
-          )
-        `)
-        .order('updated_at', { ascending: false });
-
-      if (error) throw error;
-
-      // Filter by property if selected
-      let results = data as ChecklistInstanceWithRelations[];
-      if (selectedPropertyId) {
-        results = results.filter(
-          (instance) => instance.template?.property?.id === selectedPropertyId
-        );
-      }
-
-      return results;
-    },
-  });
+  const properties = propertiesQuery.data ?? [];
+  const aufgaben = aufgabenQuery.data ?? [];
+  const checklistInstances = checklistsQuery.data ?? [];
+  const isLoadingAufgaben = aufgabenQuery.isLoading;
+  const isLoadingChecklists = checklistsQuery.isLoading;
 
   const getCompletedItemsCount = (instance: ChecklistInstanceWithRelations): { completed: number; total: number } => {
     const items = (instance.template?.items as unknown as ChecklistItem[]) || [];

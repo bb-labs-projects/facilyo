@@ -4,12 +4,13 @@ import { useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/auth-store';
 
-// Create a client
+// Create a client with optimized settings for time-tracking app
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60 * 1000, // 1 minute
-      refetchOnWindowFocus: false,
+      staleTime: 30 * 1000, // 30 seconds - better for time-critical data
+      refetchOnWindowFocus: true, // Refetch when user returns to tab
+      retry: 1, // Only retry once on failure
     },
   },
 });
