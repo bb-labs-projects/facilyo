@@ -360,12 +360,16 @@ interface PropertyGroupedEntriesProps {
   className?: string;
 }
 
-interface PropertyGroup {
+// A "visit" represents a continuous work session at a property (or a travel/break entry)
+interface PropertyVisit {
+  id: string; // Unique identifier for the visit
+  type: 'property' | 'travel' | 'break';
   property: TimeEntryWithProperty['property'];
   propertyId: string | null;
   entries: TimeEntryWithProperty[];
   totalSeconds: number;
   activityBreakdown: Map<ActivityType, number>;
+  startTime: Date;
 }
 
 export function PropertyGroupedEntries({
@@ -373,81 +377,113 @@ export function PropertyGroupedEntries({
   onEntryDelete,
   className,
 }: PropertyGroupedEntriesProps) {
-  const [expandedProperties, setExpandedProperties] = useState<Set<string>>(new Set());
+  const [expandedVisits, setExpandedVisits] = useState<Set<string>>(new Set());
 
-  // Group entries by property
-  const propertyGroups = entries.reduce<Map<string, PropertyGroup>>((groups, entry) => {
-    // Only group property entries, skip travel and break
-    if (entry.entry_type !== 'property') {
-      // Create a special group for non-property entries
-      const key = entry.entry_type;
-      if (!groups.has(key)) {
-        groups.set(key, {
-          property: null,
-          propertyId: null,
-          entries: [],
-          totalSeconds: 0,
-          activityBreakdown: new Map(),
-        });
-      }
-      const group = groups.get(key)!;
-      group.entries.push(entry);
+  // Sort entries by start time first
+  const sortedEntries = [...entries].sort(
+    (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+  );
 
-      const duration = calculateDuration(entry);
-      group.totalSeconds += duration;
-      return groups;
-    }
+  // Group entries into "visits" - continuous sessions at a property
+  // A new visit starts when:
+  // 1. The entry type changes (property -> travel, travel -> property, etc.)
+  // 2. The property changes (for property entries)
+  // 3. There was a travel/break between two visits to the same property
+  const visits: PropertyVisit[] = [];
+  let currentVisit: PropertyVisit | null = null;
+  let lastEntryWasNonProperty = false;
 
-    const key = entry.property_id || 'unknown';
-    if (!groups.has(key)) {
-      groups.set(key, {
-        property: entry.property,
-        propertyId: entry.property_id,
-        entries: [],
-        totalSeconds: 0,
-        activityBreakdown: new Map(),
-      });
-    }
-
-    const group = groups.get(key)!;
-    group.entries.push(entry);
-
+  for (const entry of sortedEntries) {
+    const entryType = entry.entry_type || 'property';
     const duration = calculateDuration(entry);
-    group.totalSeconds += duration;
 
-    // Track activity breakdown
-    if (entry.activity_type) {
-      const currentDuration = group.activityBreakdown.get(entry.activity_type) || 0;
-      group.activityBreakdown.set(entry.activity_type, currentDuration + duration);
+    // Travel/break entries are always individual items
+    if (entryType !== 'property') {
+      // If there was a current property visit, close it
+      if (currentVisit && currentVisit.type === 'property') {
+        visits.push(currentVisit);
+        currentVisit = null;
+      }
+
+      // Create a single-entry visit for travel/break
+      visits.push({
+        id: `${entryType}-${entry.id}`,
+        type: entryType as 'travel' | 'break',
+        property: null,
+        propertyId: null,
+        entries: [entry],
+        totalSeconds: duration,
+        activityBreakdown: new Map(),
+        startTime: new Date(entry.start_time),
+      });
+      lastEntryWasNonProperty = true;
+      continue;
     }
 
-    return groups;
-  }, new Map());
+    // Property entry logic
+    const propertyId = entry.property_id || 'unknown';
 
-  const toggleExpanded = (propertyId: string) => {
-    setExpandedProperties(prev => {
+    // Start a new visit if:
+    // - No current visit
+    // - Last entry was travel/break (interrupted visit)
+    // - Different property
+    const shouldStartNewVisit =
+      !currentVisit ||
+      currentVisit.type !== 'property' ||
+      lastEntryWasNonProperty ||
+      currentVisit.propertyId !== propertyId;
+
+    if (shouldStartNewVisit) {
+      // Save previous visit if exists
+      if (currentVisit && currentVisit.type === 'property') {
+        visits.push(currentVisit);
+      }
+
+      // Start new visit
+      currentVisit = {
+        id: `property-${propertyId}-${entry.id}`,
+        type: 'property',
+        property: entry.property,
+        propertyId,
+        entries: [entry],
+        totalSeconds: duration,
+        activityBreakdown: new Map(),
+        startTime: new Date(entry.start_time),
+      };
+
+      if (entry.activity_type) {
+        currentVisit.activityBreakdown.set(entry.activity_type, duration);
+      }
+    } else {
+      // Continue current visit
+      currentVisit!.entries.push(entry);
+      currentVisit!.totalSeconds += duration;
+
+      if (entry.activity_type) {
+        const currentDuration = currentVisit!.activityBreakdown.get(entry.activity_type) || 0;
+        currentVisit!.activityBreakdown.set(entry.activity_type, currentDuration + duration);
+      }
+    }
+
+    lastEntryWasNonProperty = false;
+  }
+
+  // Don't forget the last visit
+  if (currentVisit) {
+    visits.push(currentVisit);
+  }
+
+  const toggleExpanded = (visitId: string) => {
+    setExpandedVisits(prev => {
       const next = new Set(prev);
-      if (next.has(propertyId)) {
-        next.delete(propertyId);
+      if (next.has(visitId)) {
+        next.delete(visitId);
       } else {
-        next.add(propertyId);
+        next.add(visitId);
       }
       return next;
     });
   };
-
-  // Sort: property entries first (by total time desc), then travel, then break
-  const sortedGroups = Array.from(propertyGroups.entries()).sort((a, b) => {
-    const [keyA, groupA] = a;
-    const [keyB, groupB] = b;
-
-    // Non-property entries go last
-    if (keyA === 'travel' || keyA === 'break') return 1;
-    if (keyB === 'travel' || keyB === 'break') return -1;
-
-    // Sort by total time descending
-    return groupB.totalSeconds - groupA.totalSeconds;
-  });
 
   if (entries.length === 0) {
     return (
@@ -459,25 +495,25 @@ export function PropertyGroupedEntries({
 
   return (
     <div className={cn('space-y-3', className)}>
-      {sortedGroups.map(([key, group]) => {
+      {visits.map((visit) => {
         // Render travel/break entries as simple cards
-        if (key === 'travel' || key === 'break') {
-          return group.entries.map((entry) => (
+        if (visit.type === 'travel' || visit.type === 'break') {
+          return (
             <TimeEntryCard
-              key={entry.id}
-              entry={entry}
+              key={visit.id}
+              entry={visit.entries[0]}
               onDelete={onEntryDelete}
             />
-          ));
+          );
         }
 
-        const isExpanded = expandedProperties.has(key);
-        const hasMultipleActivities = group.activityBreakdown.size > 1;
-        const hasActiveEntry = group.entries.some(e => e.status === 'active');
+        const isExpanded = expandedVisits.has(visit.id);
+        const hasMultipleActivities = visit.activityBreakdown.size > 1;
+        const hasActiveEntry = visit.entries.some(e => e.status === 'active');
 
         return (
           <Card
-            key={key}
+            key={visit.id}
             className={cn(
               'border-l-4',
               ENTRY_TYPE_CONFIG.property.bgColor,
@@ -489,18 +525,18 @@ export function PropertyGroupedEntries({
               {/* Header with property name and total time */}
               <div
                 className="flex items-start justify-between cursor-pointer"
-                onClick={() => toggleExpanded(key)}
+                onClick={() => toggleExpanded(visit.id)}
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <Building2 className={cn('h-4 w-4', ENTRY_TYPE_CONFIG.property.textColor)} />
                     <h3 className="font-medium truncate">
-                      {group.property?.name || 'Unbekannte Liegenschaft'}
+                      {visit.property?.name || 'Unbekannte Liegenschaft'}
                     </h3>
                   </div>
-                  {group.property && (
+                  {visit.property && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      {group.property.address}, {group.property.city}
+                      {visit.property.address}, {visit.property.city}
                     </p>
                   )}
                 </div>
@@ -508,13 +544,13 @@ export function PropertyGroupedEntries({
                 <div className="flex items-center gap-2">
                   <div className="text-right">
                     <span className="font-mono text-lg font-semibold">
-                      {swissFormat.duration(group.totalSeconds)}
+                      {swissFormat.duration(visit.totalSeconds)}
                     </span>
                     {hasActiveEntry && (
                       <span className="badge badge-success ml-2">Aktiv</span>
                     )}
                   </div>
-                  {(hasMultipleActivities || group.entries.length > 1) && (
+                  {(hasMultipleActivities || visit.entries.length > 1) && (
                     <Button variant="ghost" size="icon" className="h-8 w-8">
                       {isExpanded ? (
                         <ChevronUp className="h-4 w-4" />
@@ -527,9 +563,9 @@ export function PropertyGroupedEntries({
               </div>
 
               {/* Activity breakdown summary */}
-              {group.activityBreakdown.size > 0 && (
+              {visit.activityBreakdown.size > 0 && (
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {Array.from(group.activityBreakdown.entries())
+                  {Array.from(visit.activityBreakdown.entries())
                     .sort((a, b) => b[1] - a[1])
                     .map(([activityType, seconds]) => {
                       const actConfig = ACTIVITY_TYPE_CONFIG[activityType];
@@ -556,9 +592,9 @@ export function PropertyGroupedEntries({
               {isExpanded && (
                 <div className="mt-4 pt-4 border-t space-y-2">
                   <p className="text-xs font-medium text-muted-foreground mb-2">
-                    Einzelne Einträge ({group.entries.length})
+                    Einzelne Einträge ({visit.entries.length})
                   </p>
-                  {group.entries
+                  {visit.entries
                     .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
                     .map((entry) => {
                       const duration = calculateDuration(entry);
