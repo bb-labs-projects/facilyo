@@ -26,9 +26,9 @@ export default function AppLayout({
   const refreshState = useCallback(async () => {
     if (!isAuthenticated) return;
 
-    // Prevent duplicate calls within 1 second
+    // Prevent duplicate calls within 2 seconds
     const now = Date.now();
-    if (isRefreshing.current || now - lastRefreshTime.current < 1000) {
+    if (isRefreshing.current || now - lastRefreshTime.current < 2000) {
       return;
     }
 
@@ -36,9 +36,32 @@ export default function AppLayout({
     lastRefreshTime.current = now;
 
     try {
-      // Refresh Supabase session
       const supabase = getClient();
-      await supabase.auth.getSession();
+
+      // First check current session
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        // Session expired - redirect to login
+        console.log('Session expired, redirecting to login');
+        router.push('/login');
+        return;
+      }
+
+      // Check if token is close to expiring (within 5 minutes)
+      const expiresAt = session.expires_at;
+      const nowSeconds = Math.floor(Date.now() / 1000);
+      const timeUntilExpiry = expiresAt ? expiresAt - nowSeconds : 0;
+
+      if (timeUntilExpiry < 300) {
+        // Token expires soon - force refresh
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError || !refreshData.session) {
+          console.log('Failed to refresh session, redirecting to login');
+          router.push('/login');
+          return;
+        }
+      }
 
       // Reinitialize timer from server
       await initializeTimer();
@@ -48,10 +71,18 @@ export default function AppLayout({
         return;
       }
       console.error('Failed to refresh state:', error);
+
+      // On any auth error, redirect to login
+      if (error instanceof Error &&
+          (error.message.includes('JWT') ||
+           error.message.includes('token') ||
+           error.message.includes('session'))) {
+        router.push('/login');
+      }
     } finally {
       isRefreshing.current = false;
     }
-  }, [isAuthenticated, initializeTimer]);
+  }, [isAuthenticated, initializeTimer, router]);
 
   // Initialize timer state on mount
   useEffect(() => {
