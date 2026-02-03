@@ -14,6 +14,7 @@ import {
   canAccessAdminPanel,
   canManageRolePermissions,
   canManageUserCalendar,
+  canDeleteActivity,
   isPrivilegedRole,
   canAssignRole,
   getAssignableRoles,
@@ -37,6 +38,7 @@ export interface Permissions {
   canAccessAdminPanel: boolean;
   canManageRolePermissions: boolean;
   canManageUserCalendar: boolean;
+  canDeleteActivity: boolean;
   isPrivileged: boolean;
 
   // Dynamic permission checks
@@ -66,6 +68,7 @@ export function usePermissions(): Permissions {
         canAccessAdminPanel: false,
         canManageRolePermissions: false,
         canManageUserCalendar: false,
+        canDeleteActivity: false,
         isPrivileged: false,
         canAssignRole: () => false,
         getAssignableRoles: () => [],
@@ -86,6 +89,7 @@ export function usePermissions(): Permissions {
       canAccessAdminPanel: canAccessAdminPanel(role),
       canManageRolePermissions: canManageRolePermissions(role),
       canManageUserCalendar: canManageUserCalendar(role),
+      canDeleteActivity: canDeleteActivity(role),
       isPrivileged: isPrivilegedRole(role),
       canAssignRole: (targetRole: UserRole) => canAssignRole(role, targetRole),
       getAssignableRoles: () => getAssignableRoles(role),

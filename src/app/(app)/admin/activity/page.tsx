@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQueries } from '@tanstack/react-query';
+import { useQueries, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import {
   CheckCircle2,
   ClipboardList,
@@ -16,6 +17,7 @@ import {
   Camera,
   X,
   Filter,
+  Trash2,
 } from 'lucide-react';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
@@ -26,6 +28,14 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { usePermissions } from '@/hooks/use-permissions';
 import { getClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
@@ -106,12 +116,17 @@ function formatName(profile: Profile | null): string {
 
 export default function AdminActivityPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const permissions = usePermissions();
   const [activeTab, setActiveTab] = useState<TabType>('aufgaben');
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedChecklist, setSelectedChecklist] = useState<ChecklistInstanceWithRelations | null>(null);
   const [selectedAufgabe, setSelectedAufgabe] = useState<AufgabeWithRelations | null>(null);
+
+  // Delete dialog state
+  const [deleteAufgabeId, setDeleteAufgabeId] = useState<string | null>(null);
+  const [deleteChecklistId, setDeleteChecklistId] = useState<string | null>(null);
 
   // Fetch properties, aufgaben, and checklists in parallel for better performance
   const [propertiesQuery, aufgabenQuery, checklistsQuery] = useQueries({
@@ -196,6 +211,51 @@ export default function AdminActivityPage() {
   const checklistInstances = checklistsQuery.data ?? [];
   const isLoadingAufgaben = aufgabenQuery.isLoading;
   const isLoadingChecklists = checklistsQuery.isLoading;
+
+  // Computed values for delete dialogs
+  const aufgabeToDelete = aufgaben.find(a => a.id === deleteAufgabeId);
+  const checklistToDelete = checklistInstances.find(c => c.id === deleteChecklistId);
+
+  // Delete mutations
+  const deleteAufgabeMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const supabase = getClient();
+      const { error } = await (supabase as any)
+        .from('aufgaben')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Aufgabe wurde gelöscht');
+      queryClient.invalidateQueries({ queryKey: ['admin-completed-aufgaben'] });
+      setDeleteAufgabeId(null);
+      setSelectedAufgabe(null);
+    },
+    onError: (error: Error) => {
+      toast.error(`Fehler: ${error.message}`);
+    },
+  });
+
+  const deleteChecklistMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const supabase = getClient();
+      const { error } = await (supabase as any)
+        .from('checklist_instances')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Checkliste wurde gelöscht');
+      queryClient.invalidateQueries({ queryKey: ['admin-checklist-instances'] });
+      setDeleteChecklistId(null);
+      setSelectedChecklist(null);
+    },
+    onError: (error: Error) => {
+      toast.error(`Fehler: ${error.message}`);
+    },
+  });
 
   const getCompletedItemsCount = (instance: ChecklistInstanceWithRelations): { completed: number; total: number } => {
     const items = (instance.template?.items as unknown as ChecklistItem[]) || [];
@@ -327,7 +387,22 @@ export default function AdminActivityPage() {
                             </p>
                           )}
                         </div>
-                        <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          {permissions.canDeleteActivity && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-red-600 hover:bg-red-50"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteAufgabeId(aufgabe.id);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                        </div>
                       </div>
 
                       <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground pl-13">
@@ -417,7 +492,22 @@ export default function AdminActivityPage() {
                           {progress.completed}/{progress.total} Punkte erledigt
                         </p>
                       </div>
-                      <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        {permissions.canDeleteActivity && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-red-600 hover:bg-red-50"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteChecklistId(instance.id);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -515,6 +605,20 @@ export default function AdminActivityPage() {
                   <p className="text-center text-muted-foreground py-4">
                     Keine Checklistenpunkte vorhanden
                   </p>
+                )}
+
+                {/* Delete Button */}
+                {permissions.canDeleteActivity && (
+                  <div className="pt-4 border-t">
+                    <Button
+                      variant="destructive"
+                      className="w-full"
+                      onClick={() => setDeleteChecklistId(selectedChecklist.id)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Checkliste löschen
+                    </Button>
+                  </div>
                 )}
               </div>
             </>
@@ -640,11 +744,105 @@ export default function AdminActivityPage() {
                     </p>
                   </div>
                 </div>
+
+                {/* Delete Button */}
+                {permissions.canDeleteActivity && (
+                  <div className="pt-4 border-t">
+                    <Button
+                      variant="destructive"
+                      className="w-full"
+                      onClick={() => setDeleteAufgabeId(selectedAufgabe.id)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Aufgabe löschen
+                    </Button>
+                  </div>
+                )}
               </div>
             </>
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Delete Aufgabe Confirmation Dialog */}
+      <Dialog open={!!deleteAufgabeId} onOpenChange={() => setDeleteAufgabeId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Aufgabe löschen</DialogTitle>
+            <DialogDescription>
+              Möchten Sie diese erledigte Aufgabe wirklich löschen?
+              {aufgabeToDelete && (
+                <>
+                  <br />
+                  <span className="font-medium text-foreground">
+                    {aufgabeToDelete.title}
+                  </span>
+                  <br />
+                  <span className="text-xs">
+                    Erledigt von {formatName(aufgabeToDelete.completer)}
+                    {aufgabeToDelete.completed_at && ` am ${formatDateTime(aufgabeToDelete.completed_at)}`}
+                  </span>
+                </>
+              )}
+              <br />
+              <br />
+              Diese Aktion kann nicht rückgängig gemacht werden.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setDeleteAufgabeId(null)}>
+              Abbrechen
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteAufgabeId && deleteAufgabeMutation.mutate(deleteAufgabeId)}
+              disabled={deleteAufgabeMutation.isPending}
+            >
+              {deleteAufgabeMutation.isPending ? 'Wird gelöscht...' : 'Löschen'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Checklist Confirmation Dialog */}
+      <Dialog open={!!deleteChecklistId} onOpenChange={() => setDeleteChecklistId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Checkliste löschen</DialogTitle>
+            <DialogDescription>
+              Möchten Sie diese ausgefüllte Checkliste wirklich löschen?
+              {checklistToDelete && (
+                <>
+                  <br />
+                  <span className="font-medium text-foreground">
+                    {checklistToDelete.template?.name || 'Unbekannte Checkliste'}
+                  </span>
+                  <br />
+                  <span className="text-xs">
+                    Ausgefüllt von {formatName(checklistToDelete.time_entry?.user)}
+                    {` am ${formatDateTime(checklistToDelete.updated_at)}`}
+                  </span>
+                </>
+              )}
+              <br />
+              <br />
+              Diese Aktion kann nicht rückgängig gemacht werden.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setDeleteChecklistId(null)}>
+              Abbrechen
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteChecklistId && deleteChecklistMutation.mutate(deleteChecklistId)}
+              disabled={deleteChecklistMutation.isPending}
+            >
+              {deleteChecklistMutation.isPending ? 'Wird gelöscht...' : 'Löschen'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageContainer>
   );
 }

@@ -22,6 +22,7 @@ const defaultPermissions: Record<UserRole, Record<PermissionName, boolean>> = {
     access_admin_panel: true,
     manage_role_permissions: true,
     manage_user_calendar: true,
+    delete_activity: true,
   },
   owner: {
     manage_properties: true,
@@ -35,6 +36,7 @@ const defaultPermissions: Record<UserRole, Record<PermissionName, boolean>> = {
     access_admin_panel: true,
     manage_role_permissions: true,
     manage_user_calendar: true,
+    delete_activity: false,
   },
   manager: {
     manage_properties: true,
@@ -48,6 +50,7 @@ const defaultPermissions: Record<UserRole, Record<PermissionName, boolean>> = {
     access_admin_panel: true,
     manage_role_permissions: false,
     manage_user_calendar: false,
+    delete_activity: false,
   },
   employee: {
     manage_properties: false,
@@ -61,6 +64,7 @@ const defaultPermissions: Record<UserRole, Record<PermissionName, boolean>> = {
     access_admin_panel: false,
     manage_role_permissions: false,
     manage_user_calendar: false,
+    delete_activity: false,
   },
 };
 
@@ -115,6 +119,7 @@ function buildDefaultPermissionsMap(): Map<string, boolean> {
     'access_admin_panel',
     'manage_role_permissions',
     'manage_user_calendar',
+    'delete_activity',
   ];
 
   roles.forEach((role) => {
@@ -194,6 +199,10 @@ export function canManageRolePermissions(role: UserRole): boolean {
 
 export function canManageUserCalendar(role: UserRole): boolean {
   return defaultPermissions[role]?.manage_user_calendar ?? false;
+}
+
+export function canDeleteActivity(role: UserRole): boolean {
+  return defaultPermissions[role]?.delete_activity ?? false;
 }
 
 export function isPrivilegedRole(role: UserRole): boolean {
@@ -276,6 +285,7 @@ export const permissionLabels: Record<PermissionName, string> = {
   access_admin_panel: 'Admin-Panel Zugriff',
   manage_role_permissions: 'Rollen-Berechtigungen verwalten',
   manage_user_calendar: 'Benutzerkalender verwalten',
+  delete_activity: 'Aktivitäten löschen',
 };
 
 // Get all permission names
@@ -291,6 +301,7 @@ export const allPermissions: PermissionName[] = [
   'access_admin_panel',
   'manage_role_permissions',
   'manage_user_calendar',
+  'delete_activity',
 ];
 
 // Get display label for role

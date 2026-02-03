@@ -19,7 +19,8 @@ export type PermissionName =
   | 'update_user_roles'
   | 'access_admin_panel'
   | 'manage_role_permissions'
-  | 'manage_user_calendar';
+  | 'manage_user_calendar'
+  | 'delete_activity';
 export type PropertyType = 'residential' | 'commercial' | 'industrial' | 'mixed';
 export type TimeEntryStatus = 'active' | 'paused' | 'completed';
 export type TimeEntryType = 'property' | 'travel' | 'break';
