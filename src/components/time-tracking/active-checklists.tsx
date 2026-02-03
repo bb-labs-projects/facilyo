@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ClipboardList, ChevronDown, ChevronUp, Check, Camera, Save, Loader2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import imageCompression from 'browser-image-compression';
+// browser-image-compression is dynamically imported when needed to reduce initial bundle size
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -491,6 +491,8 @@ function PhotoItem({
 
   const compressImage = async (file: File): Promise<File> => {
     try {
+      // Dynamic import to reduce initial bundle size
+      const imageCompression = (await import('browser-image-compression')).default;
       const options = {
         maxSizeMB: 1,
         maxWidthOrHeight: 1920,

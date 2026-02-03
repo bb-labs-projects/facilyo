@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import { Check, Camera, GripVertical, Loader2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import imageCompression from 'browser-image-compression';
+// browser-image-compression is dynamically imported when needed to reduce initial bundle size
 import { Input } from '@/components/ui/input';
 import { cn, hapticFeedback } from '@/lib/utils';
 import { getClient } from '@/lib/supabase/client';
@@ -215,6 +215,8 @@ function PhotoInput({ value, onChange, label, required }: PhotoInputProps) {
 
   const compressImage = async (file: File): Promise<File> => {
     try {
+      // Dynamic import to reduce initial bundle size
+      const imageCompression = (await import('browser-image-compression')).default;
       const options = {
         maxSizeMB: 1,
         maxWidthOrHeight: 1920,
