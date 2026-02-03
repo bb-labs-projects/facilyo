@@ -1,8 +1,7 @@
 'use client';
 
-import { Building2, Car, Coffee, Wrench, Trees, Scissors, ClipboardList, Home, Briefcase, Clock } from 'lucide-react';
+import { Building2, Car, Coffee, Wrench, Trees, Scissors, ClipboardList, Home, Briefcase } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { format } from 'date-fns';
 import { swissFormat } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import type { TimeEntryWithProperty, TimeEntryType, ActivityType } from '@/types/database';
@@ -12,16 +11,13 @@ interface PropertyTimeSummaryProps {
   className?: string;
 }
 
-interface VisitSummary {
+interface EntrySummary {
   id: string;
   name: string;
   type: TimeEntryType;
-  propertyId: string | null;
   entryCount: number;
   totalSeconds: number;
   activityBreakdown: Map<ActivityType, number>;
-  startTime: Date;
-  endTime: Date | null;
 }
 
 // Entry type display configuration
@@ -62,99 +58,69 @@ const ACTIVITY_TYPE_CONFIG: Record<ActivityType, {
 };
 
 export function PropertyTimeSummary({ entries, className }: PropertyTimeSummaryProps) {
-  // Sort entries chronologically first
-  const sortedEntries = [...entries].sort(
-    (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
-  );
-
-  // Group entries into "visits" - consecutive property entries on the same property
-  // Travel and break entries interrupt a visit, creating separate visits for the same property
-  const visits: VisitSummary[] = [];
-  let currentVisit: VisitSummary | null = null;
-
-  for (const entry of sortedEntries) {
+  // Aggregate time entries by property (for property entries) or by type (for travel/break)
+  // Filter out zero-duration entries (e.g., from auto-stop at same time as start)
+  const summaries = entries.reduce<Record<string, EntrySummary>>((acc, entry) => {
     // Calculate duration first to filter zero-duration entries
-    const start = new Date(entry.start_time);
-    const end = entry.end_time ? new Date(entry.end_time) : new Date();
-    const duration = Math.floor((end.getTime() - start.getTime()) / 1000) - (entry.pause_duration || 0);
+    const start = new Date(entry.start_time).getTime();
+    const end = entry.end_time ? new Date(entry.end_time).getTime() : Date.now();
+    const duration = Math.floor((end - start) / 1000) - (entry.pause_duration || 0);
 
     // Skip entries with zero or negative duration (completed entries only)
     if (entry.end_time && duration <= 0) {
-      continue;
+      return acc;
     }
 
     const entryType = entry.entry_type || 'property';
+    let key: string;
+    let name: string;
 
-    // Travel and break entries are always separate items
-    if (entryType === 'travel' || entryType === 'break') {
-      // Close any current property visit
-      if (currentVisit) {
-        visits.push(currentVisit);
-        currentVisit = null;
-      }
-
-      // Add travel/break as its own entry
-      visits.push({
-        id: `${entryType}-${entry.id}`,
-        name: ENTRY_TYPE_CONFIG[entryType].label,
-        type: entryType,
-        propertyId: null,
-        entryCount: 1,
-        totalSeconds: Math.max(0, duration),
-        activityBreakdown: new Map(),
-        startTime: start,
-        endTime: entry.end_time ? end : null,
-      });
-      continue;
-    }
-
-    // Property entry - check if we can merge with current visit
-    if (
-      currentVisit &&
-      currentVisit.type === 'property' &&
-      currentVisit.propertyId === entry.property_id
-    ) {
-      // Same property, add to current visit
-      currentVisit.entryCount += 1;
-      currentVisit.totalSeconds += Math.max(0, duration);
-      currentVisit.endTime = entry.end_time ? end : null;
-
-      if (entry.activity_type) {
-        const currentActivityTime = currentVisit.activityBreakdown.get(entry.activity_type) || 0;
-        currentVisit.activityBreakdown.set(entry.activity_type, currentActivityTime + Math.max(0, duration));
-      }
+    if (entryType === 'property' && entry.property_id) {
+      key = `property-${entry.property_id}`;
+      name = entry.property?.name || 'Unbekannte Liegenschaft';
     } else {
-      // Different property or first entry - close current visit and start new one
-      if (currentVisit) {
-        visits.push(currentVisit);
-      }
-
-      const name = entry.property?.name || 'Unbekannte Liegenschaft';
-      currentVisit = {
-        id: `visit-${entry.id}`,
-        name,
-        type: 'property',
-        propertyId: entry.property_id,
-        entryCount: 1,
-        totalSeconds: Math.max(0, duration),
-        activityBreakdown: new Map(),
-        startTime: start,
-        endTime: entry.end_time ? end : null,
-      };
-
-      if (entry.activity_type) {
-        currentVisit.activityBreakdown.set(entry.activity_type, Math.max(0, duration));
-      }
+      key = entryType;
+      name = ENTRY_TYPE_CONFIG[entryType].label;
     }
-  }
 
-  // Don't forget the last visit
-  if (currentVisit) {
-    visits.push(currentVisit);
-  }
+    if (!acc[key]) {
+      acc[key] = {
+        id: key,
+        name,
+        type: entryType,
+        entryCount: 0,
+        totalSeconds: 0,
+        activityBreakdown: new Map(),
+      };
+    }
 
-  // Visits are already in chronological order
-  const sortedSummaries = visits;
+    acc[key].entryCount += 1;
+    acc[key].totalSeconds += Math.max(0, duration);
+
+    // Track activity breakdown for property entries
+    if (entryType === 'property' && entry.activity_type) {
+      const currentActivityTime = acc[key].activityBreakdown.get(entry.activity_type) || 0;
+      acc[key].activityBreakdown.set(entry.activity_type, currentActivityTime + Math.max(0, duration));
+    }
+
+    return acc;
+  }, {});
+
+  // Sort: properties first (by time), then travel, then break
+  const sortedSummaries = Object.values(summaries).sort((a, b) => {
+    // Sort by type priority first
+    const typePriority: Record<TimeEntryType, number> = {
+      property: 0,
+      travel: 1,
+      break: 2,
+    };
+
+    const priorityDiff = typePriority[a.type] - typePriority[b.type];
+    if (priorityDiff !== 0) return priorityDiff;
+
+    // Then by total seconds
+    return b.totalSeconds - a.totalSeconds;
+  });
 
   if (sortedSummaries.length === 0) {
     return null;
@@ -178,9 +144,6 @@ export function PropertyTimeSummary({ entries, className }: PropertyTimeSummaryP
           const config = ENTRY_TYPE_CONFIG[summary.type];
           const Icon = config.icon;
           const hasActivities = summary.activityBreakdown.size > 0;
-          const isActive = summary.endTime === null;
-          const startTimeStr = format(summary.startTime, 'HH:mm');
-          const endTimeStr = summary.endTime ? format(summary.endTime, 'HH:mm') : '';
 
           return (
             <div
@@ -197,25 +160,9 @@ export function PropertyTimeSummary({ entries, className }: PropertyTimeSummaryP
                 </span>
               </div>
 
-              {/* Time range */}
-              <div className="flex items-center gap-1.5 mt-1 ml-6 text-xs text-muted-foreground">
-                <Clock className="h-3 w-3" />
-                <span className="font-mono">
-                  {startTimeStr} - {endTimeStr}
-                  {isActive && (
-                    <span className="inline-flex items-center ml-1">
-                      <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
-                      </span>
-                    </span>
-                  )}
-                </span>
-              </div>
-
               {/* Activity breakdown for property entries */}
               {hasActivities && (
-                <div className="flex flex-wrap gap-2 mt-1.5 ml-6">
+                <div className="flex flex-wrap gap-2 mt-2 ml-6">
                   {Array.from(summary.activityBreakdown.entries())
                     .sort((a, b) => b[1] - a[1])
                     .map(([activityType, seconds]) => {
