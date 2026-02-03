@@ -472,20 +472,23 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
                   }}
                 >
                   {isTiny ? (
-                    // Tiny single-line layout (minimal)
+                    // Tiny single-line layout (minimal) - property icon first, then activity icons
                     <div className={cn('flex items-center gap-1 h-full text-xs', colors.text)}>
-                      {merged ? (
-                        <span className="flex items-center gap-0.5">
-                          {getActivityIcons('sm')?.length ? getActivityIcons('sm') : getEntryIcon('property')}
-                        </span>
-                      ) : (
-                        (entry as TimeEntryWithProperty).activity_type
-                          ? getActivityIcon((entry as TimeEntryWithProperty).activity_type, 'sm')
-                          : getEntryIcon(entry.entry_type || 'property')
-                      )}
+                      {/* Always show entry type icon first */}
+                      {getEntryIcon(entry.entry_type || 'property')}
+                      {/* Show property name if space allows */}
                       <span className={cn('font-medium truncate flex-1', isOverlapping && 'hidden sm:inline')}>
                         {entry.property?.name || getEntryTypeLabel(entry.entry_type || 'property')}
                       </span>
+                      {/* Activity icons after property name */}
+                      {entry.entry_type === 'property' && (
+                        <span className={cn('flex items-center gap-0.5 shrink-0', isOverlapping && 'hidden sm:flex')}>
+                          {merged ? getActivityIcons('sm') : (
+                            (entry as TimeEntryWithProperty).activity_type &&
+                            getActivityIcon((entry as TimeEntryWithProperty).activity_type, 'sm')
+                          )}
+                        </span>
+                      )}
                       <span className={cn(
                         'font-mono opacity-70 shrink-0 text-[10px] flex items-center gap-1',
                         isOverlapping && 'hidden sm:flex'
@@ -506,20 +509,23 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
                       )}
                     </div>
                   ) : isCompact ? (
-                    // Compact single-line layout
+                    // Compact single-line layout - property icon first, then name, then activity icons
                     <div className={cn('flex items-center gap-1.5 h-full text-sm', colors.text)}>
-                      {merged ? (
-                        <span className="flex items-center gap-0.5">
-                          {getActivityIcons()?.length ? getActivityIcons() : getEntryIcon('property')}
-                        </span>
-                      ) : (
-                        (entry as TimeEntryWithProperty).activity_type
-                          ? getActivityIcon((entry as TimeEntryWithProperty).activity_type)
-                          : getEntryIcon(entry.entry_type || 'property')
-                      )}
+                      {/* Always show entry type icon first */}
+                      {getEntryIcon(entry.entry_type || 'property')}
+                      {/* Property name */}
                       <span className={cn('font-semibold truncate flex-1', isOverlapping && 'hidden sm:inline')}>
                         {entry.property?.name || getEntryTypeLabel(entry.entry_type || 'property')}
                       </span>
+                      {/* Activity icons after property name */}
+                      {entry.entry_type === 'property' && (
+                        <span className={cn('flex items-center gap-0.5 shrink-0', isOverlapping && 'hidden sm:flex')}>
+                          {merged ? getActivityIcons() : (
+                            (entry as TimeEntryWithProperty).activity_type &&
+                            getActivityIcon((entry as TimeEntryWithProperty).activity_type)
+                          )}
+                        </span>
+                      )}
                       <span className={cn(
                         'text-xs font-mono opacity-80 shrink-0 flex items-center gap-1',
                         isOverlapping && 'hidden sm:flex'

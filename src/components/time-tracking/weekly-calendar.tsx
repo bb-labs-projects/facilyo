@@ -495,22 +495,23 @@ export function WeeklyCalendar({ entries, selectedDate, className, onEntryUpdate
                           isTiny ? 'text-[10px]' : 'text-xs',
                           isOverlapping && 'justify-center'
                         )}>
-                          {/* Show activity icons for merged entries, or single icon for regular entries */}
-                          {merged ? (
-                            <span className="flex items-center gap-0.5">
-                              {activityIcons && activityIcons.length > 0 ? activityIcons : getEntryIcon('property')}
-                            </span>
-                          ) : (
-                            (entry as TimeEntryWithProperty).activity_type
-                              ? getActivityIcon((entry as TimeEntryWithProperty).activity_type)
-                              : getEntryIcon(entry.entry_type || 'property')
-                          )}
-                          {/* Hide text and time when overlapping - only show icon */}
+                          {/* Always show entry type icon first */}
+                          {getEntryIcon(entry.entry_type || 'property')}
+                          {/* Hide text and time when overlapping - only show icons */}
                           {!isOverlapping && (
                             <>
                               <span className="truncate flex-1 min-w-0 font-medium">
                                 {entry.property?.name || getEntryTypeLabel(entry.entry_type || 'property')}
                               </span>
+                              {/* Activity icons after property name */}
+                              {entry.entry_type === 'property' && (
+                                <span className="flex items-center gap-0.5 shrink-0">
+                                  {merged ? activityIcons : (
+                                    (entry as TimeEntryWithProperty).activity_type &&
+                                    getActivityIcon((entry as TimeEntryWithProperty).activity_type)
+                                  )}
+                                </span>
+                              )}
                               <span className="text-[10px] opacity-75 shrink-0 flex items-center gap-0.5">
                                 {startTime}-{endTime || ''}
                                 {isActive && (
@@ -521,6 +522,15 @@ export function WeeklyCalendar({ entries, selectedDate, className, onEntryUpdate
                                 )}
                               </span>
                             </>
+                          )}
+                          {/* When overlapping, show activity icons after entry type icon */}
+                          {isOverlapping && entry.entry_type === 'property' && (
+                            <span className="flex items-center gap-0.5">
+                              {merged ? activityIcons : (
+                                (entry as TimeEntryWithProperty).activity_type &&
+                                getActivityIcon((entry as TimeEntryWithProperty).activity_type)
+                              )}
+                            </span>
                           )}
                           {isOverlapping && isActive && (
                             <span className="relative flex h-1.5 w-1.5">
