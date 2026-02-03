@@ -46,7 +46,6 @@ export default function AppLayout({
 
       if (!session) {
         // Session expired - redirect to login
-        console.log('Session expired, redirecting to login');
         router.push('/login');
         return;
       }
@@ -58,22 +57,17 @@ export default function AppLayout({
 
       if (timeUntilExpiry < 300) {
         // Token expires soon - force refresh
-        console.log('Token expiring soon, refreshing...');
         const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
         if (refreshError || !refreshData.session) {
-          console.log('Failed to refresh session, redirecting to login');
           router.push('/login');
           return;
         }
       }
 
-      // Refresh profile first (queries depend on profile?.id)
-      console.log('Refreshing profile...');
+      // Refresh profile (queries depend on profile?.id)
       await refreshProfile();
 
-      // Cancel any stuck queries and refetch all data
-      console.log('Invalidating queries...');
-      queryClient.cancelQueries();
+      // Invalidate queries to refetch fresh data
       queryClient.invalidateQueries();
 
       // Reinitialize timer from server

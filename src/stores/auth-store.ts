@@ -6,6 +6,10 @@ import type { User } from '@supabase/supabase-js';
 import type { Profile } from '@/types/database';
 import { getClient } from '@/lib/supabase/client';
 
+// Debounce helper for refreshProfile
+let isRefreshingProfile = false;
+let lastProfileRefresh = 0;
+
 interface AuthState {
   user: User | null;
   profile: Profile | null;
@@ -142,24 +146,30 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       refreshProfile: async () => {
-        const supabase = getClient();
-        let { user } = get();
-
-        console.log('refreshProfile called, user:', user?.id);
-
-        if (!user) {
-          // Try to get user from session
-          const { data: { user: sessionUser } } = await supabase.auth.getUser();
-          if (sessionUser) {
-            set({ user: sessionUser, isAuthenticated: true });
-            user = sessionUser;
-          } else {
-            console.log('No user found in session');
-            return;
-          }
+        // Debounce: prevent duplicate calls within 2 seconds
+        const now = Date.now();
+        if (isRefreshingProfile || now - lastProfileRefresh < 2000) {
+          return;
         }
 
+        isRefreshingProfile = true;
+        lastProfileRefresh = now;
+
         try {
+          const supabase = getClient();
+          let { user } = get();
+
+          if (!user) {
+            // Try to get user from session
+            const { data: { user: sessionUser } } = await supabase.auth.getUser();
+            if (sessionUser) {
+              set({ user: sessionUser, isAuthenticated: true });
+              user = sessionUser;
+            } else {
+              return;
+            }
+          }
+
           const { data, error } = await supabase
             .from('profiles')
             .select('*')
@@ -168,10 +178,15 @@ export const useAuthStore = create<AuthStore>()(
 
           if (error) throw error;
           const profileData = data as Profile;
-          console.log('Profile loaded:', profileData?.id);
           set({ profile: profileData });
         } catch (error) {
+          // Ignore AbortError - happens when switching tabs quickly
+          if (error instanceof Error && error.message?.includes('AbortError')) {
+            return;
+          }
           console.error('Failed to fetch profile:', error);
+        } finally {
+          isRefreshingProfile = false;
         }
       },
 
