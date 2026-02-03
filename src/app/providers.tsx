@@ -40,8 +40,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const initialize = useAuthStore((state) => state.initialize);
   const logout = useAuthStore((state) => state.logout);
 
-  // Handle session expiration
+  // Handle session expiration (only redirect if not already on login/auth pages)
   const handleSessionExpired = useCallback(async () => {
+    // Don't redirect if already on login or auth pages
+    if (typeof window !== 'undefined' &&
+        (window.location.pathname === '/login' ||
+         window.location.pathname.startsWith('/change-password'))) {
+      return;
+    }
     console.log('Session expired, logging out');
     await logout();
     queryClient.clear();
@@ -76,9 +82,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
     };
   }, [handleSessionExpired]);
 
-  // Periodic session check every 5 minutes
+  // Periodic session check every 5 minutes (skip on auth pages)
   useEffect(() => {
     const checkSession = async () => {
+      // Skip session check on login and auth pages
+      if (typeof window !== 'undefined' &&
+          (window.location.pathname === '/login' ||
+           window.location.pathname.startsWith('/change-password'))) {
+        return;
+      }
+
       const supabase = getClient();
       const { data: { session } } = await supabase.auth.getSession();
 
