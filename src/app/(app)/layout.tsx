@@ -2,6 +2,7 @@
 
 import { useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { BottomNav } from '@/components/layout/bottom-nav';
 import { Sidebar } from '@/components/layout/sidebar';
 import { MobileMenuProvider } from '@/contexts/mobile-menu-context';
@@ -15,6 +16,7 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { isAuthenticated, isLoading } = useAuthStore();
   const initializeTimer = useTimerStore((state) => state.initializeFromServer);
 
@@ -55,6 +57,7 @@ export default function AppLayout({
 
       if (timeUntilExpiry < 300) {
         // Token expires soon - force refresh
+        console.log('Token expiring soon, refreshing...');
         const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
         if (refreshError || !refreshData.session) {
           console.log('Failed to refresh session, redirecting to login');
@@ -62,6 +65,10 @@ export default function AppLayout({
           return;
         }
       }
+
+      // Cancel any stuck queries and refetch all data
+      queryClient.cancelQueries();
+      queryClient.invalidateQueries();
 
       // Reinitialize timer from server
       await initializeTimer();
@@ -82,7 +89,7 @@ export default function AppLayout({
     } finally {
       isRefreshing.current = false;
     }
-  }, [isAuthenticated, initializeTimer, router]);
+  }, [isAuthenticated, initializeTimer, router, queryClient]);
 
   // Initialize timer state on mount
   useEffect(() => {

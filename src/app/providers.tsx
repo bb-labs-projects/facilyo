@@ -11,9 +11,11 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 0, // Data is always considered stale - ensures fresh data
-      refetchOnWindowFocus: true, // Refetch when user returns to tab
-      refetchOnMount: true, // Refetch when component mounts
-      refetchOnReconnect: true, // Refetch when network reconnects
+      gcTime: 5 * 60 * 1000, // Garbage collect after 5 minutes
+      refetchOnWindowFocus: 'always', // Always refetch on tab switch
+      refetchOnMount: 'always', // Always refetch when component mounts
+      refetchOnReconnect: 'always', // Always refetch when network reconnects
+      networkMode: 'always', // Try to fetch even if offline
       retry: (failureCount, error) => {
         // Don't retry on auth errors
         if (error instanceof Error) {
@@ -22,7 +24,8 @@ const queryClient = new QueryClient({
               message.includes('token') ||
               message.includes('unauthorized') ||
               message.includes('403') ||
-              message.includes('401')) {
+              message.includes('401') ||
+              message.includes('pgrst')) {
             return false;
           }
         }
@@ -55,12 +58,15 @@ export function Providers({ children }: { children: React.ReactNode }) {
     const supabase = getClient();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' && !session) {
+      console.log('Auth state change:', event, !!session);
+
+      if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) {
         handleSessionExpired();
       }
 
       if (event === 'TOKEN_REFRESHED' && session) {
-        // Token was refreshed successfully - invalidate queries to get fresh data
+        // Token was refreshed successfully - cancel and refetch all queries
+        queryClient.cancelQueries();
         queryClient.invalidateQueries();
       }
     });
