@@ -147,44 +147,54 @@ export default function AdminRolesPage() {
           Keine bearbeitbaren Rollen verfügbar.
         </div>
       ) : (
-        <Card>
-          <CardContent className="p-0">
-            <div className="divide-y divide-border">
-              {allPermissions.map((permission) => {
-                const isEnabled = getPermissionEnabled(selectedRole, permission);
-                const isPending = updatePermissionMutation.isPending;
+        <>
+          <Card>
+            <CardContent className="p-0">
+              <div className="divide-y divide-border">
+                {allPermissions.map((permission) => {
+                  const isAdmin = selectedRole === 'admin';
+                  const isEnabled = isAdmin ? true : getPermissionEnabled(selectedRole, permission);
+                  const isPending = updatePermissionMutation.isPending;
+                  const isDisabled = isAdmin || isPending;
 
-                return (
-                  <button
-                    key={permission}
-                    onClick={() => handleTogglePermission(permission)}
-                    disabled={isPending}
-                    className={cn(
-                      'w-full flex items-center justify-between p-4 text-left transition-colors',
-                      'hover:bg-muted/50',
-                      isPending && 'opacity-50 cursor-not-allowed'
-                    )}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Shield className="h-5 w-5 text-muted-foreground" />
-                      <span className="font-medium">{permissionLabels[permission]}</span>
-                    </div>
-                    <div
+                  return (
+                    <button
+                      key={permission}
+                      onClick={() => !isAdmin && handleTogglePermission(permission)}
+                      disabled={isDisabled}
                       className={cn(
-                        'w-6 h-6 rounded border-2 flex items-center justify-center transition-colors',
-                        isEnabled
-                          ? 'bg-primary-600 border-primary-600'
-                          : 'border-muted-foreground'
+                        'w-full flex items-center justify-between p-4 text-left transition-colors',
+                        isAdmin ? 'cursor-default' : 'hover:bg-muted/50',
+                        isPending && !isAdmin && 'opacity-50 cursor-not-allowed'
                       )}
                     >
-                      {isEnabled && <Check className="w-4 h-4 text-white" />}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+                      <div className="flex items-center gap-3">
+                        <Shield className="h-5 w-5 text-muted-foreground" />
+                        <span className="font-medium">{permissionLabels[permission]}</span>
+                      </div>
+                      <div
+                        className={cn(
+                          'w-6 h-6 rounded border-2 flex items-center justify-center transition-colors',
+                          isEnabled
+                            ? 'bg-primary-600 border-primary-600'
+                            : 'border-muted-foreground'
+                        )}
+                      >
+                        {isEnabled && <Check className="w-4 h-4 text-white" />}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {selectedRole === 'admin' && (
+            <p className="mt-3 text-sm text-muted-foreground">
+              Der Administrator hat immer alle Berechtigungen. Diese können nicht entfernt werden.
+            </p>
+          )}
+        </>
       )}
 
       {/* Info Note */}
