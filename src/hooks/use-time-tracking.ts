@@ -13,8 +13,8 @@ import {
 import { swissFormat } from '@/lib/i18n';
 import { toast } from 'sonner';
 
-// Auto-stop time: 20:00 (8 PM)
-const AUTO_STOP_HOUR = 20;
+// Auto-stop time: 23:00 (11 PM)
+const AUTO_STOP_HOUR = 23;
 const AUTO_STOP_MINUTE = 0;
 
 export function useTimeTracking() {
@@ -59,9 +59,9 @@ export function useTimeTracking() {
     return Math.max(0, elapsed);
   }, [activeEntry]);
 
-  // Check if current time is past the auto-stop time (20:00)
-  // This only handles LIVE auto-stop (when app is open at 20:00)
-  // For cases where app is opened AFTER 20:00, initializeFromServer handles it
+  // Check if current time is past the auto-stop time (23:00)
+  // This only handles LIVE auto-stop (when app is open at 23:00)
+  // For cases where app is opened AFTER 23:00, initializeFromServer handles it
   const checkAutoStop = useCallback(async () => {
     // Don't run until initialization is complete
     // This prevents race condition where checkAutoStop runs before initializeFromServer
@@ -72,16 +72,21 @@ export function useTimeTracking() {
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
 
-    // Check if it's 20:00 or later
+    // Check if it's 23:00 or later
     if (currentHour > AUTO_STOP_HOUR ||
         (currentHour === AUTO_STOP_HOUR && currentMinute >= AUTO_STOP_MINUTE)) {
       // Prevent multiple auto-stops
       autoStopRef.current = true;
 
+      // Calculate the exact 23:00 timestamp for today
+      const today = now.toISOString().split('T')[0];
+      const autoStopTime = new Date(`${today}T${String(AUTO_STOP_HOUR).padStart(2, '0')}:${String(AUTO_STOP_MINUTE).padStart(2, '0')}:00`);
+      const autoStopTimeISO = autoStopTime.toISOString();
+
       try {
-        await endWorkDay();
+        await endWorkDay(autoStopTimeISO);
         toast.info('Arbeitstag automatisch beendet', {
-          description: 'Die Zeiterfassung wurde um 20:00 Uhr automatisch gestoppt.',
+          description: 'Die Zeiterfassung wurde um 23:00 Uhr automatisch gestoppt.',
         });
       } catch (error) {
         console.error('Auto-stop failed:', error);
@@ -144,11 +149,11 @@ export function useTimeTracking() {
 
         if (formattedDates.length === 1) {
           toast.info('Arbeitstag automatisch beendet', {
-            description: `Der Arbeitstag vom ${formattedDates[0]} wurde automatisch um 20:00 Uhr beendet.`,
+            description: `Der Arbeitstag vom ${formattedDates[0]} wurde automatisch um 23:00 Uhr beendet.`,
           });
         } else {
           toast.info('Arbeitstage automatisch beendet', {
-            description: `Die Arbeitstage vom ${formattedDates.join(', ')} wurden automatisch um 20:00 Uhr beendet.`,
+            description: `Die Arbeitstage vom ${formattedDates.join(', ')} wurden automatisch um 23:00 Uhr beendet.`,
           });
         }
       }

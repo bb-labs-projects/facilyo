@@ -28,7 +28,7 @@ interface TimerState {
 interface TimerActions {
   // Work day actions
   startWorkDay: () => Promise<WorkDay>;
-  endWorkDay: () => Promise<void>;
+  endWorkDay: (overrideEndTime?: string) => Promise<void>;
   setWorkDay: (workDay: WorkDay | null) => void;
   // Entry type actions
   startTravelTime: () => Promise<TimeEntry>;
@@ -38,7 +38,7 @@ interface TimerActions {
   startBreak: () => Promise<TimeEntry>;
   endBreak: () => Promise<void>;
   // Internal helpers
-  stopCurrentEntry: (coords?: { lat: number; lng: number }) => Promise<TimeEntry | null>;
+  stopCurrentEntry: (coords?: { lat: number; lng: number }, overrideEndTime?: string) => Promise<TimeEntry | null>;
   // State management
   setActiveEntry: (entry: TimeEntry | null) => void;
   setActiveProperty: (property: Property | null) => void;
@@ -135,7 +135,7 @@ export const useTimerStore = create<TimerStore>()(
       },
 
       // End work day - finalized and cannot be restarted
-      endWorkDay: async () => {
+      endWorkDay: async (overrideEndTime?) => {
         const supabase = getClient();
         const { workDay, activeEntry } = get();
 
@@ -149,14 +149,14 @@ export const useTimerStore = create<TimerStore>()(
 
         // Stop any active entry first
         if (activeEntry) {
-          await get().stopCurrentEntry();
+          await get().stopCurrentEntry(undefined, overrideEndTime);
         }
 
         // Mark work day as ended (not finalized for testing)
         const { error } = await (supabase
           .from('work_days') as any)
           .update({
-            end_time: new Date().toISOString()
+            end_time: overrideEndTime || new Date().toISOString()
           })
           .eq('id', workDay.id);
 
@@ -461,13 +461,13 @@ export const useTimerStore = create<TimerStore>()(
       },
 
       // Internal: stop current entry
-      stopCurrentEntry: async (coords) => {
+      stopCurrentEntry: async (coords, overrideEndTime) => {
         const supabase = getClient();
         const { activeEntry } = get();
 
         if (!activeEntry) return null;
 
-        const now = new Date().toISOString();
+        const now = overrideEndTime || new Date().toISOString();
 
         const { data, error } = await (supabase
           .from('time_entries') as any)
@@ -533,8 +533,8 @@ export const useTimerStore = create<TimerStore>()(
         const today = new Date().toISOString().split('T')[0];
         const now = new Date();
 
-        // Auto-stop configuration: 20:00
-        const AUTO_STOP_HOUR = 20;
+        // Auto-stop configuration: 23:00
+        const AUTO_STOP_HOUR = 23;
         const AUTO_STOP_MINUTE = 0;
 
         // First, check for any open work days (including past days)
@@ -550,13 +550,13 @@ export const useTimerStore = create<TimerStore>()(
             const workDayDate = openWorkDay.date;
             const isFromPastDay = workDayDate < today;
 
-            // Check if it's today but past 20:00
+            // Check if it's today but past 23:00
             const isTodayPastAutoStop = workDayDate === today &&
               (now.getHours() > AUTO_STOP_HOUR ||
                (now.getHours() === AUTO_STOP_HOUR && now.getMinutes() >= AUTO_STOP_MINUTE));
 
             if (isFromPastDay || isTodayPastAutoStop) {
-              // Calculate the auto-stop time (20:00 of the work day's date)
+              // Calculate the auto-stop time (23:00 of the work day's date)
               const autoStopTime = new Date(`${workDayDate}T${String(AUTO_STOP_HOUR).padStart(2, '0')}:${String(AUTO_STOP_MINUTE).padStart(2, '0')}:00`);
               const autoStopTimeISO = autoStopTime.toISOString();
 
