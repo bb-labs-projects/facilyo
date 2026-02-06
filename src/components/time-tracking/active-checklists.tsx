@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ClipboardList, ChevronDown, ChevronUp, Check, Camera, Save, Loader2, X } from 'lucide-react';
+import { ClipboardList, ChevronDown, ChevronUp, Check, Camera, Save, Loader2, X, ImageIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 // browser-image-compression is dynamically imported when needed to reduce initial bundle size
@@ -37,6 +37,8 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
   const [localChanges, setLocalChanges] = useState<Record<string, Record<string, unknown>>>({});
   // Track which checklist is currently being saved
   const [savingChecklistId, setSavingChecklistId] = useState<string | null>(null);
+  // Enlarged template image overlay
+  const [enlargedImageUrl, setEnlargedImageUrl] = useState<string | null>(null);
 
   // Fetch checklists for the property
   const { data: checklists = [] } = useQuery({
@@ -251,6 +253,18 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
             >
               <CardHeader className="py-3 px-4">
                 <div className="flex items-center justify-between">
+                  {checklist.image_url && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEnlargedImageUrl(checklist.image_url);
+                      }}
+                      className="w-10 h-10 rounded-md overflow-hidden bg-slate-100 border border-slate-200 flex-shrink-0 mr-3"
+                    >
+                      <img src={checklist.image_url} alt="" className="w-full h-full object-cover" />
+                    </button>
+                  )}
                   <div className="flex-1 min-w-0">
                     <CardTitle className="text-base">{checklist.name}</CardTitle>
                     <p className="text-xs text-muted-foreground mt-0.5">
@@ -291,6 +305,20 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
                   transition={{ duration: 0.2 }}
                 >
                   <CardContent className="pt-0 pb-4 px-4 space-y-3">
+                    {checklist.image_url && (
+                      <button
+                        type="button"
+                        onClick={() => setEnlargedImageUrl(checklist.image_url)}
+                        className="w-full rounded-lg overflow-hidden border border-slate-200 bg-slate-50"
+                      >
+                        <img
+                          src={checklist.image_url}
+                          alt="Referenzbild"
+                          className="w-full max-h-48 object-contain"
+                        />
+                      </button>
+                    )}
+
                     {items.map((item) => (
                       <ChecklistItemInput
                         key={item.id}
@@ -316,6 +344,27 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
           </Card>
         );
       })}
+
+      {/* Enlarged image overlay */}
+      {enlargedImageUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setEnlargedImageUrl(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setEnlargedImageUrl(null)}
+            className="absolute top-4 right-4 p-2 bg-white/20 text-white rounded-full"
+          >
+            <X className="h-6 w-6" />
+          </button>
+          <img
+            src={enlargedImageUrl}
+            alt="Referenzbild"
+            className="max-w-full max-h-full object-contain rounded-lg"
+          />
+        </div>
+      )}
     </div>
   );
 }

@@ -238,6 +238,7 @@ export interface Database {
           property_id: string;
           name: string;
           items: Json;
+          image_url: string | null;
           is_active: boolean;
           created_at: string;
           updated_at: string;
@@ -247,6 +248,7 @@ export interface Database {
           property_id: string;
           name: string;
           items: Json;
+          image_url?: string | null;
           is_active?: boolean;
           created_at?: string;
           updated_at?: string;
@@ -256,6 +258,7 @@ export interface Database {
           property_id?: string;
           name?: string;
           items?: Json;
+          image_url?: string | null;
           is_active?: boolean;
           created_at?: string;
           updated_at?: string;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -14,6 +14,9 @@ import {
   Type,
   Hash,
   Camera,
+  ImagePlus,
+  Loader2,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Header, PageContainer } from '@/components/layout/header';
@@ -69,7 +72,10 @@ export default function AdminChecklistsPage() {
   const [name, setName] = useState('');
   const [propertyId, setPropertyId] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [imageUrl, setImageUrl] = useState('');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [items, setItems] = useState<ChecklistItem[]>([]);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   // Item form state
   const [showItemForm, setShowItemForm] = useState(false);
@@ -113,13 +119,14 @@ export default function AdminChecklistsPage() {
 
   // Create mutation
   const createMutation = useMutation({
-    mutationFn: async (data: { name: string; property_id: string; items: ChecklistItem[]; is_active: boolean }) => {
+    mutationFn: async (data: { name: string; property_id: string; items: ChecklistItem[]; is_active: boolean; image_url: string | null }) => {
       const supabase = getClient();
       const insertData = {
         name: data.name,
         property_id: data.property_id,
         items: data.items,
         is_active: data.is_active,
+        image_url: data.image_url,
       };
       const { data: result, error } = await (supabase as any)
         .from('checklist_templates')
@@ -142,13 +149,14 @@ export default function AdminChecklistsPage() {
 
   // Update mutation
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: { name: string; property_id: string; items: ChecklistItem[]; is_active: boolean } }) => {
+    mutationFn: async ({ id, data }: { id: string; data: { name: string; property_id: string; items: ChecklistItem[]; is_active: boolean; image_url: string | null } }) => {
       const supabase = getClient();
       const updateData = {
         name: data.name,
         property_id: data.property_id,
         items: data.items,
         is_active: data.is_active,
+        image_url: data.image_url,
       };
       const { data: result, error } = await (supabase as any)
         .from('checklist_templates')
@@ -203,6 +211,7 @@ export default function AdminChecklistsPage() {
     setName('');
     setPropertyId('');
     setIsActive(true);
+    setImageUrl('');
     setItems([]);
     setEditingTemplate(null);
     setShowForm(false);
@@ -220,6 +229,7 @@ export default function AdminChecklistsPage() {
     setName(template.name);
     setPropertyId(template.property_id);
     setIsActive(template.is_active);
+    setImageUrl(template.image_url || '');
     setItems((template.items as unknown as ChecklistItem[]) || []);
     setEditingTemplate(template);
     setShowForm(true);
@@ -229,6 +239,7 @@ export default function AdminChecklistsPage() {
     setName(`${template.name} (Kopie)`);
     setPropertyId(template.property_id);
     setIsActive(template.is_active);
+    setImageUrl(template.image_url || '');
     // Create new IDs for copied items
     const copiedItems = ((template.items as unknown as ChecklistItem[]) || []).map((item, index) => ({
       ...item,
@@ -248,6 +259,7 @@ export default function AdminChecklistsPage() {
       property_id: propertyId,
       items,
       is_active: isActive,
+      image_url: imageUrl || null,
     };
 
     if (editingTemplate) {
@@ -300,6 +312,46 @@ export default function AdminChecklistsPage() {
     [newItems[index], newItems[newIndex]] = [newItems[newIndex], newItems[index]];
     newItems.forEach((item, i) => (item.order = i));
     setItems(newItems);
+  };
+
+  const compressImage = async (file: File): Promise<File> => {
+    try {
+      const imageCompression = (await import('browser-image-compression')).default;
+      return await imageCompression(file, {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
+      });
+    } catch {
+      return file;
+    }
+  };
+
+  const handleImageUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    setIsUploadingImage(true);
+    try {
+      const supabase = getClient();
+      const compressedFile = await compressImage(files[0]);
+      const timestamp = Date.now();
+      const extension = files[0].name.split('.').pop() || 'jpg';
+      const filename = `${timestamp}-${Math.random().toString(36).substr(2, 9)}.${extension}`;
+      const path = `checklists/templates/${filename}`;
+
+      const { data, error } = await supabase.storage
+        .from('photos')
+        .upload(path, compressedFile, { cacheControl: '3600', upsert: false });
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage.from('photos').getPublicUrl(data.path);
+      setImageUrl(publicUrl);
+    } catch (error: any) {
+      toast.error(error?.message || 'Bild konnte nicht hochgeladen werden');
+    } finally {
+      setIsUploadingImage(false);
+    }
   };
 
   // Group templates by property
@@ -365,6 +417,11 @@ export default function AdminChecklistsPage() {
                     <Card key={template.id}>
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between gap-3">
+                          {template.image_url && (
+                            <div className="w-12 h-12 rounded-md overflow-hidden bg-slate-100 border border-slate-200 flex-shrink-0">
+                              <img src={template.image_url} alt="" className="w-full h-full object-cover" />
+                            </div>
+                          )}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <h3 className="font-medium">{template.name}</h3>
@@ -476,6 +533,46 @@ export default function AdminChecklistsPage() {
                 />
               </button>
               <label className="text-sm font-medium">Aktiv</label>
+            </div>
+
+            {/* Image upload */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Referenzbild</label>
+              {isUploadingImage ? (
+                <div className="w-full h-24 border-2 border-dashed border-primary-300 rounded-lg flex flex-col items-center justify-center gap-2 bg-primary-50">
+                  <Loader2 className="h-6 w-6 text-primary-500 animate-spin" />
+                  <span className="text-sm text-primary-600">Wird hochgeladen...</span>
+                </div>
+              ) : imageUrl ? (
+                <div className="relative w-[200px] h-[200px] rounded-lg overflow-hidden bg-slate-100 border border-slate-200">
+                  <a href={imageUrl} target="_blank" rel="noopener noreferrer" className="block w-full h-full">
+                    <img src={imageUrl} alt="Referenzbild" className="w-full h-full object-contain" />
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setImageUrl('')}
+                    className="absolute top-0.5 right-0.5 p-0.5 bg-error-500 text-white rounded-full shadow-md"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => imageInputRef.current?.click()}
+                  className="w-full h-24 border-2 border-dashed border-muted-foreground/50 rounded-lg flex flex-col items-center justify-center gap-2 hover:border-primary-500 transition-colors"
+                >
+                  <ImagePlus className="h-6 w-6 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Referenzbild hochladen</span>
+                </button>
+              )}
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleImageUpload(e.target.files)}
+                className="hidden"
+              />
             </div>
 
             {/* Items section */}
