@@ -1,11 +1,22 @@
 'use client';
 
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
-import { MapPin, Clock, User, Building2 } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { MapPin, Clock, User, Building2, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { usePermissions } from '@/hooks/use-permissions';
 import { getClient } from '@/lib/supabase/client';
 import { swissFormat } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
@@ -36,6 +47,9 @@ const categoryConfig = {
 export default function IssueDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const permissions = usePermissions();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const issueId = params.id as string;
 
   const { data: issue, isLoading } = useQuery({
@@ -55,6 +69,50 @@ export default function IssueDetailPage() {
 
       if (error) throw error;
       return data as IssueWithRelations;
+    },
+  });
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const supabase = getClient();
+
+      // Fetch photo URLs before deleting
+      const { data: issueData } = await supabase
+        .from('issues')
+        .select('photo_urls')
+        .eq('id', issueId)
+        .single();
+
+      // Delete photos from storage
+      const photoUrls: string[] = (issueData as any)?.photo_urls || [];
+      if (photoUrls.length > 0) {
+        const storagePaths = photoUrls
+          .map((url: string) => {
+            const match = url.match(/\/storage\/v1\/object\/public\/photos\/([^?]+)/);
+            return match ? decodeURIComponent(match[1]) : null;
+          })
+          .filter((path): path is string => path !== null);
+
+        if (storagePaths.length > 0) {
+          await supabase.storage.from('photos').remove(storagePaths);
+        }
+      }
+
+      const { error } = await supabase
+        .from('issues')
+        .delete()
+        .eq('id', issueId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Meldung wurde gelöscht');
+      queryClient.invalidateQueries({ queryKey: ['issues'] });
+      router.push('/issues');
+    },
+    onError: (error: Error) => {
+      toast.error(`Fehler: ${error.message}`);
     },
   });
 
@@ -225,6 +283,45 @@ export default function IssueDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete button */}
+      {permissions.canManageAufgaben && (
+        <div className="mt-6">
+          <Button
+            variant="outline"
+            size="touch"
+            className="w-full border-error-300 text-error-600 hover:bg-error-50"
+            onClick={() => setShowDeleteDialog(true)}
+            leftIcon={<Trash2 className="h-5 w-5" />}
+          >
+            Meldung löschen
+          </Button>
+        </div>
+      )}
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Meldung löschen</DialogTitle>
+            <DialogDescription>
+              Sind Sie sicher, dass Sie diese Meldung löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              Abbrechen
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteMutation.mutate()}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? 'Wird gelöscht...' : 'Löschen'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageContainer>
   );
 }
