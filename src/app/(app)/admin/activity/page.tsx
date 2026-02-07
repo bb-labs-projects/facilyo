@@ -220,6 +220,29 @@ export default function AdminActivityPage() {
   const deleteAufgabeMutation = useMutation({
     mutationFn: async (id: string) => {
       const supabase = getClient();
+
+      // Fetch photo URLs before deleting
+      const { data: taskData } = await (supabase as any)
+        .from('aufgaben')
+        .select('completion_photo_urls')
+        .eq('id', id)
+        .single();
+
+      // Delete completion photos from storage
+      const photoUrls: string[] | null = taskData?.completion_photo_urls;
+      if (photoUrls && photoUrls.length > 0) {
+        const storagePaths = photoUrls
+          .map((url: string) => {
+            const match = url.match(/\/storage\/v1\/object\/public\/photos\/([^?]+)/);
+            return match ? decodeURIComponent(match[1]) : null;
+          })
+          .filter((path): path is string => path !== null);
+
+        if (storagePaths.length > 0) {
+          await supabase.storage.from('photos').remove(storagePaths);
+        }
+      }
+
       const { error } = await (supabase as any)
         .from('aufgaben')
         .delete()

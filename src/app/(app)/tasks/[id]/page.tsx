@@ -166,15 +166,8 @@ export default function AufgabeDetailPage() {
           .filter((path): path is string => path !== null);
 
         if (storagePaths.length > 0) {
-          const { error: storageError } = await supabase.storage
-            .from('photos')
-            .remove(storagePaths);
-          if (storageError) {
-            console.error('Storage delete failed:', storageError, 'Paths:', storagePaths);
-          }
+          await supabase.storage.from('photos').remove(storagePaths);
         }
-      } else {
-        console.log('No photos to delete. taskData:', taskData);
       }
 
       const { error } = await (supabase as any)
