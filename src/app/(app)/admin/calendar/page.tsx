@@ -865,14 +865,13 @@ function EditEntryDialog({ entry, properties, onClose, onSave, isLoading }: Edit
             <Label>Eintragstyp</Label>
             <Select value={entryType} onValueChange={(v) => setEntryType(v as TimeEntryType)}>
               <SelectTrigger>
-                <span>
-                  {entryType === 'property' ? 'Liegenschaft' : entryType === 'travel' ? 'Fahrzeit' : 'Pause'}
-                </span>
+                <span>{ENTRY_TYPE_CONFIG[entryType]?.label ?? entryType}</span>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="property">Liegenschaft</SelectItem>
                 <SelectItem value="travel">Fahrzeit</SelectItem>
                 <SelectItem value="break">Pause</SelectItem>
+                <SelectItem value="vacation">Ferien</SelectItem>
               </SelectContent>
             </Select>
           </div>

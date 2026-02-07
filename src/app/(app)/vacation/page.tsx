@@ -8,8 +8,8 @@ import {
   ChevronRight,
   Plus,
   Calendar,
-  Clock,
   FileText,
+  X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Header, PageContainer } from '@/components/layout/header';
@@ -141,7 +141,50 @@ export default function VacationPage() {
     mutationFn: async (request: VacationRequestWithUser) => {
       const supabase = getClient();
 
-      // 1. Update vacation request status
+      // 1. Check request is still pending (duplicate click protection)
+      const { data: current, error: checkError } = await (supabase as any)
+        .from('vacation_requests')
+        .select('status')
+        .eq('id', request.id)
+        .single();
+
+      if (checkError) throw checkError;
+      if (current.status !== 'pending') {
+        throw new Error('Antrag wurde bereits bearbeitet');
+      }
+
+      // 2. Check user's balance before approving
+      const currentYear = new Date().getFullYear();
+      const { data: userProfile, error: profileError } = await (supabase as any)
+        .from('profiles')
+        .select('vacation_days_per_year')
+        .eq('id', request.user_id)
+        .single();
+
+      if (profileError) throw profileError;
+
+      const { data: existingApproved, error: balanceError } = await (supabase as any)
+        .from('vacation_requests')
+        .select('total_days')
+        .eq('user_id', request.user_id)
+        .eq('status', 'approved')
+        .gte('start_date', `${currentYear}-01-01`)
+        .lte('start_date', `${currentYear}-12-31`);
+
+      if (balanceError) throw balanceError;
+
+      const usedDays = (existingApproved as { total_days: number }[]).reduce(
+        (sum, r) => sum + r.total_days, 0
+      );
+      const allowance = userProfile.vacation_days_per_year ?? 25;
+
+      if (usedDays + request.total_days > allowance) {
+        throw new Error(
+          `Nicht genügend Ferientage: ${allowance - usedDays} verfügbar, ${request.total_days} beantragt`
+        );
+      }
+
+      // 3. Update vacation request status (only if still pending)
       const { error: updateError } = await (supabase as any)
         .from('vacation_requests')
         .update({
@@ -149,58 +192,104 @@ export default function VacationPage() {
           reviewed_by: profile!.id,
           reviewed_at: new Date().toISOString(),
         })
-        .eq('id', request.id);
+        .eq('id', request.id)
+        .eq('status', 'pending');
 
       if (updateError) throw updateError;
 
-      // 2. Create time entries for each business day
-      const start = parseISO(request.start_date);
-      const end = parseISO(request.end_date);
-      const days = eachDayOfInterval({ start, end });
+      // 4. Create time entries for each business day with rollback on failure
+      const createdEntryIds: string[] = [];
+      try {
+        const start = parseISO(request.start_date);
+        const end = parseISO(request.end_date);
+        const days = eachDayOfInterval({ start, end });
 
-      for (const day of days) {
-        const dayOfWeek = getDay(day);
-        // Skip weekends (0=Sunday, 6=Saturday)
-        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+        for (const day of days) {
+          const dayOfWeek = getDay(day);
+          if (dayOfWeek === 0 || dayOfWeek === 6) continue;
 
-        const dateStr = format(day, 'yyyy-MM-dd');
+          const dateStr = format(day, 'yyyy-MM-dd');
 
-        // Upsert work_day
-        const { data: workDay, error: wdError } = await (supabase as any)
-          .from('work_days')
-          .upsert(
-            {
-              user_id: request.user_id,
-              date: dateStr,
-              start_time: `${dateStr}T08:00:00`,
-              end_time: request.is_half_day
-                ? `${dateStr}T12:00:00`
-                : `${dateStr}T16:00:00`,
-              is_finalized: true,
-            },
-            { onConflict: 'user_id,date' }
-          )
-          .select()
-          .single();
+          // Check for existing work day first (don't overwrite real data)
+          const { data: existingWd } = await (supabase as any)
+            .from('work_days')
+            .select('id')
+            .eq('user_id', request.user_id)
+            .eq('date', dateStr)
+            .maybeSingle();
 
-        if (wdError) throw wdError;
+          let workDayId: string;
 
-        // Create time entry
-        const { error: teError } = await (supabase as any)
-          .from('time_entries')
-          .insert({
-            work_day_id: workDay.id,
-            user_id: request.user_id,
-            property_id: null,
-            entry_type: 'vacation',
-            start_time: `${dateStr}T08:00:00`,
-            end_time: request.is_half_day
-              ? `${dateStr}T12:00:00`
-              : `${dateStr}T16:00:00`,
-            status: 'completed',
-          });
+          if (existingWd) {
+            workDayId = existingWd.id;
+          } else {
+            const { data: newWd, error: wdError } = await (supabase as any)
+              .from('work_days')
+              .insert({
+                user_id: request.user_id,
+                date: dateStr,
+                start_time: `${dateStr}T08:00:00`,
+                end_time: request.is_half_day
+                  ? `${dateStr}T12:00:00`
+                  : `${dateStr}T16:00:00`,
+                is_finalized: true,
+              })
+              .select()
+              .single();
 
-        if (teError) throw teError;
+            if (wdError) throw wdError;
+            workDayId = newWd.id;
+          }
+
+          // Skip if vacation entry already exists for this day (idempotency)
+          const { data: existingEntry } = await (supabase as any)
+            .from('time_entries')
+            .select('id')
+            .eq('user_id', request.user_id)
+            .eq('entry_type', 'vacation')
+            .eq('work_day_id', workDayId)
+            .maybeSingle();
+
+          if (!existingEntry) {
+            const { data: newEntry, error: teError } = await (supabase as any)
+              .from('time_entries')
+              .insert({
+                work_day_id: workDayId,
+                user_id: request.user_id,
+                property_id: null,
+                entry_type: 'vacation',
+                start_time: `${dateStr}T08:00:00`,
+                end_time: request.is_half_day
+                  ? `${dateStr}T12:00:00`
+                  : `${dateStr}T16:00:00`,
+                status: 'completed',
+              })
+              .select('id')
+              .single();
+
+            if (teError) throw teError;
+            createdEntryIds.push(newEntry.id);
+          }
+        }
+      } catch (entryError) {
+        // Rollback: revert request status and delete created entries
+        await (supabase as any)
+          .from('vacation_requests')
+          .update({
+            status: 'pending',
+            reviewed_by: null,
+            reviewed_at: null,
+          })
+          .eq('id', request.id);
+
+        if (createdEntryIds.length > 0) {
+          await (supabase as any)
+            .from('time_entries')
+            .delete()
+            .in('id', createdEntryIds);
+        }
+
+        throw entryError;
       }
     },
     onSuccess: () => {
@@ -243,6 +332,54 @@ export default function VacationPage() {
       queryClient.invalidateQueries({ queryKey: ['vacation-pending'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-calendar'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-own'] });
+    },
+    onError: (error: Error) => {
+      toast.error(`Fehler: ${error.message}`);
+    },
+  });
+
+  // ─── Cancel mutation (delete pending or revoke approved with time entry cleanup) ───
+  const cancelMutation = useMutation({
+    mutationFn: async (request: VacationRequestWithUser) => {
+      const supabase = getClient();
+
+      // If approved, delete associated vacation time entries first
+      if (request.status === 'approved') {
+        const start = parseISO(request.start_date);
+        const end = parseISO(request.end_date);
+        const days = eachDayOfInterval({ start, end });
+
+        for (const day of days) {
+          const dayOfWeek = getDay(day);
+          if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+
+          const dateStr = format(day, 'yyyy-MM-dd');
+          const startTime = `${dateStr}T08:00:00`;
+
+          // Delete vacation time entries for this day
+          await (supabase as any)
+            .from('time_entries')
+            .delete()
+            .eq('user_id', request.user_id)
+            .eq('entry_type', 'vacation')
+            .eq('start_time', startTime);
+        }
+      }
+
+      // Delete the vacation request
+      const { error } = await (supabase as any)
+        .from('vacation_requests')
+        .delete()
+        .eq('id', request.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Ferienantrag storniert');
+      queryClient.invalidateQueries({ queryKey: ['vacation-pending'] });
+      queryClient.invalidateQueries({ queryKey: ['vacation-calendar'] });
+      queryClient.invalidateQueries({ queryKey: ['vacation-own'] });
+      queryClient.invalidateQueries({ queryKey: ['vacation-used-days'] });
     },
     onError: (error: Error) => {
       toast.error(`Fehler: ${error.message}`);
@@ -584,7 +721,28 @@ export default function VacationPage() {
                             </p>
                           )}
                         </div>
-                        {getStatusBadge(req.status)}
+                        <div className="flex items-center gap-2">
+                          {getStatusBadge(req.status)}
+                          {/* Cancel button: pending (own) or approved (admin only) */}
+                          {(req.status === 'pending' || (req.status === 'approved' && canManageVacations)) && (
+                            <button
+                              onClick={() => {
+                                if (confirm(
+                                  req.status === 'approved'
+                                    ? 'Bewilligten Antrag stornieren? Die zugehörigen Zeiteinträge werden gelöscht.'
+                                    : 'Antrag stornieren?'
+                                )) {
+                                  cancelMutation.mutate(req);
+                                }
+                              }}
+                              disabled={cancelMutation.isPending}
+                              className="p-1 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                              title="Stornieren"
+                            >
+                              <X className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
