@@ -136,6 +136,24 @@ export default function VacationPage() {
     enabled: !!profile?.id && canManageVacations,
   });
 
+  // ─── All approved requests (admin tab - for cancellation) ───
+  const { data: approvedRequests = [], refetch: refetchApproved } = useQuery({
+    queryKey: ['vacation-approved'],
+    queryFn: async () => {
+      const supabase = getClient();
+      const { data, error } = await (supabase as any)
+        .from('vacation_requests')
+        .select('*, user:profiles!vacation_requests_user_id_fkey(*)')
+        .eq('status', 'approved')
+        .gte('end_date', format(new Date(), 'yyyy-MM-dd'))
+        .order('start_date', { ascending: true });
+
+      if (error) throw error;
+      return data as VacationRequestWithUser[];
+    },
+    enabled: !!profile?.id && canManageVacations,
+  });
+
   // ─── Approve mutation ───
   const approveMutation = useMutation({
     mutationFn: async (request: VacationRequestWithUser) => {
@@ -295,6 +313,7 @@ export default function VacationPage() {
     onSuccess: () => {
       toast.success('Ferienantrag bewilligt');
       queryClient.invalidateQueries({ queryKey: ['vacation-pending'] });
+      queryClient.invalidateQueries({ queryKey: ['vacation-approved'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-calendar'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-own'] });
     },
@@ -377,6 +396,7 @@ export default function VacationPage() {
     onSuccess: () => {
       toast.success('Ferienantrag storniert');
       queryClient.invalidateQueries({ queryKey: ['vacation-pending'] });
+      queryClient.invalidateQueries({ queryKey: ['vacation-approved'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-calendar'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-own'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-used-days'] });
@@ -387,7 +407,7 @@ export default function VacationPage() {
   });
 
   const handleRefresh = async () => {
-    await Promise.all([refetchCalendar(), refetchOwn(), refetchPending()]);
+    await Promise.all([refetchCalendar(), refetchOwn(), refetchPending(), refetchApproved()]);
   };
 
   // ─── Calendar helpers ───
@@ -691,7 +711,7 @@ export default function VacationPage() {
                 <p>Keine Ferienanträge vorhanden</p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-3 pb-20">
                 {ownRequests.map((req) => (
                   <Card key={req.id}>
                     <CardContent className="p-4">
@@ -763,66 +783,118 @@ export default function VacationPage() {
 
         {/* ════════════════ TAB 3: ANTRÄGE (Admin) ════════════════ */}
         {activeTab === 'antraege' && canManageVacations && (
-          <div>
-            {pendingRequests.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Keine offenen Anträge</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {pendingRequests.map((req) => (
-                  <Card key={req.id}>
-                    <CardContent className="p-4">
-                      <div className="mb-3">
-                        <p className="font-semibold">
-                          {getUserName(req.user)}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {format(parseISO(req.start_date), 'dd.MM.yyyy', {
-                            locale: de,
-                          })}{' '}
-                          &ndash;{' '}
-                          {format(parseISO(req.end_date), 'dd.MM.yyyy', {
-                            locale: de,
-                          })}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {req.total_days} {req.total_days === 1 ? 'Tag' : 'Tage'}
-                          {req.is_half_day && ' (halber Tag)'}
-                        </p>
-                        {req.notes && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {req.notes}
+          <div className="space-y-6">
+            {/* Pending requests */}
+            <div>
+              <h3 className="font-semibold mb-3">Offene Anträge</h3>
+              {pendingRequests.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                  <p>Keine offenen Anträge</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {pendingRequests.map((req) => (
+                    <Card key={req.id}>
+                      <CardContent className="p-4">
+                        <div className="mb-3">
+                          <p className="font-semibold">
+                            {getUserName(req.user)}
                           </p>
-                        )}
-                      </div>
+                          <p className="text-sm text-muted-foreground">
+                            {format(parseISO(req.start_date), 'dd.MM.yyyy', {
+                              locale: de,
+                            })}{' '}
+                            &ndash;{' '}
+                            {format(parseISO(req.end_date), 'dd.MM.yyyy', {
+                              locale: de,
+                            })}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {req.total_days} {req.total_days === 1 ? 'Tag' : 'Tage'}
+                            {req.is_half_day && ' (halber Tag)'}
+                          </p>
+                          {req.notes && (
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {req.notes}
+                            </p>
+                          )}
+                        </div>
 
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                          onClick={() => approveMutation.mutate(req)}
-                          disabled={approveMutation.isPending}
-                        >
-                          Bewilligen
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
-                          onClick={() => {
-                            setRejectingRequest(req);
-                            setRejectionReason('');
-                          }}
-                          disabled={rejectMutation.isPending}
-                        >
-                          Ablehnen
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                            onClick={() => approveMutation.mutate(req)}
+                            disabled={approveMutation.isPending}
+                          >
+                            Bewilligen
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
+                            onClick={() => {
+                              setRejectingRequest(req);
+                              setRejectionReason('');
+                            }}
+                            disabled={rejectMutation.isPending}
+                          >
+                            Ablehnen
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Approved requests (admin can cancel) */}
+            {approvedRequests.length > 0 && (
+              <div>
+                <h3 className="font-semibold mb-3">Bewilligte Ferien (kommende)</h3>
+                <div className="space-y-3">
+                  {approvedRequests.map((req) => (
+                    <Card key={req.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className="font-semibold">
+                              {getUserName(req.user)}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {format(parseISO(req.start_date), 'dd.MM.yyyy', {
+                                locale: de,
+                              })}{' '}
+                              &ndash;{' '}
+                              {format(parseISO(req.end_date), 'dd.MM.yyyy', {
+                                locale: de,
+                              })}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {req.total_days} {req.total_days === 1 ? 'Tag' : 'Tage'}
+                              {req.is_half_day && ' (halber Tag)'}
+                            </p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-red-300 text-red-600 hover:bg-red-50"
+                            onClick={() => {
+                              if (confirm(`Bewilligte Ferien von ${getUserName(req.user)} stornieren? Die Zeiteinträge werden gelöscht.`)) {
+                                cancelMutation.mutate(req);
+                              }
+                            }}
+                            disabled={cancelMutation.isPending}
+                          >
+                            Stornieren
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </div>
             )}
           </div>

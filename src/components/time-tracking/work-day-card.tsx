@@ -235,7 +235,7 @@ export function TimeEntryCard({
                   {isActive ? 'Aktiv' : isPaused ? 'Pausiert' : 'Beendet'}
                 </span>
               </div>
-              {onDelete && !isActive && (
+              {onDelete && !isActive && entryType !== 'vacation' && (
                 <Button
                   variant="ghost"
                   size="icon"

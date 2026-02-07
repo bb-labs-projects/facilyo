@@ -445,14 +445,20 @@ export default function CalendarPage() {
           date={currentDate}
           entries={getEntriesForDay(currentDate)}
           onEditEntry={setEditingEntry}
-          onDeleteEntry={(entry) => deleteEntryMutation.mutate(entry.id)}
+          onDeleteEntry={(entry) => {
+            if (entry.entry_type === 'vacation') { toast.error('Ferieneinträge können nur über die Ferien-Seite verwaltet werden'); return; }
+            deleteEntryMutation.mutate(entry.id);
+          }}
         />
       ) : viewMode === 'week' ? (
         <WeekView
           startDate={dateRange.start}
           workDays={workDaysData}
           onEditEntry={setEditingEntry}
-          onDeleteEntry={(entry) => deleteEntryMutation.mutate(entry.id)}
+          onDeleteEntry={(entry) => {
+            if (entry.entry_type === 'vacation') { toast.error('Ferieneinträge können nur über die Ferien-Seite verwaltet werden'); return; }
+            deleteEntryMutation.mutate(entry.id);
+          }}
           onDayClick={(date) => {
             setCurrentDate(date);
             setViewMode('day');
@@ -742,14 +748,18 @@ function TimeEntryRow({ entry, onEdit, onDelete }: TimeEntryRowProps) {
           <Button variant="ghost" size="icon" onClick={onEdit} className="h-8 w-8">
             <Pencil className="h-4 w-4" />
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowDeleteConfirm(true)}
-            className="h-8 w-8 text-destructive hover:text-destructive"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          {entry.entry_type !== 'vacation' ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowDeleteConfirm(true)}
+              className="h-8 w-8 text-destructive hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          ) : (
+            <span className="text-[10px] text-muted-foreground w-8 text-center">Ferien</span>
+          )}
         </div>
       </div>
 

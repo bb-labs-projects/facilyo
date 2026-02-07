@@ -136,6 +136,8 @@ export function TimeEntryEditSheet({
   // Check if entry is active (no end_time means still running)
   const isActive = entry?.status === 'active' || !entry?.end_time;
 
+  const isVacation = entry?.entry_type === 'vacation';
+
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async () => {
@@ -144,6 +146,11 @@ export function TimeEntryEditSheet({
       // Prevent deletion of active entries
       if (isActive) {
         throw new Error('Aktive Einträge können nicht gelöscht werden');
+      }
+
+      // Prevent deletion of vacation entries (must be managed via Ferien page)
+      if (isVacation) {
+        throw new Error('Ferieneinträge können nur über die Ferien-Seite verwaltet werden');
       }
 
       const supabase = getClient();
@@ -269,7 +276,7 @@ export function TimeEntryEditSheet({
             >
               Speichern
             </Button>
-            {!isActive && (
+            {!isActive && !isVacation && (
               <Button
                 variant="destructive"
                 onClick={() => setShowDeleteDialog(true)}
@@ -282,6 +289,11 @@ export function TimeEntryEditSheet({
             {isActive && (
               <p className="text-xs text-center text-muted-foreground">
                 Aktive Einträge können nicht gelöscht werden
+              </p>
+            )}
+            {isVacation && (
+              <p className="text-xs text-center text-muted-foreground">
+                Ferieneinträge können nur über die Ferien-Seite verwaltet werden
               </p>
             )}
           </SheetFooter>
