@@ -221,10 +221,10 @@ export default function AdminActivityPage() {
     mutationFn: async (id: string) => {
       const supabase = getClient();
 
-      // Fetch photo URLs before deleting
+      // Fetch photo URLs and source meldung ID before deleting
       const { data: taskData } = await (supabase as any)
         .from('aufgaben')
-        .select('completion_photo_urls, source_meldung:issues(photo_urls)')
+        .select('source_meldung_id, completion_photo_urls, source_meldung:issues(photo_urls)')
         .eq('id', id)
         .single();
 
@@ -247,11 +247,20 @@ export default function AdminActivityPage() {
         }
       }
 
+      // Delete the task first (removes FK reference to issue)
       const { error } = await (supabase as any)
         .from('aufgaben')
         .delete()
         .eq('id', id);
       if (error) throw error;
+
+      // Delete the source meldung (issue) if it exists
+      if (taskData?.source_meldung_id) {
+        await (supabase as any)
+          .from('issues')
+          .delete()
+          .eq('id', taskData.source_meldung_id);
+      }
     },
     onSuccess: () => {
       toast.success('Aufgabe wurde gelöscht');
