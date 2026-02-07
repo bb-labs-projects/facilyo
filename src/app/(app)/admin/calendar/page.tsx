@@ -840,6 +840,7 @@ interface EditEntryDialogProps {
 }
 
 function EditEntryDialog({ entry, properties, onClose, onSave, isLoading }: EditEntryDialogProps) {
+  const isVacation = entry.entry_type === 'vacation';
   const [startTime, setStartTime] = useState(
     format(parseISO(entry.start_time), "yyyy-MM-dd'T'HH:mm")
   );
@@ -862,6 +863,34 @@ function EditEntryDialog({ entry, properties, onClose, onSave, isLoading }: Edit
     });
   };
 
+  // Read-only view for vacation entries
+  if (isVacation) {
+    return (
+      <Dialog open onOpenChange={onClose}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ferieneintrag</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-3">
+            <div className="p-4 bg-green-50 rounded-lg border border-green-200 text-sm text-green-800">
+              <p><span className="font-medium">Startzeit:</span> {format(parseISO(entry.start_time), 'dd.MM.yyyy HH:mm')}</p>
+              <p><span className="font-medium">Endzeit:</span> {entry.end_time ? format(parseISO(entry.end_time), 'dd.MM.yyyy HH:mm') : '–'}</p>
+              <p><span className="font-medium">Dauer:</span> {formatDuration(calculateDuration(entry))}</p>
+            </div>
+            <p className="text-xs text-center text-muted-foreground">
+              Ferieneinträge können nur über die Ferien-Seite verwaltet werden
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={onClose}>
+              Schliessen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-md">
@@ -881,7 +910,6 @@ function EditEntryDialog({ entry, properties, onClose, onSave, isLoading }: Edit
                 <SelectItem value="property">Liegenschaft</SelectItem>
                 <SelectItem value="travel">Fahrzeit</SelectItem>
                 <SelectItem value="break">Pause</SelectItem>
-                <SelectItem value="vacation">Ferien</SelectItem>
               </SelectContent>
             </Select>
           </div>

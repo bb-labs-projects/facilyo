@@ -102,6 +102,11 @@ export function TimeEntryEditSheet({
     mutationFn: async () => {
       if (!entry) return;
 
+      // Prevent editing vacation entries
+      if (entry.entry_type === 'vacation') {
+        throw new Error('Ferieneinträge können nur über die Ferien-Seite verwaltet werden');
+      }
+
       const supabase = getClient();
 
       // Build new timestamps using the entry's original date
@@ -202,6 +207,19 @@ export function TimeEntryEditSheet({
             </SheetDescription>
           </SheetHeader>
 
+          {isVacation ? (
+            <div className="mt-6 space-y-3">
+              <div className="p-4 bg-green-50 rounded-lg border border-green-200 text-sm text-green-800">
+                <p className="font-medium mb-1">Ferieneintrag</p>
+                <p>Startzeit: {startTime}</p>
+                <p>Endzeit: {endTime}</p>
+                {durationPreview && <p>Dauer: {durationPreview}</p>}
+              </div>
+              <p className="text-xs text-center text-muted-foreground">
+                Ferieneinträge können nur über die Ferien-Seite verwaltet werden
+              </p>
+            </div>
+          ) : (
           <div className="space-y-4 mt-6">
             {/* Property Select - only for property entries */}
             {entry.entry_type === 'property' && (
@@ -267,8 +285,10 @@ export function TimeEntryEditSheet({
               rows={3}
             />
           </div>
+          )}
 
           <SheetFooter className="mt-6 flex-col gap-2">
+            {!isVacation && (
             <Button
               onClick={handleSave}
               isLoading={updateMutation.isPending}
@@ -276,6 +296,7 @@ export function TimeEntryEditSheet({
             >
               Speichern
             </Button>
+            )}
             {!isActive && !isVacation && (
               <Button
                 variant="destructive"

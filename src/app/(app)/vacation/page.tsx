@@ -364,25 +364,17 @@ export default function VacationPage() {
 
       // If approved, delete associated vacation time entries first
       if (request.status === 'approved') {
-        const start = parseISO(request.start_date);
-        const end = parseISO(request.end_date);
-        const days = eachDayOfInterval({ start, end });
+        // Delete all vacation time entries in the date range (using gte/lte to catch modified times)
+        const rangeStart = `${request.start_date}T00:00:00`;
+        const rangeEnd = `${request.end_date}T23:59:59`;
 
-        for (const day of days) {
-          const dayOfWeek = getDay(day);
-          if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-
-          const dateStr = format(day, 'yyyy-MM-dd');
-          const startTime = `${dateStr}T08:00:00`;
-
-          // Delete vacation time entries for this day
-          await (supabase as any)
-            .from('time_entries')
-            .delete()
-            .eq('user_id', request.user_id)
-            .eq('entry_type', 'vacation')
-            .eq('start_time', startTime);
-        }
+        await (supabase as any)
+          .from('time_entries')
+          .delete()
+          .eq('user_id', request.user_id)
+          .eq('entry_type', 'vacation')
+          .gte('start_time', rangeStart)
+          .lte('start_time', rangeEnd);
       }
 
       // Delete the vacation request
