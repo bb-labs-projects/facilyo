@@ -224,14 +224,18 @@ export default function AdminActivityPage() {
       // Fetch photo URLs before deleting
       const { data: taskData } = await (supabase as any)
         .from('aufgaben')
-        .select('completion_photo_urls')
+        .select('completion_photo_urls, source_meldung:issues(photo_urls)')
         .eq('id', id)
         .single();
 
-      // Delete completion photos from storage
-      const photoUrls: string[] | null = taskData?.completion_photo_urls;
-      if (photoUrls && photoUrls.length > 0) {
-        const storagePaths = photoUrls
+      // Collect all photo URLs (completion + source meldung)
+      const allPhotoUrls: string[] = [
+        ...(taskData?.completion_photo_urls || []),
+        ...(taskData?.source_meldung?.photo_urls || []),
+      ];
+
+      if (allPhotoUrls.length > 0) {
+        const storagePaths = allPhotoUrls
           .map((url: string) => {
             const match = url.match(/\/storage\/v1\/object\/public\/photos\/([^?]+)/);
             return match ? decodeURIComponent(match[1]) : null;
