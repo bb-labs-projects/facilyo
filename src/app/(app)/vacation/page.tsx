@@ -333,6 +333,19 @@ export default function VacationPage() {
       reason: string;
     }) => {
       const supabase = getClient();
+
+      // Check current status first
+      const { data: current, error: checkError } = await (supabase as any)
+        .from('vacation_requests')
+        .select('status')
+        .eq('id', requestId)
+        .single();
+
+      if (checkError) throw checkError;
+      if (current.status !== 'pending') {
+        throw new Error('Antrag wurde bereits bearbeitet');
+      }
+
       const { error } = await (supabase as any)
         .from('vacation_requests')
         .update({
@@ -341,7 +354,8 @@ export default function VacationPage() {
           reviewed_at: new Date().toISOString(),
           rejection_reason: reason,
         })
-        .eq('id', requestId);
+        .eq('id', requestId)
+        .eq('status', 'pending');
 
       if (error) throw error;
     },
@@ -431,20 +445,21 @@ export default function VacationPage() {
   };
 
   // ─── Saldo calculations ───
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
   const today = new Date();
   const vacationDaysPerYear = profile?.vacation_days_per_year ?? 25;
 
   const approvedPast = useMemo(() => {
     return ownRequests
-      .filter((r) => r.status === 'approved' && parseISO(r.end_date) < today)
+      .filter((r) => r.status === 'approved' && r.end_date < todayStr)
       .reduce((sum, r) => sum + r.total_days, 0);
-  }, [ownRequests, today]);
+  }, [ownRequests, todayStr]);
 
   const approvedFuture = useMemo(() => {
     return ownRequests
-      .filter((r) => r.status === 'approved' && parseISO(r.end_date) >= today)
+      .filter((r) => r.status === 'approved' && r.end_date >= todayStr)
       .reduce((sum, r) => sum + r.total_days, 0);
-  }, [ownRequests, today]);
+  }, [ownRequests, todayStr]);
 
   const totalApproved = approvedPast + approvedFuture;
   const remaining = vacationDaysPerYear - totalApproved;
