@@ -267,6 +267,45 @@ export default function AdminActivityPage() {
   const deleteChecklistMutation = useMutation({
     mutationFn: async (id: string) => {
       const supabase = getClient();
+
+      // Fetch instance with completed items and template item definitions
+      const { data: instance } = await (supabase as any)
+        .from('checklist_instances')
+        .select('completed_items, template:checklist_templates(items)')
+        .eq('id', id)
+        .single();
+
+      if (instance) {
+        // Find photo item IDs from template definition
+        const items = (instance.template?.items || []) as { id: string; type: string }[];
+        const photoItemIds = items
+          .filter((item) => item.type === 'photo')
+          .map((item) => item.id);
+
+        // Collect photo URLs from completed items (NOT reference image)
+        const photoUrls: string[] = [];
+        const completed = instance.completed_items || {};
+        for (const itemId of photoItemIds) {
+          const value = completed[itemId];
+          if (typeof value === 'string' && value.length > 0) {
+            photoUrls.push(value);
+          }
+        }
+
+        if (photoUrls.length > 0) {
+          const storagePaths = photoUrls
+            .map((url: string) => {
+              const match = url.match(/\/storage\/v1\/object\/public\/photos\/([^?]+)/);
+              return match ? decodeURIComponent(match[1]) : null;
+            })
+            .filter((path): path is string => path !== null);
+
+          if (storagePaths.length > 0) {
+            await supabase.storage.from('photos').remove(storagePaths);
+          }
+        }
+      }
+
       const { error } = await (supabase as any)
         .from('checklist_instances')
         .delete()
