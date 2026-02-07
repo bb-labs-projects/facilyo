@@ -708,14 +708,23 @@ export default function VacationPage() {
             </div>
 
             {/* Own requests list */}
-            <h3 className="font-semibold mb-3">Meine Anträge</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold">Meine Anträge</h3>
+              <Button
+                size="sm"
+                onClick={() => router.push('/vacation/new')}
+                leftIcon={<Plus className="h-4 w-4" />}
+              >
+                Beantragen
+              </Button>
+            </div>
             {ownRequests.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Calendar className="h-10 w-10 mx-auto mb-3 opacity-50" />
                 <p>Keine Ferienanträge vorhanden</p>
               </div>
             ) : (
-              <div className="space-y-3 pb-20">
+              <div className="space-y-3">
                 {ownRequests.map((req) => (
                   <Card key={req.id}>
                     <CardContent className="p-4">
@@ -774,14 +783,6 @@ export default function VacationPage() {
               </div>
             )}
 
-            {/* FAB */}
-            <button
-              onClick={() => router.push('/vacation/new')}
-              className="fixed bottom-24 right-6 lg:bottom-8 w-14 h-14 bg-primary-600 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-primary-700 transition-colors z-30"
-              aria-label="Ferien beantragen"
-            >
-              <Plus className="h-6 w-6" />
-            </button>
           </div>
         )}
 
