@@ -23,6 +23,7 @@ const defaultPermissions: Record<UserRole, Record<PermissionName, boolean>> = {
     manage_role_permissions: true,
     manage_user_calendar: true,
     delete_activity: true,
+    manage_vacations: true,
   },
   owner: {
     manage_properties: true,
@@ -37,6 +38,7 @@ const defaultPermissions: Record<UserRole, Record<PermissionName, boolean>> = {
     manage_role_permissions: true,
     manage_user_calendar: true,
     delete_activity: false,
+    manage_vacations: true,
   },
   manager: {
     manage_properties: true,
@@ -51,6 +53,7 @@ const defaultPermissions: Record<UserRole, Record<PermissionName, boolean>> = {
     manage_role_permissions: false,
     manage_user_calendar: false,
     delete_activity: false,
+    manage_vacations: false,
   },
   employee: {
     manage_properties: false,
@@ -65,6 +68,7 @@ const defaultPermissions: Record<UserRole, Record<PermissionName, boolean>> = {
     manage_role_permissions: false,
     manage_user_calendar: false,
     delete_activity: false,
+    manage_vacations: false,
   },
 };
 
@@ -120,6 +124,7 @@ function buildDefaultPermissionsMap(): Map<string, boolean> {
     'manage_role_permissions',
     'manage_user_calendar',
     'delete_activity',
+    'manage_vacations',
   ];
 
   roles.forEach((role) => {
@@ -205,6 +210,10 @@ export function canDeleteActivity(role: UserRole): boolean {
   return defaultPermissions[role]?.delete_activity ?? false;
 }
 
+export function canManageVacations(role: UserRole): boolean {
+  return defaultPermissions[role]?.manage_vacations ?? false;
+}
+
 export function isPrivilegedRole(role: UserRole): boolean {
   return ['admin', 'owner', 'manager'].includes(role);
 }
@@ -286,6 +295,7 @@ export const permissionLabels: Record<PermissionName, string> = {
   manage_role_permissions: 'Rollen-Berechtigungen verwalten',
   manage_user_calendar: 'Benutzerkalender verwalten',
   delete_activity: 'Aktivitäten löschen',
+  manage_vacations: 'Ferien verwalten',
 };
 
 // Get all permission names
@@ -302,6 +312,7 @@ export const allPermissions: PermissionName[] = [
   'manage_role_permissions',
   'manage_user_calendar',
   'delete_activity',
+  'manage_vacations',
 ];
 
 // Get display label for role

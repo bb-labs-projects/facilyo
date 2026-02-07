@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { Car, Building2, Coffee, MapPin, Clock, FileText, Pencil, Wrench, Trees, Scissors, ClipboardList, Sparkles } from 'lucide-react';
+import { Car, Building2, Coffee, MapPin, Clock, FileText, Pencil, Wrench, Trees, Scissors, ClipboardList, Sparkles, Palmtree } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { swissFormat } from '@/lib/i18n';
 import type { TimeEntryWithProperty, TimeEntryType, ActivityType } from '@/types/database';
@@ -43,6 +43,12 @@ const ENTRY_COLORS: Record<TimeEntryType, { bg: string; border: string; text: st
     border: 'border-orange-300',
     text: 'text-orange-800',
     icon: 'text-orange-600',
+  },
+  vacation: {
+    bg: 'bg-green-50',
+    border: 'border-green-300',
+    text: 'text-green-800',
+    icon: 'text-green-600',
   },
 };
 
@@ -267,7 +273,10 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
         return 'Fahrzeit';
       case 'break':
         return 'Pause';
+      case 'vacation':
+        return 'Ferien';
       case 'property':
+      default:
         return 'Liegenschaft';
     }
   };
@@ -280,7 +289,10 @@ export function DailyCalendar({ entries, selectedDate, className, onEntryUpdated
         return <Car className={cn('h-4 w-4', colors.icon)} />;
       case 'break':
         return <Coffee className={cn('h-4 w-4', colors.icon)} />;
+      case 'vacation':
+        return <Palmtree className={cn('h-4 w-4', colors.icon)} />;
       case 'property':
+      default:
         return <Building2 className={cn('h-4 w-4', colors.icon)} />;
     }
   };

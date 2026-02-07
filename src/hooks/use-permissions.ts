@@ -15,6 +15,7 @@ import {
   canManageRolePermissions,
   canManageUserCalendar,
   canDeleteActivity,
+  canManageVacations,
   isPrivilegedRole,
   canAssignRole,
   getAssignableRoles,
@@ -39,6 +40,7 @@ export interface Permissions {
   canManageRolePermissions: boolean;
   canManageUserCalendar: boolean;
   canDeleteActivity: boolean;
+  canManageVacations: boolean;
   isPrivileged: boolean;
 
   // Dynamic permission checks
@@ -69,6 +71,7 @@ export function usePermissions(): Permissions {
         canManageRolePermissions: false,
         canManageUserCalendar: false,
         canDeleteActivity: false,
+        canManageVacations: false,
         isPrivileged: false,
         canAssignRole: () => false,
         getAssignableRoles: () => [],
@@ -90,6 +93,7 @@ export function usePermissions(): Permissions {
       canManageRolePermissions: canManageRolePermissions(role),
       canManageUserCalendar: canManageUserCalendar(role),
       canDeleteActivity: canDeleteActivity(role),
+      canManageVacations: canManageVacations(role),
       isPrivileged: isPrivilegedRole(role),
       canAssignRole: (targetRole: UserRole) => canAssignRole(role, targetRole),
       getAssignableRoles: () => getAssignableRoles(role),

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Play, Square, Coffee, LogOut, Car, Building2, StopCircle } from 'lucide-react';
+import { Play, Square, Coffee, LogOut, Car, Building2, StopCircle, Palmtree } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -45,6 +45,13 @@ export function StatusBadge({ entryType, propertyName, className }: StatusBadgeP
       bgColor: 'bg-orange-100',
       textColor: 'text-orange-800',
       borderColor: 'border-orange-300',
+    },
+    vacation: {
+      label: 'Ferien',
+      icon: Palmtree,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-800',
+      borderColor: 'border-green-300',
     },
   };
 

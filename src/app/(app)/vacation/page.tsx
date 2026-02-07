@@ -1,0 +1,738 @@
+'use client';
+
+import { useState, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Calendar,
+  Clock,
+  FileText,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { Header, PageContainer } from '@/components/layout/header';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { PullToRefresh } from '@/components/layout/pull-to-refresh';
+import { useAuthStore } from '@/stores/auth-store';
+import { usePermissions } from '@/hooks/use-permissions';
+import { getClient } from '@/lib/supabase/client';
+import { cn } from '@/lib/utils';
+import {
+  format,
+  addMonths,
+  subMonths,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isSameMonth,
+  isWeekend,
+  getDay,
+  startOfWeek,
+  endOfWeek,
+  isSameDay,
+  parseISO,
+} from 'date-fns';
+import { de } from 'date-fns/locale';
+import type { VacationRequestWithUser, Profile } from '@/types/database';
+
+const USER_COLORS = [
+  '#3B82F6',
+  '#10B981',
+  '#F59E0B',
+  '#EF4444',
+  '#8B5CF6',
+  '#EC4899',
+  '#06B6D4',
+  '#F97316',
+];
+
+type Tab = 'kalender' | 'saldo' | 'antraege';
+
+export default function VacationPage() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const profile = useAuthStore((state) => state.profile);
+  const { canManageVacations } = usePermissions();
+
+  const [activeTab, setActiveTab] = useState<Tab>('kalender');
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [rejectingRequest, setRejectingRequest] = useState<VacationRequestWithUser | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
+
+  // ─── Calendar query: all approved + own pending for visible month ───
+  const monthStart = startOfMonth(currentMonth);
+  const monthEnd = endOfMonth(currentMonth);
+
+  const { data: calendarRequests = [], refetch: refetchCalendar } = useQuery({
+    queryKey: [
+      'vacation-calendar',
+      profile?.id,
+      format(monthStart, 'yyyy-MM-dd'),
+    ],
+    queryFn: async () => {
+      const supabase = getClient();
+      const { data, error } = await (supabase as any)
+        .from('vacation_requests')
+        .select('*, user:profiles!vacation_requests_user_id_fkey(*)')
+        .or(
+          `status.eq.approved,and(user_id.eq.${profile!.id},status.eq.pending)`
+        )
+        .lte('start_date', format(monthEnd, 'yyyy-MM-dd'))
+        .gte('end_date', format(monthStart, 'yyyy-MM-dd'));
+
+      if (error) throw error;
+      return data as VacationRequestWithUser[];
+    },
+    enabled: !!profile?.id,
+  });
+
+  // ─── Own requests for current year (saldo tab) ───
+  const currentYear = new Date().getFullYear();
+
+  const { data: ownRequests = [], refetch: refetchOwn } = useQuery({
+    queryKey: ['vacation-own', profile?.id, currentYear],
+    queryFn: async () => {
+      const supabase = getClient();
+      const { data, error } = await (supabase as any)
+        .from('vacation_requests')
+        .select('*, user:profiles!vacation_requests_user_id_fkey(*)')
+        .eq('user_id', profile!.id)
+        .gte('start_date', `${currentYear}-01-01`)
+        .lte('start_date', `${currentYear}-12-31`)
+        .order('start_date', { ascending: false });
+
+      if (error) throw error;
+      return data as VacationRequestWithUser[];
+    },
+    enabled: !!profile?.id,
+  });
+
+  // ─── All pending requests (admin tab) ───
+  const { data: pendingRequests = [], refetch: refetchPending } = useQuery({
+    queryKey: ['vacation-pending'],
+    queryFn: async () => {
+      const supabase = getClient();
+      const { data, error } = await (supabase as any)
+        .from('vacation_requests')
+        .select('*, user:profiles!vacation_requests_user_id_fkey(*)')
+        .eq('status', 'pending')
+        .order('start_date', { ascending: true });
+
+      if (error) throw error;
+      return data as VacationRequestWithUser[];
+    },
+    enabled: !!profile?.id && canManageVacations,
+  });
+
+  // ─── Approve mutation ───
+  const approveMutation = useMutation({
+    mutationFn: async (request: VacationRequestWithUser) => {
+      const supabase = getClient();
+
+      // 1. Update vacation request status
+      const { error: updateError } = await (supabase as any)
+        .from('vacation_requests')
+        .update({
+          status: 'approved',
+          reviewed_by: profile!.id,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq('id', request.id);
+
+      if (updateError) throw updateError;
+
+      // 2. Create time entries for each business day
+      const start = parseISO(request.start_date);
+      const end = parseISO(request.end_date);
+      const days = eachDayOfInterval({ start, end });
+
+      for (const day of days) {
+        const dayOfWeek = getDay(day);
+        // Skip weekends (0=Sunday, 6=Saturday)
+        if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+
+        const dateStr = format(day, 'yyyy-MM-dd');
+
+        // Upsert work_day
+        const { data: workDay, error: wdError } = await (supabase as any)
+          .from('work_days')
+          .upsert(
+            {
+              user_id: request.user_id,
+              date: dateStr,
+              start_time: `${dateStr}T08:00:00`,
+              end_time: request.is_half_day
+                ? `${dateStr}T12:00:00`
+                : `${dateStr}T16:00:00`,
+              is_finalized: true,
+            },
+            { onConflict: 'user_id,date' }
+          )
+          .select()
+          .single();
+
+        if (wdError) throw wdError;
+
+        // Create time entry
+        const { error: teError } = await (supabase as any)
+          .from('time_entries')
+          .insert({
+            work_day_id: workDay.id,
+            user_id: request.user_id,
+            property_id: null,
+            entry_type: 'vacation',
+            start_time: `${dateStr}T08:00:00`,
+            end_time: request.is_half_day
+              ? `${dateStr}T12:00:00`
+              : `${dateStr}T16:00:00`,
+            status: 'completed',
+          });
+
+        if (teError) throw teError;
+      }
+    },
+    onSuccess: () => {
+      toast.success('Ferienantrag bewilligt');
+      queryClient.invalidateQueries({ queryKey: ['vacation-pending'] });
+      queryClient.invalidateQueries({ queryKey: ['vacation-calendar'] });
+      queryClient.invalidateQueries({ queryKey: ['vacation-own'] });
+    },
+    onError: (error: Error) => {
+      toast.error(`Fehler: ${error.message}`);
+    },
+  });
+
+  // ─── Reject mutation ───
+  const rejectMutation = useMutation({
+    mutationFn: async ({
+      requestId,
+      reason,
+    }: {
+      requestId: string;
+      reason: string;
+    }) => {
+      const supabase = getClient();
+      const { error } = await (supabase as any)
+        .from('vacation_requests')
+        .update({
+          status: 'rejected',
+          reviewed_by: profile!.id,
+          reviewed_at: new Date().toISOString(),
+          rejection_reason: reason,
+        })
+        .eq('id', requestId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Ferienantrag abgelehnt');
+      setRejectingRequest(null);
+      setRejectionReason('');
+      queryClient.invalidateQueries({ queryKey: ['vacation-pending'] });
+      queryClient.invalidateQueries({ queryKey: ['vacation-calendar'] });
+      queryClient.invalidateQueries({ queryKey: ['vacation-own'] });
+    },
+    onError: (error: Error) => {
+      toast.error(`Fehler: ${error.message}`);
+    },
+  });
+
+  const handleRefresh = async () => {
+    await Promise.all([refetchCalendar(), refetchOwn(), refetchPending()]);
+  };
+
+  // ─── Calendar helpers ───
+  const userColorMap = useMemo(() => {
+    const map = new Map<string, string>();
+    const uniqueUsers = new Set(calendarRequests.map((r) => r.user_id));
+    let i = 0;
+    uniqueUsers.forEach((userId) => {
+      map.set(userId, USER_COLORS[i % USER_COLORS.length]);
+      i++;
+    });
+    return map;
+  }, [calendarRequests]);
+
+  const calendarDays = useMemo(() => {
+    const start = startOfWeek(monthStart, { weekStartsOn: 1 });
+    const end = endOfWeek(monthEnd, { weekStartsOn: 1 });
+    return eachDayOfInterval({ start, end });
+  }, [monthStart, monthEnd]);
+
+  const getRequestsForDay = (day: Date) => {
+    return calendarRequests.filter((req) => {
+      const start = parseISO(req.start_date);
+      const end = parseISO(req.end_date);
+      return day >= start && day <= end;
+    });
+  };
+
+  // ─── Saldo calculations ───
+  const today = new Date();
+  const vacationDaysPerYear = profile?.vacation_days_per_year ?? 25;
+
+  const approvedPast = useMemo(() => {
+    return ownRequests
+      .filter((r) => r.status === 'approved' && parseISO(r.end_date) < today)
+      .reduce((sum, r) => sum + r.total_days, 0);
+  }, [ownRequests, today]);
+
+  const approvedFuture = useMemo(() => {
+    return ownRequests
+      .filter((r) => r.status === 'approved' && parseISO(r.end_date) >= today)
+      .reduce((sum, r) => sum + r.total_days, 0);
+  }, [ownRequests, today]);
+
+  const totalApproved = approvedPast + approvedFuture;
+  const remaining = vacationDaysPerYear - totalApproved;
+  const currentMonthNum = today.getMonth() + 1;
+  const proRata = Math.round((vacationDaysPerYear * (currentMonthNum / 12)) * 10) / 10;
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+            Beantragt
+          </span>
+        );
+      case 'approved':
+        return (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            Bewilligt
+          </span>
+        );
+      case 'rejected':
+        return (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+            Abgelehnt
+          </span>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const getUserName = (user: Profile) => {
+    if (user.first_name || user.last_name) {
+      return `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
+    }
+    return user.email;
+  };
+
+  // ─── Render ───
+  return (
+    <PageContainer
+      header={
+        <Header
+          title="Ferien"
+          rightElement={
+            <div className="flex gap-1">
+              <Button
+                variant={activeTab === 'kalender' ? 'primary' : 'ghost'}
+                size="sm"
+                onClick={() => setActiveTab('kalender')}
+              >
+                Kalender
+              </Button>
+              <Button
+                variant={activeTab === 'saldo' ? 'primary' : 'ghost'}
+                size="sm"
+                onClick={() => setActiveTab('saldo')}
+              >
+                Mein Saldo
+              </Button>
+              {canManageVacations && (
+                <Button
+                  variant={activeTab === 'antraege' ? 'primary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setActiveTab('antraege')}
+                >
+                  Anträge
+                  {pendingRequests.length > 0 && (
+                    <span className="ml-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                      {pendingRequests.length}
+                    </span>
+                  )}
+                </Button>
+              )}
+            </div>
+          }
+        />
+      }
+    >
+      <PullToRefresh onRefresh={handleRefresh}>
+        {/* ════════════════ TAB 1: KALENDER ════════════════ */}
+        {activeTab === 'kalender' && (
+          <div>
+            {/* Month navigation */}
+            <div className="flex items-center justify-between mb-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+              <h2 className="text-lg font-semibold">
+                {format(currentMonth, 'MMMM yyyy', { locale: de })}
+              </h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+              >
+                <ChevronRight className="h-5 w-5" />
+              </Button>
+            </div>
+
+            {/* Calendar grid */}
+            <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-lg overflow-hidden">
+              {/* Weekday headers */}
+              {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((day) => (
+                <div
+                  key={day}
+                  className="bg-gray-50 text-center text-xs font-medium text-gray-500 py-2"
+                >
+                  {day}
+                </div>
+              ))}
+
+              {/* Day cells */}
+              {calendarDays.map((day) => {
+                const dayRequests = getRequestsForDay(day);
+                const isCurrentMonth = isSameMonth(day, currentMonth);
+                const isToday = isSameDay(day, new Date());
+                const weekend = isWeekend(day);
+
+                return (
+                  <div
+                    key={day.toISOString()}
+                    className={cn(
+                      'bg-white min-h-[60px] p-1 relative',
+                      !isCurrentMonth && 'bg-gray-50',
+                      weekend && 'bg-gray-100'
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'text-xs',
+                        !isCurrentMonth && 'text-gray-300',
+                        weekend && isCurrentMonth && 'text-gray-400',
+                        isToday &&
+                          'bg-primary-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px]'
+                      )}
+                    >
+                      {format(day, 'd')}
+                    </span>
+
+                    {/* Vacation bars/dots */}
+                    <div className="mt-0.5 space-y-0.5">
+                      {dayRequests.slice(0, 3).map((req) => {
+                        const color = userColorMap.get(req.user_id) ?? '#999';
+                        const isPending = req.status === 'pending';
+                        return (
+                          <div
+                            key={req.id}
+                            className={cn(
+                              'h-1.5 rounded-full text-[8px] truncate',
+                              isPending && 'opacity-50'
+                            )}
+                            style={{
+                              backgroundColor: isPending ? 'transparent' : color,
+                              border: isPending
+                                ? `1px dashed ${color}`
+                                : 'none',
+                            }}
+                            title={`${getUserName(req.user)} (${req.status === 'pending' ? 'beantragt' : 'bewilligt'})`}
+                          />
+                        );
+                      })}
+                      {dayRequests.length > 3 && (
+                        <span className="text-[8px] text-gray-400">
+                          +{dayRequests.length - 3}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Legend */}
+            {calendarRequests.length > 0 && (
+              <div className="mt-4 flex flex-wrap gap-3">
+                {Array.from(
+                  new Map(
+                    calendarRequests.map((r) => [r.user_id, r.user])
+                  ).entries()
+                ).map(([userId, user]) => (
+                  <div key={userId} className="flex items-center gap-1.5 text-xs">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{
+                        backgroundColor: userColorMap.get(userId) ?? '#999',
+                      }}
+                    />
+                    <span className="text-gray-600">{getUserName(user)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ════════════════ TAB 2: MEIN SALDO ════════════════ */}
+        {activeTab === 'saldo' && (
+          <div>
+            {/* Stats cards */}
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <p className="text-xs text-muted-foreground">Jahresanspruch</p>
+                  <p className="text-2xl font-bold text-primary-700">
+                    {vacationDaysPerYear}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Tage</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <p className="text-xs text-muted-foreground">Bezogen</p>
+                  <p className="text-2xl font-bold text-orange-600">
+                    {approvedPast}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Tage</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <p className="text-xs text-muted-foreground">Bewilligt offen</p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {approvedFuture}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Tage</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <p className="text-xs text-muted-foreground">Verfügbar</p>
+                  <p className={cn(
+                    'text-2xl font-bold',
+                    remaining >= 0 ? 'text-green-600' : 'text-red-600'
+                  )}>
+                    {remaining}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Tage</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Pro-rata info */}
+            <div className="bg-blue-50 rounded-lg p-3 mb-6 text-sm text-blue-800">
+              Bis {format(today, 'MMMM', { locale: de })} anteilsmässig verfügbar:{' '}
+              <span className="font-semibold">{proRata} Tage</span>
+            </div>
+
+            {/* Own requests list */}
+            <h3 className="font-semibold mb-3">Meine Anträge</h3>
+            {ownRequests.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Calendar className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                <p>Keine Ferienanträge vorhanden</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {ownRequests.map((req) => (
+                  <Card key={req.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="font-medium text-sm">
+                            {format(parseISO(req.start_date), 'dd.MM.yyyy', {
+                              locale: de,
+                            })}{' '}
+                            &ndash;{' '}
+                            {format(parseISO(req.end_date), 'dd.MM.yyyy', {
+                              locale: de,
+                            })}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {req.total_days} {req.total_days === 1 ? 'Tag' : 'Tage'}
+                            {req.is_half_day && ' (halber Tag)'}
+                          </p>
+                          {req.notes && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {req.notes}
+                            </p>
+                          )}
+                          {req.rejection_reason && (
+                            <p className="text-xs text-red-600 mt-1">
+                              Grund: {req.rejection_reason}
+                            </p>
+                          )}
+                        </div>
+                        {getStatusBadge(req.status)}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {/* FAB */}
+            <button
+              onClick={() => router.push('/vacation/new')}
+              className="fixed bottom-24 right-6 lg:bottom-8 w-14 h-14 bg-primary-600 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-primary-700 transition-colors z-30"
+              aria-label="Ferien beantragen"
+            >
+              <Plus className="h-6 w-6" />
+            </button>
+          </div>
+        )}
+
+        {/* ════════════════ TAB 3: ANTRÄGE (Admin) ════════════════ */}
+        {activeTab === 'antraege' && canManageVacations && (
+          <div>
+            {pendingRequests.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Keine offenen Anträge</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {pendingRequests.map((req) => (
+                  <Card key={req.id}>
+                    <CardContent className="p-4">
+                      <div className="mb-3">
+                        <p className="font-semibold">
+                          {getUserName(req.user)}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {format(parseISO(req.start_date), 'dd.MM.yyyy', {
+                            locale: de,
+                          })}{' '}
+                          &ndash;{' '}
+                          {format(parseISO(req.end_date), 'dd.MM.yyyy', {
+                            locale: de,
+                          })}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {req.total_days} {req.total_days === 1 ? 'Tag' : 'Tage'}
+                          {req.is_half_day && ' (halber Tag)'}
+                        </p>
+                        {req.notes && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {req.notes}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                          onClick={() => approveMutation.mutate(req)}
+                          disabled={approveMutation.isPending}
+                        >
+                          Bewilligen
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
+                          onClick={() => {
+                            setRejectingRequest(req);
+                            setRejectionReason('');
+                          }}
+                          disabled={rejectMutation.isPending}
+                        >
+                          Ablehnen
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </PullToRefresh>
+
+      {/* Rejection Dialog */}
+      <Dialog
+        open={!!rejectingRequest}
+        onOpenChange={() => setRejectingRequest(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Antrag ablehnen</DialogTitle>
+            <DialogDescription>
+              Bitte geben Sie einen Grund für die Ablehnung an.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-4">
+            {rejectingRequest && (
+              <div className="mb-4 p-3 bg-muted rounded-lg">
+                <p className="font-medium text-sm">
+                  {getUserName(rejectingRequest.user)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {format(parseISO(rejectingRequest.start_date), 'dd.MM.yyyy', {
+                    locale: de,
+                  })}{' '}
+                  &ndash;{' '}
+                  {format(parseISO(rejectingRequest.end_date), 'dd.MM.yyyy', {
+                    locale: de,
+                  })}{' '}
+                  ({rejectingRequest.total_days}{' '}
+                  {rejectingRequest.total_days === 1 ? 'Tag' : 'Tage'})
+                </p>
+              </div>
+            )}
+            <Input
+              placeholder="Ablehnungsgrund..."
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+            />
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setRejectingRequest(null)}
+            >
+              Abbrechen
+            </Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={() =>
+                rejectingRequest &&
+                rejectMutation.mutate({
+                  requestId: rejectingRequest.id,
+                  reason: rejectionReason,
+                })
+              }
+              disabled={!rejectionReason.trim() || rejectMutation.isPending}
+            >
+              {rejectMutation.isPending ? 'Wird abgelehnt...' : 'Ablehnen'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </PageContainer>
+  );
+}

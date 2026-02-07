@@ -18,6 +18,7 @@ import {
   Scissors,
   ClipboardList,
   Sparkles,
+  Palmtree,
   Plus,
   Pencil,
   Trash2,
@@ -94,6 +95,7 @@ const ENTRY_TYPE_CONFIG: Record<TimeEntryType, { label: string; icon: typeof Car
   property: { label: 'Liegenschaft', icon: Building2, color: 'text-primary-600 bg-primary-50' },
   travel: { label: 'Fahrzeit', icon: Car, color: 'text-amber-600 bg-amber-50' },
   break: { label: 'Pause', icon: Coffee, color: 'text-orange-600 bg-orange-50' },
+  vacation: { label: 'Ferien', icon: Palmtree, color: 'text-green-600 bg-green-50' },
 };
 
 function calculateDuration(entry: TimeEntry): number {

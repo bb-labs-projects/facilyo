@@ -15,6 +15,7 @@ import {
   Building2,
   Shield,
   CalendarDays,
+  Palmtree,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -35,6 +36,7 @@ const mainNavItems: NavItem[] = [
   { href: '/time', label: 'Zeiten', icon: Clock },
   { href: '/tasks', label: 'Aufgaben', icon: ClipboardList },
   { href: '/issues', label: 'Meldungen', icon: AlertTriangle },
+  { href: '/vacation', label: 'Ferien', icon: Palmtree },
 ];
 
 const adminNavItems: NavItem[] = [

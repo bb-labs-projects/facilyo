@@ -6,7 +6,7 @@ import {
   Home,
   Clock,
   ClipboardList,
-  AlertTriangle,
+  Palmtree,
   User,
 } from 'lucide-react';
 import { cn, hapticFeedback } from '@/lib/utils';
@@ -23,7 +23,7 @@ const navItems: NavItem[] = [
   { href: '/', label: 'Start', icon: Home },
   { href: '/time', label: 'Zeiten', icon: Clock },
   { href: '/tasks', label: 'Aufgaben', icon: ClipboardList },
-  { href: '/issues', label: 'Meldungen', icon: AlertTriangle },
+  { href: '/vacation', label: 'Ferien', icon: Palmtree },
   { href: '/profile', label: 'Profil', icon: User },
 ];
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { Building2, Car, Coffee, Wrench, Trees, Scissors, ClipboardList, Sparkles } from 'lucide-react';
+import { Building2, Car, Coffee, Wrench, Trees, Scissors, ClipboardList, Sparkles, Palmtree } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { swissFormat } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
@@ -40,6 +40,11 @@ const ENTRY_TYPE_CONFIG: Record<TimeEntryType, {
     label: 'Pause',
     icon: Coffee,
     color: 'text-orange-600',
+  },
+  vacation: {
+    label: 'Ferien',
+    icon: Palmtree,
+    color: 'text-green-600',
   },
 };
 
@@ -112,6 +117,7 @@ export function PropertyTimeSummary({ entries, className }: PropertyTimeSummaryP
       property: 0,
       travel: 1,
       break: 2,
+      vacation: 3,
     };
 
     const priorityDiff = typePriority[a.type] - typePriority[b.type];

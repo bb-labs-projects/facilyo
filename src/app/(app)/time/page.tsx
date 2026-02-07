@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Calendar, ChevronLeft, ChevronRight, Car, Coffee, Building2 } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Car, Coffee, Building2, Palmtree } from 'lucide-react';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
 import { PropertyTimeSummary } from '@/components/time-tracking/property-time-summary';
@@ -22,6 +22,7 @@ const ENTRY_TYPE_CONFIG: Record<TimeEntryType, { label: string; icon: typeof Car
   property: { label: 'Liegenschaft', icon: Building2, color: 'text-primary-900' },
   travel: { label: 'Fahrzeit', icon: Car, color: 'text-amber-600' },
   break: { label: 'Pause', icon: Coffee, color: 'text-orange-600' },
+  vacation: { label: 'Ferien', icon: Palmtree, color: 'text-green-600' },
 };
 
 export default function TimePage() {
@@ -109,6 +110,7 @@ export default function TimePage() {
       property: 0,
       travel: 0,
       break: 0,
+      vacation: 0,
     };
 
     allEntries.forEach((entry) => {

@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { format, startOfWeek, addDays, isSameDay, parseISO } from 'date-fns';
 import { de } from 'date-fns/locale';
-import { Car, Building2, Coffee, Wrench, Trees, Scissors, ClipboardList, Sparkles } from 'lucide-react';
+import { Car, Building2, Coffee, Wrench, Trees, Scissors, ClipboardList, Sparkles, Palmtree } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { TimeEntryWithProperty, TimeEntryType, ActivityType } from '@/types/database';
 import { TimeEntryEditSheet } from './time-entry-edit-sheet';
@@ -39,6 +39,11 @@ const ENTRY_COLORS: Record<TimeEntryType, { bg: string; border: string; text: st
     bg: 'bg-orange-100',
     border: 'border-orange-300',
     text: 'text-orange-800',
+  },
+  vacation: {
+    bg: 'bg-green-100',
+    border: 'border-green-300',
+    text: 'text-green-800',
   },
 };
 
@@ -329,7 +334,10 @@ export function WeeklyCalendar({ entries, selectedDate, className, onEntryUpdate
         return 'Fahrzeit';
       case 'break':
         return 'Pause';
+      case 'vacation':
+        return 'Ferien';
       case 'property':
+      default:
         return 'Liegenschaft';
     }
   };
@@ -341,7 +349,10 @@ export function WeeklyCalendar({ entries, selectedDate, className, onEntryUpdate
         return <Car className="h-3 w-3" />;
       case 'break':
         return <Coffee className="h-3 w-3" />;
+      case 'vacation':
+        return <Palmtree className="h-3 w-3" />;
       case 'property':
+      default:
         return <Building2 className="h-3 w-3" />;
     }
   };

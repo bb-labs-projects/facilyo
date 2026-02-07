@@ -20,10 +20,12 @@ export type PermissionName =
   | 'access_admin_panel'
   | 'manage_role_permissions'
   | 'manage_user_calendar'
-  | 'delete_activity';
+  | 'delete_activity'
+  | 'manage_vacations';
 export type PropertyType = 'residential' | 'commercial' | 'industrial' | 'mixed' | 'office' | 'private_maintenance';
 export type TimeEntryStatus = 'active' | 'paused' | 'completed';
-export type TimeEntryType = 'property' | 'travel' | 'break';
+export type TimeEntryType = 'property' | 'travel' | 'break' | 'vacation';
+export type VacationStatus = 'pending' | 'approved' | 'rejected';
 export type ActivityType = 'hauswartung' | 'rasen_maehen' | 'hecken_schneiden' | 'regie' | 'reinigung';
 export type IssuePriority = 'low' | 'medium' | 'high' | 'urgent';
 export type IssueStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
@@ -44,6 +46,7 @@ export interface Database {
           avatar_url: string | null;
           push_subscription: Json | null;
           is_active: boolean;
+          vacation_days_per_year: number;
           created_at: string;
           updated_at: string;
         };
@@ -57,6 +60,7 @@ export interface Database {
           avatar_url?: string | null;
           push_subscription?: Json | null;
           is_active?: boolean;
+          vacation_days_per_year?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -70,6 +74,7 @@ export interface Database {
           avatar_url?: string | null;
           push_subscription?: Json | null;
           is_active?: boolean;
+          vacation_days_per_year?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -548,6 +553,53 @@ export interface Database {
           updated_at?: string;
         };
       };
+      vacation_requests: {
+        Row: {
+          id: string;
+          user_id: string;
+          start_date: string;
+          end_date: string;
+          is_half_day: boolean;
+          total_days: number;
+          status: VacationStatus;
+          notes: string | null;
+          reviewed_by: string | null;
+          reviewed_at: string | null;
+          rejection_reason: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          start_date: string;
+          end_date: string;
+          is_half_day?: boolean;
+          total_days: number;
+          status?: VacationStatus;
+          notes?: string | null;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+          rejection_reason?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          start_date?: string;
+          end_date?: string;
+          is_half_day?: boolean;
+          total_days?: number;
+          status?: VacationStatus;
+          notes?: string | null;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+          rejection_reason?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Views: {
       [_ in never]: never;
@@ -563,6 +615,7 @@ export interface Database {
       issue_priority: IssuePriority;
       issue_status: IssueStatus;
       issue_category: IssueCategory;
+      vacation_status: VacationStatus;
     };
   };
 }
@@ -581,6 +634,7 @@ export type ChecklistItemCompletion = Database['public']['Tables']['checklist_it
 export type AuthCredentials = Database['public']['Tables']['auth_credentials']['Row'];
 export type AuthAuditLog = Database['public']['Tables']['auth_audit_log']['Row'];
 export type RolePermission = Database['public']['Tables']['role_permissions']['Row'];
+export type VacationRequest = Database['public']['Tables']['vacation_requests']['Row'];
 
 // Insert types
 export type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];
@@ -591,6 +645,7 @@ export type ChecklistTemplateInsert = Database['public']['Tables']['checklist_te
 export type IssueInsert = Database['public']['Tables']['issues']['Insert'];
 export type AufgabeInsert = Database['public']['Tables']['aufgaben']['Insert'];
 export type ChecklistItemCompletionInsert = Database['public']['Tables']['checklist_item_completions']['Insert'];
+export type VacationRequestInsert = Database['public']['Tables']['vacation_requests']['Insert'];
 
 // Update types
 export type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
@@ -600,6 +655,7 @@ export type TimeEntryUpdate = Database['public']['Tables']['time_entries']['Upda
 export type ChecklistTemplateUpdate = Database['public']['Tables']['checklist_templates']['Update'];
 export type IssueUpdate = Database['public']['Tables']['issues']['Update'];
 export type AufgabeUpdate = Database['public']['Tables']['aufgaben']['Update'];
+export type VacationRequestUpdate = Database['public']['Tables']['vacation_requests']['Update'];
 
 // Checklist item structure
 export interface ChecklistItem {
@@ -630,4 +686,9 @@ export interface AufgabeWithRelations extends Aufgabe {
   creator: Profile;
   assignee: Profile | null;
   source_meldung: Issue | null;
+}
+
+export interface VacationRequestWithUser extends VacationRequest {
+  user: Profile;
+  reviewer: Profile | null;
 }

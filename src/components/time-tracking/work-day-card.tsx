@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Calendar, Clock, MapPin, Car, Coffee, Building2, Trash2, ChevronDown, ChevronUp, Wrench, Trees, Scissors, ClipboardList, Sparkles } from 'lucide-react';
+import { Calendar, Clock, MapPin, Car, Coffee, Building2, Trash2, ChevronDown, ChevronUp, Wrench, Trees, Scissors, ClipboardList, Sparkles, Palmtree } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -57,6 +57,13 @@ const ENTRY_TYPE_CONFIG: Record<TimeEntryType, {
     bgColor: 'bg-orange-50',
     borderColor: 'border-orange-200',
     textColor: 'text-orange-700',
+  },
+  vacation: {
+    label: 'Ferien',
+    icon: Palmtree,
+    bgColor: 'bg-green-50',
+    borderColor: 'border-green-200',
+    textColor: 'text-green-700',
   },
 };
 

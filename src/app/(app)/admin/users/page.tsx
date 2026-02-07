@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueries, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Users, Shield, Building2, Search, UserPlus, KeyRound, Unlock, AlertCircle, Power } from 'lucide-react';
+import { Users, Shield, Building2, Search, UserPlus, KeyRound, Unlock, AlertCircle, Power, Palmtree } from 'lucide-react';
 import { toast } from 'sonner';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
@@ -61,6 +61,8 @@ export default function AdminUsersPage() {
   const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
   const [showTempPasswordDialog, setShowTempPasswordDialog] = useState(false);
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
+  const [showVacationDaysDialog, setShowVacationDaysDialog] = useState(false);
+  const [vacationDaysValue, setVacationDaysValue] = useState<number>(25);
   const [tempPasswordData, setTempPasswordData] = useState<{
     username: string;
     tempPassword: string;
@@ -349,6 +351,27 @@ export default function AdminUsersPage() {
     },
   });
 
+  // Update vacation days mutation
+  const updateVacationDaysMutation = useMutation({
+    mutationFn: async ({ userId, days }: { userId: string; days: number }) => {
+      const supabase = getClient();
+      const { error } = await (supabase as any)
+        .from('profiles')
+        .update({ vacation_days_per_year: days })
+        .eq('id', userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Ferientage aktualisiert');
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      setShowVacationDaysDialog(false);
+      setSelectedUser(null);
+    },
+    onError: (error: Error) => {
+      toast.error(`Fehler: ${error.message}`);
+    },
+  });
+
   // Toggle user active status mutation
   const toggleActiveMutation = useMutation({
     mutationFn: async ({ userId, isActive }: { userId: string; isActive: boolean }) => {
@@ -540,6 +563,9 @@ export default function AdminUsersPage() {
                         <span className="text-xs text-muted-foreground">
                           {assignedCount} {assignedCount === 1 ? 'Liegenschaft' : 'Liegenschaften'}
                         </span>
+                        <span className="text-xs text-muted-foreground">
+                          {user.vacation_days_per_year ?? 25} Ferientage
+                        </span>
                       </div>
                     </div>
 
@@ -612,6 +638,19 @@ export default function AdminUsersPage() {
                           <Shield className="h-4 w-4" />
                         </Button>
                       )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedUser(user);
+                          setVacationDaysValue(user.vacation_days_per_year ?? 25);
+                          setShowVacationDaysDialog(true);
+                        }}
+                        title="Ferientage bearbeiten"
+                      >
+                        <Palmtree className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -883,6 +922,39 @@ export default function AdminUsersPage() {
               disabled={toggleActiveMutation.isPending}
             >
               {toggleActiveMutation.isPending ? 'Wird deaktiviert...' : 'Deaktivieren'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Vacation days dialog */}
+      <Dialog open={showVacationDaysDialog} onOpenChange={setShowVacationDaysDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ferientage pro Jahr</DialogTitle>
+            <DialogDescription>
+              Ferienanspruch für {selectedUser?.first_name} {selectedUser?.last_name} festlegen
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              label="Ferientage pro Jahr"
+              type="number"
+              min={0}
+              max={60}
+              step={0.5}
+              value={vacationDaysValue}
+              onChange={(e) => setVacationDaysValue(parseFloat(e.target.value) || 0)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowVacationDaysDialog(false)}>
+              Abbrechen
+            </Button>
+            <Button
+              onClick={() => selectedUser && updateVacationDaysMutation.mutate({ userId: selectedUser.id, days: vacationDaysValue })}
+              disabled={updateVacationDaysMutation.isPending}
+            >
+              {updateVacationDaysMutation.isPending ? 'Wird gespeichert...' : 'Speichern'}
             </Button>
           </DialogFooter>
         </DialogContent>
