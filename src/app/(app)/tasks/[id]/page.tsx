@@ -159,14 +159,22 @@ export default function AufgabeDetailPage() {
       if (photoUrls && photoUrls.length > 0) {
         const storagePaths = photoUrls
           .map((url: string) => {
+            // Extract path after bucket name in the public URL
             const match = url.match(/\/storage\/v1\/object\/public\/photos\/([^?]+)/);
-            return match ? match[1] : null;
+            return match ? decodeURIComponent(match[1]) : null;
           })
           .filter((path): path is string => path !== null);
 
         if (storagePaths.length > 0) {
-          await supabase.storage.from('photos').remove(storagePaths);
+          const { error: storageError } = await supabase.storage
+            .from('photos')
+            .remove(storagePaths);
+          if (storageError) {
+            console.error('Storage delete failed:', storageError, 'Paths:', storagePaths);
+          }
         }
+      } else {
+        console.log('No photos to delete. taskData:', taskData);
       }
 
       const { error } = await (supabase as any)
