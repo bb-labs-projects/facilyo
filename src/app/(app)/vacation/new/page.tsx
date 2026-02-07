@@ -120,7 +120,9 @@ export default function NewVacationRequestPage() {
     },
     onSuccess: () => {
       toast.success('Ferienantrag eingereicht');
-      queryClient.invalidateQueries({ queryKey: ['vacation-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['vacation-own'] });
+      queryClient.invalidateQueries({ queryKey: ['vacation-pending'] });
+      queryClient.invalidateQueries({ queryKey: ['vacation-calendar'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-used-days'] });
       router.push('/vacation');
     },

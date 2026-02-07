@@ -316,6 +316,7 @@ export default function VacationPage() {
       queryClient.invalidateQueries({ queryKey: ['vacation-approved'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-calendar'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-own'] });
+      queryClient.invalidateQueries({ queryKey: ['vacation-used-days'] });
     },
     onError: (error: Error) => {
       toast.error(`Fehler: ${error.message}`);
@@ -351,6 +352,7 @@ export default function VacationPage() {
       queryClient.invalidateQueries({ queryKey: ['vacation-pending'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-calendar'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-own'] });
+      queryClient.invalidateQueries({ queryKey: ['vacation-used-days'] });
     },
     onError: (error: Error) => {
       toast.error(`Fehler: ${error.message}`);
@@ -484,45 +486,55 @@ export default function VacationPage() {
   // ─── Render ───
   return (
     <PageContainer
-      header={
-        <Header
-          title="Ferien"
-          rightElement={
-            <div className="flex gap-1">
-              <Button
-                variant={activeTab === 'kalender' ? 'primary' : 'ghost'}
-                size="sm"
-                onClick={() => setActiveTab('kalender')}
-              >
-                Kalender
-              </Button>
-              <Button
-                variant={activeTab === 'saldo' ? 'primary' : 'ghost'}
-                size="sm"
-                onClick={() => setActiveTab('saldo')}
-              >
-                Mein Saldo
-              </Button>
-              {canManageVacations && (
-                <Button
-                  variant={activeTab === 'antraege' ? 'primary' : 'ghost'}
-                  size="sm"
-                  onClick={() => setActiveTab('antraege')}
-                >
-                  Anträge
-                  {pendingRequests.length > 0 && (
-                    <span className="ml-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                      {pendingRequests.length}
-                    </span>
-                  )}
-                </Button>
-              )}
-            </div>
-          }
-        />
-      }
+      header={<Header title="Ferien" />}
     >
       <PullToRefresh onRefresh={handleRefresh}>
+        {/* Tab bar */}
+        <div className={cn(
+          'flex gap-1 mb-4 p-1 bg-muted rounded-lg',
+          canManageVacations ? '' : 'max-w-sm'
+        )}>
+          <button
+            onClick={() => setActiveTab('kalender')}
+            className={cn(
+              'flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors',
+              activeTab === 'kalender'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            Kalender
+          </button>
+          <button
+            onClick={() => setActiveTab('saldo')}
+            className={cn(
+              'flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors',
+              activeTab === 'saldo'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            Saldo
+          </button>
+          {canManageVacations && (
+            <button
+              onClick={() => setActiveTab('antraege')}
+              className={cn(
+                'flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors relative',
+                activeTab === 'antraege'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              Anträge
+              {pendingRequests.length > 0 && (
+                <span className="ml-1 inline-flex items-center justify-center w-5 h-5 bg-red-500 text-white text-xs rounded-full">
+                  {pendingRequests.length}
+                </span>
+              )}
+            </button>
+          )}
+        </div>
         {/* ════════════════ TAB 1: KALENDER ════════════════ */}
         {activeTab === 'kalender' && (
           <div>
@@ -748,10 +760,10 @@ export default function VacationPage() {
                                 }
                               }}
                               disabled={cancelMutation.isPending}
-                              className="p-1 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                              className="p-2 -mr-1 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                               title="Stornieren"
                             >
-                              <X className="h-4 w-4" />
+                              <X className="h-5 w-5" />
                             </button>
                           )}
                         </div>
@@ -815,17 +827,15 @@ export default function VacationPage() {
 
                         <div className="flex gap-2">
                           <Button
-                            size="sm"
-                            className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                            className="flex-1 h-11 bg-green-600 hover:bg-green-700 text-white"
                             onClick={() => approveMutation.mutate(req)}
                             disabled={approveMutation.isPending}
                           >
-                            Bewilligen
+                            {approveMutation.isPending ? 'Wird bewilligt...' : 'Bewilligen'}
                           </Button>
                           <Button
-                            size="sm"
                             variant="outline"
-                            className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
+                            className="flex-1 h-11 border-red-300 text-red-600 hover:bg-red-50"
                             onClick={() => {
                               setRejectingRequest(req);
                               setRejectionReason('');
@@ -870,9 +880,8 @@ export default function VacationPage() {
                             </p>
                           </div>
                           <Button
-                            size="sm"
                             variant="outline"
-                            className="border-red-300 text-red-600 hover:bg-red-50"
+                            className="h-10 border-red-300 text-red-600 hover:bg-red-50"
                             onClick={() => {
                               if (confirm(`Bewilligte Ferien von ${getUserName(req.user)} stornieren? Die Zeiteinträge werden gelöscht.`)) {
                                 cancelMutation.mutate(req);
