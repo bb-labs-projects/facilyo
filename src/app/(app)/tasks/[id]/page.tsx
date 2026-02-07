@@ -146,6 +146,21 @@ export default function AufgabeDetailPage() {
   const deleteMutation = useMutation({
     mutationFn: async () => {
       const supabase = getClient();
+
+      // Delete completion photos from storage if they exist
+      if (aufgabe?.completion_photo_urls && aufgabe.completion_photo_urls.length > 0) {
+        const storagePaths = aufgabe.completion_photo_urls
+          .map((url) => {
+            const match = url.match(/\/storage\/v1\/object\/public\/photos\/(.+)$/);
+            return match ? match[1] : null;
+          })
+          .filter((path): path is string => path !== null);
+
+        if (storagePaths.length > 0) {
+          await supabase.storage.from('photos').remove(storagePaths);
+        }
+      }
+
       const { error } = await (supabase as any)
         .from('aufgaben')
         .delete()
