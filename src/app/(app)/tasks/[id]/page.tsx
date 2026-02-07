@@ -147,11 +147,19 @@ export default function AufgabeDetailPage() {
     mutationFn: async () => {
       const supabase = getClient();
 
+      // Fetch photo URLs directly from DB before deleting
+      const { data: taskData } = await (supabase as any)
+        .from('aufgaben')
+        .select('completion_photo_urls')
+        .eq('id', aufgabeId)
+        .single();
+
       // Delete completion photos from storage if they exist
-      if (aufgabe?.completion_photo_urls && aufgabe.completion_photo_urls.length > 0) {
-        const storagePaths = aufgabe.completion_photo_urls
-          .map((url) => {
-            const match = url.match(/\/storage\/v1\/object\/public\/photos\/(.+)$/);
+      const photoUrls: string[] | null = taskData?.completion_photo_urls;
+      if (photoUrls && photoUrls.length > 0) {
+        const storagePaths = photoUrls
+          .map((url: string) => {
+            const match = url.match(/\/storage\/v1\/object\/public\/photos\/([^?]+)/);
             return match ? match[1] : null;
           })
           .filter((path): path is string => path !== null);
