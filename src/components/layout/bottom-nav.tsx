@@ -6,10 +6,11 @@ import {
   Home,
   Clock,
   ClipboardList,
+  AlertTriangle,
   Palmtree,
-  User,
 } from 'lucide-react';
 import { cn, hapticFeedback } from '@/lib/utils';
+import { useOpenIssuesCount } from '@/hooks/use-open-issues-count';
 
 interface NavItem {
   href: string;
@@ -23,12 +24,13 @@ const navItems: NavItem[] = [
   { href: '/', label: 'Start', icon: Home },
   { href: '/time', label: 'Zeiten', icon: Clock },
   { href: '/tasks', label: 'Aufgaben', icon: ClipboardList },
+  { href: '/issues', label: 'Meldungen', icon: AlertTriangle },
   { href: '/vacation', label: 'Ferien', icon: Palmtree },
-  { href: '/profile', label: 'Profil', icon: User },
 ];
 
 export function BottomNav() {
   const pathname = usePathname();
+  const openIssuesCount = useOpenIssuesCount();
 
   const isActive = (href: string) => {
     if (href === '/') {
@@ -59,12 +61,19 @@ export function BottomNav() {
               )}
               aria-current={active ? 'page' : undefined}
             >
-              <Icon
-                className={cn(
-                  'w-6 h-6 transition-colors',
-                  active ? 'text-primary-600' : 'text-muted-foreground'
+              <span className="relative">
+                <Icon
+                  className={cn(
+                    'w-6 h-6 transition-colors',
+                    active ? 'text-primary-600' : 'text-muted-foreground'
+                  )}
+                />
+                {item.href === '/issues' && openIssuesCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                    {openIssuesCount}
+                  </span>
                 )}
-              />
+              </span>
               <span
                 className={cn(
                   'text-xs mt-1 transition-colors',
