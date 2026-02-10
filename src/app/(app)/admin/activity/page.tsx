@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueries, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -37,6 +37,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useCompletedTasksNotificationCount } from '@/hooks/use-completed-tasks-notification-count';
 import { getClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import type {
@@ -118,6 +119,13 @@ export default function AdminActivityPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const permissions = usePermissions();
+  const { markAsSeen } = useCompletedTasksNotificationCount();
+
+  // Mark completed task notifications as seen when visiting this page
+  useEffect(() => {
+    markAsSeen();
+  }, [markAsSeen]);
+
   const [activeTab, setActiveTabRaw] = useState<TabType>('aufgaben');
   const setActiveTab = useCallback((tab: TabType) => {
     setActiveTabRaw(tab);

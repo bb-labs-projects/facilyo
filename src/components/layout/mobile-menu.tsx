@@ -22,6 +22,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { useOpenIssuesCount } from '@/hooks/use-open-issues-count';
 import { useVacationNotificationCount } from '@/hooks/use-vacation-notification-count';
 import { useNewTasksNotificationCount } from '@/hooks/use-new-tasks-notification-count';
+import { useCompletedTasksNotificationCount } from '@/hooks/use-completed-tasks-notification-count';
 import {
   Sheet,
   SheetContent,
@@ -70,6 +71,7 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
   const openIssuesCount = useOpenIssuesCount();
   const { count: vacationCount } = useVacationNotificationCount();
   const { count: newTasksCount } = useNewTasksNotificationCount();
+  const { count: completedTasksCount } = useCompletedTasksNotificationCount();
 
   const isActive = (href: string) => {
     if (href === '/') {
@@ -183,7 +185,14 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
                           : 'text-slate-300 hover:bg-primary-800 hover:text-white'
                       )}
                     >
-                      <Icon className="h-5 w-5 flex-shrink-0" />
+                      <span className="relative flex-shrink-0">
+                        <Icon className="h-5 w-5" />
+                        {item.href === '/admin/activity' && completedTasksCount > 0 && (
+                          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                            {completedTasksCount}
+                          </span>
+                        )}
+                      </span>
                       <span>{item.label}</span>
                     </Link>
                   );
