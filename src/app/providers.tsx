@@ -4,13 +4,12 @@ import { useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/auth-store';
 
-// Create a client with simple settings
+// Create a client with sensible defaults
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 0,
+      staleTime: 5 * 60 * 1000, // 5 minutes
       refetchOnWindowFocus: true,
-      refetchOnMount: true,
       retry: 1,
     },
   },

@@ -38,7 +38,6 @@ import {
   eachDayOfInterval,
   isSameMonth,
   isWeekend,
-  getDay,
   startOfWeek,
   endOfWeek,
   isSameDay,
@@ -183,9 +182,10 @@ export default function VacationPage() {
 
       const { data: existingApproved, error: balanceError } = await (supabase as any)
         .from('vacation_requests')
-        .select('total_days')
+        .select('total_days, status')
         .eq('user_id', request.user_id)
-        .eq('status', 'approved')
+        .in('status', ['approved', 'pending'])
+        .neq('id', request.id)
         .gte('start_date', `${currentYear}-01-01`)
         .lte('start_date', `${currentYear}-12-31`);
 
@@ -221,10 +221,11 @@ export default function VacationPage() {
         const start = parseISO(request.start_date);
         const end = parseISO(request.end_date);
         const days = eachDayOfInterval({ start, end });
+        const isSingleDay = request.start_date === request.end_date;
+        const useHalfDay = request.is_half_day && isSingleDay;
 
         for (const day of days) {
-          const dayOfWeek = getDay(day);
-          if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+          if (isWeekend(day)) continue;
 
           const dateStr = format(day, 'yyyy-MM-dd');
 
@@ -247,7 +248,7 @@ export default function VacationPage() {
                 user_id: request.user_id,
                 date: dateStr,
                 start_time: `${dateStr}T08:00:00`,
-                end_time: request.is_half_day
+                end_time: useHalfDay
                   ? `${dateStr}T12:00:00`
                   : `${dateStr}T16:00:00`,
                 is_finalized: true,
@@ -277,7 +278,7 @@ export default function VacationPage() {
                 property_id: null,
                 entry_type: 'vacation',
                 start_time: `${dateStr}T08:00:00`,
-                end_time: request.is_half_day
+                end_time: useHalfDay
                   ? `${dateStr}T12:00:00`
                   : `${dateStr}T16:00:00`,
                 status: 'completed',
