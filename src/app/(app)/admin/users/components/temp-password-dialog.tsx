@@ -95,6 +95,7 @@ export function TempPasswordDialog({
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
                     className="p-1 text-muted-foreground hover:text-foreground"
                   >
                     {showPassword ? (

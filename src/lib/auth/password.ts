@@ -32,11 +32,17 @@ export async function verifyPassword(
 export function generateTempPassword(length: number = 16): string {
   // Characters that are easy to read and type (avoiding ambiguous chars like 0/O, 1/l/I)
   const charset = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%&*';
-  const randomBytes = crypto.randomBytes(length);
+  const maxUnbiased = Math.floor(256 / charset.length) * charset.length;
   let password = '';
 
-  for (let i = 0; i < length; i++) {
-    password += charset[randomBytes[i] % charset.length];
+  while (password.length < length) {
+    const randomBytes = crypto.randomBytes(length - password.length + 16);
+    for (let i = 0; i < randomBytes.length && password.length < length; i++) {
+      // Rejection sampling: discard bytes that would cause modulo bias
+      if (randomBytes[i] < maxUnbiased) {
+        password += charset[randomBytes[i] % charset.length];
+      }
+    }
   }
 
   return password;

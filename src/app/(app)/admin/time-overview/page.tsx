@@ -48,6 +48,7 @@ import {
   parseISO,
 } from 'date-fns';
 import { de } from 'date-fns/locale';
+import { ErrorBoundary } from '@/components/error-boundary';
 import type { Profile, TimeEntry, WorkDay, Property, ActivityType, TimeEntryType } from '@/types/database';
 // xlsx is dynamically imported in handleExportXLSX to avoid loading ~90KB upfront
 
@@ -95,6 +96,14 @@ function calculateEntryDuration(entry: TimeEntry): number {
 }
 
 export default function TimeOverviewPage() {
+  return (
+    <ErrorBoundary>
+      <TimeOverviewPageContent />
+    </ErrorBoundary>
+  );
+}
+
+function TimeOverviewPageContent() {
   const router = useRouter();
   const permissions = usePermissions();
   const [viewMode, setViewMode] = useState<ViewMode>('weekly');
@@ -257,12 +266,27 @@ export default function TimeOverviewPage() {
     };
   }, [filteredEntries]);
 
+  // Pre-build lookup maps for O(1) access
+  const employeeMap = useMemo(() => {
+    const map = new Map<string, Profile>();
+    employees.forEach((e) => map.set(e.id, e));
+    return map;
+  }, [employees]);
+
+  const entryToWorkDayMap = useMemo(() => {
+    const map = new Map<string, WorkDayWithEntries>();
+    workDaysData.forEach((wd) => {
+      wd.time_entries?.forEach((te) => map.set(te.id, wd));
+    });
+    return map;
+  }, [workDaysData]);
+
   // Group data by employee
   const employeeStats = useMemo(() => {
     const stats = new Map<string, { name: string; propertyTime: number; travelTime: number; breakTime: number; vacationTime: number; workDays: Set<string> }>();
 
     filteredEntries.forEach((entry) => {
-      const employee = employees.find(e => e.id === entry.userId);
+      const employee = employeeMap.get(entry.userId);
       if (!employee) return;
 
       const name = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.email;
@@ -275,7 +299,7 @@ export default function TimeOverviewPage() {
       const duration = calculateEntryDuration(entry);
 
       // Track work day
-      const workDay = workDaysData.find(wd => wd.time_entries?.some(te => te.id === entry.id));
+      const workDay = entryToWorkDayMap.get(entry.id);
       if (workDay) stat.workDays.add(workDay.date);
 
       switch (entry.entry_type) {
@@ -297,7 +321,7 @@ export default function TimeOverviewPage() {
     return Array.from(stats.entries())
       .map(([id, stat]) => ({ id, ...stat, workDays: stat.workDays.size }))
       .sort((a, b) => (b.propertyTime + b.travelTime) - (a.propertyTime + a.travelTime));
-  }, [filteredEntries, employees, workDaysData]);
+  }, [filteredEntries, employeeMap, entryToWorkDayMap]);
 
   // Group data by property
   const propertyStats = useMemo(() => {
@@ -398,10 +422,10 @@ export default function TimeOverviewPage() {
     }>>();
 
     filteredEntries.forEach((entry) => {
-      const employee = employees.find(e => e.id === entry.userId);
+      const employee = employeeMap.get(entry.userId);
       if (!employee) return;
 
-      const workDay = workDaysData.find(wd => wd.time_entries?.some(te => te.id === entry.id));
+      const workDay = entryToWorkDayMap.get(entry.id);
       if (!workDay) return;
 
       const employeeId = entry.userId;
@@ -453,7 +477,7 @@ export default function TimeOverviewPage() {
     }>();
 
     employeeDailyStats.forEach((days, employeeId) => {
-      const employee = employees.find(e => e.id === employeeId);
+      const employee = employeeMap.get(employeeId);
       const employeeName = employee
         ? `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.email
         : 'Unbekannt';

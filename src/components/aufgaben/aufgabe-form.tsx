@@ -182,8 +182,8 @@ export function AufgabeForm({
       </div>
 
       {/* Priority */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium">Priorität</label>
+      <div className="space-y-2" role="group" aria-labelledby="aufgabe-priority-label">
+        <span id="aufgabe-priority-label" className="text-sm font-medium">Priorität</span>
         <div className="flex flex-wrap gap-2">
           {priorityOptions.map((option) => (
             <button
@@ -205,8 +205,8 @@ export function AufgabeForm({
 
       {/* Status (only for edit mode) */}
       {mode === 'edit' && (
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Status</label>
+        <div className="space-y-2" role="group" aria-labelledby="aufgabe-status-label">
+          <span id="aufgabe-status-label" className="text-sm font-medium">Status</span>
           <div className="flex flex-wrap gap-2">
             {statusOptions.map((option) => (
               <button

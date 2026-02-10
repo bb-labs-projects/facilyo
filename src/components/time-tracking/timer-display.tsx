@@ -34,7 +34,7 @@ export function TimerDisplay({
   } : {};
 
   return (
-    <div className={cn('flex flex-col items-center', className)}>
+    <div className={cn('flex flex-col items-center', className)} aria-live="polite" aria-atomic="true">
       {/* Status indicator */}
       <div className="flex items-center gap-2 mb-2">
         <span

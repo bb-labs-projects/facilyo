@@ -303,7 +303,8 @@ function PhotoInput({ value, onChange, label, required }: PhotoInputProps) {
           <button
             type="button"
             onClick={handleRemove}
-            className="absolute top-2 right-2 bg-error-500 text-white p-1.5 rounded-full shadow-md hover:bg-error-600 transition-colors"
+            aria-label="Foto entfernen"
+            className="absolute top-2 right-2 min-w-[44px] min-h-[44px] flex items-center justify-center bg-error-500 text-white p-1.5 rounded-full shadow-md hover:bg-error-600 transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
@@ -326,6 +327,7 @@ function PhotoInput({ value, onChange, label, required }: PhotoInputProps) {
         capture="environment"
         onChange={(e) => handleFileSelect(e.target.files)}
         className="hidden"
+        aria-label="Foto aufnehmen"
       />
     </div>
   );

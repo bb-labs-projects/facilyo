@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Calendar, ChevronLeft, ChevronRight, Car, Coffee, Building2, Palmtree } from 'lucide-react';
 import { Header, PageContainer } from '@/components/layout/header';
@@ -96,13 +96,25 @@ export default function TimePage() {
 
   const isToday = isSameDay(selectedDate, new Date());
 
+  // Force re-render every second when there's an open (active) work day
+  const [, setTick] = useState(0);
+  const hasOpenWorkDay = workDays.some((day) => !day.end_time);
+  useEffect(() => {
+    if (!hasOpenWorkDay) return;
+    const interval = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(interval);
+  }, [hasOpenWorkDay]);
+
   // Calculate totals from work day spans
-  const totalSeconds = workDays.reduce((acc, day) => {
-    const dayDuration = day.end_time
-      ? Math.floor((new Date(day.end_time).getTime() - new Date(day.start_time).getTime()) / 1000)
-      : Math.floor((Date.now() - new Date(day.start_time).getTime()) / 1000);
-    return acc + dayDuration;
-  }, 0);
+  const totalSeconds = useMemo(() => {
+    return workDays.reduce((acc, day) => {
+      const dayDuration = day.end_time
+        ? Math.floor((new Date(day.end_time).getTime() - new Date(day.start_time).getTime()) / 1000)
+        : Math.floor((Date.now() - new Date(day.start_time).getTime()) / 1000);
+      return acc + dayDuration;
+    }, 0);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workDays, hasOpenWorkDay ? Math.floor(Date.now() / 1000) : 0]);
 
   // Calculate totals by entry type
   const entryTypeTotals = useMemo(() => {

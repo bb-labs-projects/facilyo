@@ -67,6 +67,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Role hierarchy check: prevent creating users with equal or higher role
+    const roleHierarchy: Record<string, number> = { employee: 1, manager: 2, owner: 3, admin: 4 };
+    if (roleHierarchy[role] >= roleHierarchy[userRole]) {
+      return NextResponse.json(
+        { error: 'Keine Berechtigung: Kann keinen Benutzer mit gleichwertiger oder höherer Rolle erstellen' },
+        { status: 403 }
+      );
+    }
+
     // Generate username first (needed for placeholder email)
     let username = body.username?.toLowerCase();
 
@@ -129,16 +138,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Check if email exists in Supabase Auth (from previous failed attempts)
-    const { data: existingAuthUsers } = await serviceClient.auth.admin.listUsers();
-    const emailExistsInAuth = existingAuthUsers?.users?.some(u => u.email === email);
-    if (emailExistsInAuth) {
-      return NextResponse.json(
-        { error: 'Ein Benutzer mit dieser E-Mail existiert bereits im System. Bitte kontaktieren Sie den Administrator.' },
-        { status: 409 }
-      );
-    }
-
     // Generate temporary password
     const tempPassword = generateTempPassword(16);
     const passwordHash = await hashPassword(tempPassword);
@@ -158,6 +157,13 @@ export async function POST(request: NextRequest) {
 
     if (authError) {
       console.error('Auth user creation error:', authError);
+      // Handle duplicate email from Supabase Auth (orphaned auth users)
+      if (authError.message?.includes('already been registered') || authError.status === 422) {
+        return NextResponse.json(
+          { error: 'Ein Benutzer mit dieser E-Mail existiert bereits im System. Bitte kontaktieren Sie den Administrator.' },
+          { status: 409 }
+        );
+      }
       return NextResponse.json(
         { error: `Fehler beim Erstellen des Benutzers: ${authError.message}` },
         { status: 500 }

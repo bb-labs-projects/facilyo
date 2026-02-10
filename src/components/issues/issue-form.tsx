@@ -85,8 +85,8 @@ export function IssueForm({
       className={cn('space-y-6', className)}
     >
       {/* Property selector */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium">Liegenschaft</label>
+      <div className="space-y-2" role="group" aria-labelledby="issue-property-label">
+        <span id="issue-property-label" className="text-sm font-medium">Liegenschaft</span>
         <PropertySelector
           properties={properties}
           selectedProperty={currentSelectedProperty || null}
@@ -99,8 +99,8 @@ export function IssueForm({
       </div>
 
       {/* Category selector */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium">Kategorie</label>
+      <div className="space-y-2" role="group" aria-labelledby="issue-category-label">
+        <span id="issue-category-label" className="text-sm font-medium">Kategorie</span>
         <div className="grid grid-cols-3 gap-2">
           {categories.map((cat) => {
             const Icon = cat.icon;
@@ -130,8 +130,8 @@ export function IssueForm({
       </div>
 
       {/* Priority selector */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium">Priorität</label>
+      <div className="space-y-2" role="group" aria-labelledby="issue-priority-label">
+        <span id="issue-priority-label" className="text-sm font-medium">Priorität</span>
         <div className="flex gap-2">
           {priorities.map((pri) => {
             const isSelected = currentPriority === pri.value;

@@ -30,6 +30,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { getClient } from '@/lib/supabase/client';
 import { roleLabels, getAssignableRoles, canEditUser } from '@/lib/permissions';
 import { getInitials, cn } from '@/lib/utils';
+import { ErrorBoundary } from '@/components/error-boundary';
 import type { Profile, Property, UserRole } from '@/types/database';
 
 interface AuthCredentials {
@@ -47,6 +48,14 @@ interface UserWithAssignments extends Profile {
 }
 
 export default function AdminUsersPage() {
+  return (
+    <ErrorBoundary>
+      <AdminUsersPageContent />
+    </ErrorBoundary>
+  );
+}
+
+function AdminUsersPageContent() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const profile = useAuthStore((state) => state.profile);
@@ -482,6 +491,7 @@ export default function AdminUsersPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
+            aria-label="Benutzer suchen"
           />
         </div>
         <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -587,7 +597,7 @@ export default function AdminUsersPage() {
                               setShowDeactivateDialog(true);
                             }
                           }}
-                          title={inactive ? 'Benutzer aktivieren' : 'Benutzer deaktivieren'}
+                          aria-label={inactive ? 'Benutzer aktivieren' : 'Benutzer deaktivieren'}
                           disabled={toggleActiveMutation.isPending}
                         >
                           <Power className={cn('h-4 w-4', inactive ? 'text-green-500' : 'text-gray-400')} />
@@ -602,7 +612,7 @@ export default function AdminUsersPage() {
                             e.stopPropagation();
                             unlockAccountMutation.mutate(user.id);
                           }}
-                          title="Account entsperren"
+                          aria-label="Account entsperren"
                           disabled={unlockAccountMutation.isPending}
                         >
                           <Unlock className="h-4 w-4 text-red-500" />
@@ -618,7 +628,7 @@ export default function AdminUsersPage() {
                             setSelectedUser(user);
                             setShowResetPasswordDialog(true);
                           }}
-                          title="Passwort zurücksetzen"
+                          aria-label="Passwort zurücksetzen"
                         >
                           <KeyRound className="h-4 w-4" />
                         </Button>
@@ -633,7 +643,7 @@ export default function AdminUsersPage() {
                             setSelectedUser(user);
                             setShowRoleDialog(true);
                           }}
-                          title="Rolle ändern"
+                          aria-label="Rolle ändern"
                         >
                           <Shield className="h-4 w-4" />
                         </Button>
@@ -647,7 +657,7 @@ export default function AdminUsersPage() {
                           setVacationDaysValue(user.vacation_days_per_year ?? 25);
                           setShowVacationDaysDialog(true);
                         }}
-                        title="Ferientage bearbeiten"
+                        aria-label="Ferientage bearbeiten"
                       >
                         <Palmtree className="h-4 w-4" />
                       </Button>
@@ -659,7 +669,7 @@ export default function AdminUsersPage() {
                           setSelectedUser(user);
                           setShowAssignmentsSheet(true);
                         }}
-                        title="Liegenschaften zuweisen"
+                        aria-label="Liegenschaften zuweisen"
                       >
                         <Building2 className="h-4 w-4" />
                       </Button>

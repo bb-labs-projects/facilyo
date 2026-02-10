@@ -95,6 +95,7 @@ export default function AdminChecklistsPage() {
           *,
           property:properties (*)
         `)
+        .eq('is_active', true)
         .order('name');
 
       if (error) throw error;
@@ -178,67 +179,19 @@ export default function AdminChecklistsPage() {
     },
   });
 
-  // Delete mutation
+  // Deactivate mutation (soft-delete)
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const supabase = getClient();
-
-      // Fetch template with reference image and all instance photos
-      const { data: template } = await (supabase as any)
-        .from('checklist_templates')
-        .select('image_url, items, instances:checklist_instances(completed_items)')
-        .eq('id', id)
-        .single();
-
-      if (template) {
-        const photoUrls: string[] = [];
-
-        // Add reference image
-        if (template.image_url) {
-          photoUrls.push(template.image_url);
-        }
-
-        // Find photo item IDs from template definition
-        const items = (template.items as unknown as ChecklistItem[]) || [];
-        const photoItemIds = items
-          .filter((item) => item.type === 'photo')
-          .map((item) => item.id);
-
-        // Collect photo URLs from all instances
-        for (const instance of template.instances || []) {
-          const completed = instance.completed_items || {};
-          for (const itemId of photoItemIds) {
-            const value = completed[itemId];
-            if (typeof value === 'string' && value.length > 0) {
-              photoUrls.push(value);
-            }
-          }
-        }
-
-        // Delete all photos from storage
-        if (photoUrls.length > 0) {
-          const storagePaths = photoUrls
-            .map((url: string) => {
-              const match = url.match(/\/storage\/v1\/object\/public\/photos\/([^?]+)/);
-              return match ? decodeURIComponent(match[1]) : null;
-            })
-            .filter((path): path is string => path !== null);
-
-          if (storagePaths.length > 0) {
-            await supabase.storage.from('photos').remove(storagePaths);
-          }
-        }
-      }
-
       const { error } = await (supabase as any)
         .from('checklist_templates')
-        .delete()
+        .update({ is_active: false })
         .eq('id', id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('Checkliste wurde gelöscht');
+      toast.success('Checkliste wurde deaktiviert');
       queryClient.invalidateQueries({ queryKey: ['admin-checklists'] });
       setShowDeleteDialog(false);
       setDeletingTemplate(null);
@@ -811,13 +764,13 @@ export default function AdminChecklistsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete confirmation dialog */}
+      {/* Deactivate confirmation dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Checkliste löschen</DialogTitle>
+            <DialogTitle>Checkliste deaktivieren</DialogTitle>
             <DialogDescription>
-              Sind Sie sicher, dass Sie &quot;{deletingTemplate?.name}&quot; löschen möchten?
+              Sind Sie sicher, dass Sie &quot;{deletingTemplate?.name}&quot; deaktivieren möchten? Die Checkliste und alle bisherigen Einträge bleiben erhalten.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -829,7 +782,7 @@ export default function AdminChecklistsPage() {
               onClick={() => deletingTemplate && deleteMutation.mutate(deletingTemplate.id)}
               disabled={deleteMutation.isPending}
             >
-              {deleteMutation.isPending ? 'Wird gelöscht...' : 'Löschen'}
+              {deleteMutation.isPending ? 'Wird deaktiviert...' : 'Deaktivieren'}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -29,7 +29,14 @@ export function PasswordStrength({ password, className }: PasswordStrengthProps)
   return (
     <div className={cn('space-y-2', className)}>
       {/* Strength bar */}
-      <div className="flex gap-1">
+      <div
+        className="flex gap-1"
+        role="meter"
+        aria-valuenow={strength.score}
+        aria-valuemin={0}
+        aria-valuemax={4}
+        aria-label="Passwortstärke"
+      >
         {[0, 1, 2, 3, 4].map((level) => (
           <div
             key={level}

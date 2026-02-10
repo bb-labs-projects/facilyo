@@ -6,9 +6,19 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, interactive = false, ...props }, ref) => (
+  ({ className, interactive = false, onClick, onKeyDown, ...props }, ref) => (
     <div
       ref={ref}
+      role={interactive && onClick ? 'button' : undefined}
+      tabIndex={interactive && onClick ? 0 : undefined}
+      onKeyDown={interactive && onClick ? (e: React.KeyboardEvent<HTMLDivElement>) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick(e as unknown as React.MouseEvent<HTMLDivElement>);
+        }
+        onKeyDown?.(e);
+      } : onKeyDown}
+      onClick={onClick}
       className={cn(
         'rounded-xl lg:rounded-2xl border border-slate-200 bg-white text-card-foreground shadow-sm',
         interactive && 'card-interactive cursor-pointer hover:shadow-md transition-shadow',

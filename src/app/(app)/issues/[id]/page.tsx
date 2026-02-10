@@ -80,6 +80,16 @@ export default function IssueDetailPage() {
     mutationFn: async () => {
       const supabase = getClient();
 
+      // Check if any aufgaben reference this issue
+      const { count } = await (supabase as any)
+        .from('aufgaben')
+        .select('id', { count: 'exact', head: true })
+        .eq('source_meldung_id', issueId);
+
+      if (count && count > 0) {
+        throw new Error('Diese Meldung kann nicht gelöscht werden, da Aufgaben darauf verweisen.');
+      }
+
       // Fetch photo URLs before deleting
       const { data: issueData } = await supabase
         .from('issues')

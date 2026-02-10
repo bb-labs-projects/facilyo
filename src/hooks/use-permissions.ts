@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/auth-store';
 import {
   canManageProperties,
@@ -19,7 +20,10 @@ import {
   isPrivilegedRole,
   canAssignRole,
   getAssignableRoles,
+  loadPermissions,
+  hasPermissionFromMap,
 } from '@/lib/permissions';
+import { getClient } from '@/lib/supabase/client';
 import type { UserRole } from '@/types/database';
 
 export interface Permissions {
@@ -54,6 +58,14 @@ export function usePermissions(): Permissions {
 
   const role = profile?.role ?? null;
 
+  // Load permissions from database, falling back to defaults
+  const { data: dbPermissions } = useQuery({
+    queryKey: ['role-permissions'],
+    queryFn: () => loadPermissions(getClient()),
+    staleTime: 60000, // 1 minute
+    enabled: !!role,
+  });
+
   return useMemo(() => {
     if (!role) {
       return {
@@ -78,25 +90,31 @@ export function usePermissions(): Permissions {
       };
     }
 
+    // Use DB permissions if loaded, otherwise fall back to hardcoded defaults
+    const check = dbPermissions
+      ? (permission: Parameters<typeof hasPermissionFromMap>[2]) =>
+          hasPermissionFromMap(dbPermissions, role, permission)
+      : null;
+
     return {
       role,
       isAuthenticated,
-      canManageProperties: canManageProperties(role),
-      canManageEmployees: canManageEmployees(role),
-      canManageChecklists: canManageChecklists(role),
-      canConvertMeldungen: canConvertMeldungen(role),
-      canManageAufgaben: canManageAufgaben(role),
-      canAssignAufgaben: canAssignAufgaben(role),
-      canViewAllUsers: canViewAllUsers(role),
-      canUpdateUserRoles: canUpdateUserRoles(role),
-      canAccessAdminPanel: canAccessAdminPanel(role),
-      canManageRolePermissions: canManageRolePermissions(role),
-      canManageUserCalendar: canManageUserCalendar(role),
-      canDeleteActivity: canDeleteActivity(role),
-      canManageVacations: canManageVacations(role),
+      canManageProperties: check ? check('manage_properties') : canManageProperties(role),
+      canManageEmployees: check ? check('manage_employees') : canManageEmployees(role),
+      canManageChecklists: check ? check('manage_checklists') : canManageChecklists(role),
+      canConvertMeldungen: check ? check('convert_meldungen') : canConvertMeldungen(role),
+      canManageAufgaben: check ? check('manage_aufgaben') : canManageAufgaben(role),
+      canAssignAufgaben: check ? check('assign_aufgaben') : canAssignAufgaben(role),
+      canViewAllUsers: check ? check('view_all_users') : canViewAllUsers(role),
+      canUpdateUserRoles: check ? check('update_user_roles') : canUpdateUserRoles(role),
+      canAccessAdminPanel: check ? check('access_admin_panel') : canAccessAdminPanel(role),
+      canManageRolePermissions: check ? check('manage_role_permissions') : canManageRolePermissions(role),
+      canManageUserCalendar: check ? check('manage_user_calendar') : canManageUserCalendar(role),
+      canDeleteActivity: check ? check('delete_activity') : canDeleteActivity(role),
+      canManageVacations: check ? check('manage_vacations') : canManageVacations(role),
       isPrivileged: isPrivilegedRole(role),
       canAssignRole: (targetRole: UserRole) => canAssignRole(role, targetRole),
       getAssignableRoles: () => getAssignableRoles(role),
     };
-  }, [role, isAuthenticated]);
+  }, [role, isAuthenticated, dbPermissions]);
 }

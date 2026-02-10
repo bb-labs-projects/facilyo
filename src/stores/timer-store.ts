@@ -52,6 +52,9 @@ interface TimerActions {
 
 type TimerStore = TimerState & TimerActions;
 
+// Simple mutex to prevent concurrent state transitions
+let isTransitioning = false;
+
 const initialState: TimerState = {
   workDay: null,
   currentEntryType: null,
@@ -213,6 +216,9 @@ export const useTimerStore = create<TimerStore>()(
 
       // Start travel time entry (stops any current entry first)
       startTravelTime: async () => {
+        if (isTransitioning) return get().activeEntry!;
+        isTransitioning = true;
+        try {
         const supabase = getClient();
         const { workDay, activeEntry } = get();
 
@@ -260,10 +266,16 @@ export const useTimerStore = create<TimerStore>()(
         });
 
         return entry;
+        } finally {
+          isTransitioning = false;
+        }
       },
 
       // Start working on a property (stops any current entry first)
       startPropertyWork: async (propertyId, activityType, coords) => {
+        if (isTransitioning) return get().activeEntry!;
+        isTransitioning = true;
+        try {
         const supabase = getClient();
         const { workDay, activeEntry } = get();
 
@@ -322,6 +334,9 @@ export const useTimerStore = create<TimerStore>()(
         });
 
         return entry;
+        } finally {
+          isTransitioning = false;
+        }
       },
 
       // Stop property work (automatically starts travel time)
@@ -401,6 +416,9 @@ export const useTimerStore = create<TimerStore>()(
 
       // Start break (remembers previous state)
       startBreak: async () => {
+        if (isTransitioning) return get().activeEntry!;
+        isTransitioning = true;
+        try {
         const supabase = getClient();
         const { workDay, activeEntry, currentEntryType, currentActivityType, activeProperty } = get();
 
@@ -457,6 +475,9 @@ export const useTimerStore = create<TimerStore>()(
         });
 
         return entry;
+        } finally {
+          isTransitioning = false;
+        }
       },
 
       // End break (resumes previous state)
@@ -678,9 +699,9 @@ export const useTimerStore = create<TimerStore>()(
     {
       name: 'facility-track-timer',
       partialize: (state) => ({
-        workDay: state.workDay,
-        activeEntry: state.activeEntry,
-        activeProperty: state.activeProperty,
+        workDayId: state.workDay?.id ?? null,
+        activeEntryId: state.activeEntry?.id ?? null,
+        activePropertyId: state.activeProperty?.id ?? null,
         currentEntryType: state.currentEntryType,
         currentActivityType: state.currentActivityType,
         previousEntryType: state.previousEntryType,

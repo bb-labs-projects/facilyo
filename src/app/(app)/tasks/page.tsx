@@ -328,8 +328,12 @@ export default function TasksPage() {
     >
       <PullToRefresh onRefresh={handleRefresh}>
         {/* Tab toggle */}
-        <div className="flex gap-2 mb-4 p-1 bg-muted rounded-lg">
+        <div className="flex gap-2 mb-4 p-1 bg-muted rounded-lg" role="tablist">
           <button
+            role="tab"
+            aria-selected={activeTab === 'aufgaben'}
+            aria-controls="tabpanel-aufgaben"
+            id="tab-aufgaben"
             onClick={() => setActiveTab('aufgaben')}
             className={cn(
               'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors',
@@ -347,6 +351,10 @@ export default function TasksPage() {
             )}
           </button>
           <button
+            role="tab"
+            aria-selected={activeTab === 'checklisten'}
+            aria-controls="tabpanel-checklisten"
+            id="tab-checklisten"
             onClick={() => setActiveTab('checklisten')}
             className={cn(
               'flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors',
@@ -361,7 +369,13 @@ export default function TasksPage() {
         </div>
 
         {/* Tab content */}
-        {activeTab === 'aufgaben' ? renderAufgabenTab() : renderChecklistenTab()}
+        <div
+          role="tabpanel"
+          id={`tabpanel-${activeTab}`}
+          aria-labelledby={`tab-${activeTab}`}
+        >
+          {activeTab === 'aufgaben' ? renderAufgabenTab() : renderChecklistenTab()}
+        </div>
       </PullToRefresh>
 
       {/* Checklist detail sheet */}

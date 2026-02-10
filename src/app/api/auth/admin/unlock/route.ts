@@ -70,6 +70,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Role hierarchy check: prevent acting on users with equal or higher role
+    const roleHierarchy: Record<string, number> = { employee: 1, manager: 2, owner: 3, admin: 4 };
+    const targetRole = (credentials.profiles as any)?.role as string;
+    if (targetRole && roleHierarchy[userRole] <= roleHierarchy[targetRole]) {
+      return NextResponse.json(
+        { error: 'Keine Berechtigung: Zielbenutzer hat eine gleichwertige oder höhere Rolle' },
+        { status: 403 }
+      );
+    }
+
     // Check if account is actually locked
     if (!credentials.locked_until || new Date(credentials.locked_until) <= new Date()) {
       return NextResponse.json(

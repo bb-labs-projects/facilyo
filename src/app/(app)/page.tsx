@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Clock, Building2, Car, Coffee } from 'lucide-react';
 import { Header, PageContainer } from '@/components/layout/header';
@@ -119,7 +119,7 @@ export default function HomePage() {
       }, 1000);
       return () => clearInterval(interval);
     }
-  }, [workDay]);
+  }, [workDay?.start_time, workDay?.end_time]);
 
   const formattedWorkDayDuration = swissFormat.duration(workDaySeconds);
 
@@ -225,30 +225,35 @@ export default function HomePage() {
     }
   };
 
-  const handleDeleteEntry = async (entry: TimeEntryWithProperty) => {
-    if (entry.entry_type === 'vacation') {
-      toast.error('Ferieneinträge können nur über die Ferien-Seite verwaltet werden');
-      return;
-    }
-
-    try {
+  const deleteEntryMutation = useMutation({
+    mutationFn: async (entryId: string) => {
       const supabase = getClient();
       const { error } = await (supabase as any)
         .from('time_entries')
         .delete()
-        .eq('id', entry.id);
+        .eq('id', entryId);
 
       if (error) {
         console.error('Delete error:', error);
         throw error;
       }
-
+    },
+    onSuccess: () => {
       toast.success('Zeiteintrag gelöscht');
       refetchEntries();
-    } catch (error: any) {
+    },
+    onError: (error: any) => {
       console.error('Delete failed:', error);
       toast.error(`Fehler beim Löschen: ${error?.message || 'Unbekannter Fehler'}`);
+    },
+  });
+
+  const handleDeleteEntry = (entry: TimeEntryWithProperty) => {
+    if (entry.entry_type === 'vacation') {
+      toast.error('Ferieneinträge können nur über die Ferien-Seite verwaltet werden');
+      return;
     }
+    deleteEntryMutation.mutate(entry.id);
   };
 
   const greeting = () => {

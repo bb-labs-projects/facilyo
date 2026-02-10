@@ -187,7 +187,7 @@ export default function AdminActivityPage() {
         queryKey: ['admin-checklist-instances', selectedPropertyId],
         queryFn: async () => {
           const supabase = getClient();
-          const { data, error } = await (supabase as any)
+          let query = (supabase as any)
             .from('checklist_instances')
             .select(`
               *,
@@ -204,9 +204,13 @@ export default function AdminActivityPage() {
             `)
             .order('updated_at', { ascending: false });
 
+          // Cannot filter by property_id at query level because the property
+          // is nested via checklist_templates, not a direct column on checklist_instances.
+          // Client-side filtering is required here.
+          const { data, error } = await query;
+
           if (error) throw error;
 
-          // Filter by property if selected
           let results = data as ChecklistInstanceWithRelations[];
           if (selectedPropertyId) {
             results = results.filter(

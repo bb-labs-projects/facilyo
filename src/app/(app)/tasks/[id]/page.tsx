@@ -183,12 +183,20 @@ export default function AufgabeDetailPage() {
 
       if (error) throw error;
 
-      // Delete the source meldung (issue) if it exists
+      // Delete the source meldung (issue) only if no other aufgaben reference it
       if (taskData?.source_meldung_id) {
-        await (supabase as any)
-          .from('issues')
-          .delete()
-          .eq('id', taskData.source_meldung_id);
+        const { count } = await (supabase as any)
+          .from('aufgaben')
+          .select('id', { count: 'exact', head: true })
+          .eq('source_meldung_id', taskData.source_meldung_id)
+          .neq('id', aufgabeId);
+
+        if (count === 0) {
+          await (supabase as any)
+            .from('issues')
+            .delete()
+            .eq('id', taskData.source_meldung_id);
+        }
       }
     },
     onSuccess: () => {

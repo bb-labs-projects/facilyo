@@ -155,6 +155,13 @@ export function IssueListItem({
     urgent: 'bg-error-500',
   };
 
+  const priorityLabels = {
+    low: 'Niedrig',
+    medium: 'Mittel',
+    high: 'Hoch',
+    urgent: 'Dringend',
+  };
+
   return (
     <button
       onClick={onClick}
@@ -170,6 +177,7 @@ export function IssueListItem({
           'w-2 h-2 rounded-full flex-shrink-0',
           priorityColors[issue.priority]
         )}
+        aria-label={`Priorität: ${priorityLabels[issue.priority]}`}
       />
 
       {/* Content */}

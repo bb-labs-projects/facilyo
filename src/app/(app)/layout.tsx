@@ -90,7 +90,7 @@ export default function AppLayout({
     } finally {
       isRefreshing.current = false;
     }
-  }, [isAuthenticated, initializeTimer, refreshProfile, router, queryClient]);
+  }, [isAuthenticated, initializeTimer, refreshProfile, router]);
 
   // Initialize timer state on mount
   useEffect(() => {

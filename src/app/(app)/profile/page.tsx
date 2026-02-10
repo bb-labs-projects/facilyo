@@ -204,7 +204,7 @@ export default function ProfilePage() {
       {/* Settings */}
       <Card className="mb-4">
         <CardContent className="p-0">
-          <button className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+          <button disabled className="w-full flex items-center justify-between p-4 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
             <div className="flex items-center gap-3">
               <Bell className="h-5 w-5 text-muted-foreground" />
               <span>Benachrichtigungen</span>
@@ -214,7 +214,7 @@ export default function ProfilePage() {
 
           <div className="border-t" />
 
-          <button className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+          <button disabled className="w-full flex items-center justify-between p-4 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
             <div className="flex items-center gap-3">
               <Info className="h-5 w-5 text-muted-foreground" />
               <span>Über die App</span>

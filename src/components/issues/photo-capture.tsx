@@ -159,7 +159,7 @@ export function PhotoCapture({
                   e.stopPropagation();
                   handleRemovePhoto(index);
                 }}
-                className="absolute top-0.5 right-0.5 p-0.5 bg-error-500 text-white rounded-full shadow-md"
+                className="absolute top-0.5 right-0.5 p-0.5 min-w-[44px] min-h-[44px] flex items-center justify-center bg-error-500 text-white rounded-full shadow-md"
                 aria-label="Foto entfernen"
               >
                 <X className="h-3 w-3" />
@@ -176,7 +176,14 @@ export function PhotoCapture({
             <Loader2 className="h-4 w-4 animate-spin" />
             <span>Wird hochgeladen...</span>
           </div>
-          <div className="h-2 bg-muted rounded-full overflow-hidden">
+          <div
+            className="h-2 bg-muted rounded-full overflow-hidden"
+            role="progressbar"
+            aria-valuenow={Math.round(uploadProgress)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="Upload-Fortschritt"
+          >
             <div
               className="h-full bg-primary-500 transition-all duration-300"
               style={{ width: `${uploadProgress}%` }}
@@ -222,6 +229,7 @@ export function PhotoCapture({
         capture="environment"
         onChange={(e) => handleFileSelect(e.target.files)}
         className="hidden"
+        aria-label="Foto aufnehmen"
       />
       <input
         ref={fileInputRef}
@@ -230,6 +238,7 @@ export function PhotoCapture({
         multiple
         onChange={(e) => handleFileSelect(e.target.files)}
         className="hidden"
+        aria-label="Foto aus Galerie wählen"
       />
     </div>
   );

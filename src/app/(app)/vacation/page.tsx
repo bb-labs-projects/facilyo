@@ -88,6 +88,9 @@ export default function VacationPage() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [rejectingRequest, setRejectingRequest] = useState<VacationRequestWithUser | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [confirmCancelRequest, setConfirmCancelRequest] = useState<VacationRequestWithUser | null>(null);
+  const [confirmCancelApprovedRequest, setConfirmCancelApprovedRequest] = useState<VacationRequestWithUser | null>(null);
+  const [confirmDeleteRejectedId, setConfirmDeleteRejectedId] = useState<{ id: string; name: string } | null>(null);
 
   // ─── Calendar query: all approved + own pending for visible month ───
   const monthStart = startOfMonth(currentMonth);
@@ -117,7 +120,7 @@ export default function VacationPage() {
   });
 
   // ─── Own requests for current year (saldo tab) ───
-  const currentYear = new Date().getFullYear();
+  const currentYear = useMemo(() => new Date().getFullYear(), []);
 
   const { data: ownRequests = [], refetch: refetchOwn } = useQuery({
     queryKey: ['vacation-own', profile?.id, currentYear],
@@ -199,27 +202,37 @@ export default function VacationPage() {
       const supabase = getClient();
       const conflicts: { requestId: string; dates: string[] }[] = [];
 
+      // Build OR filter for all pending request date ranges
+      const orClauses = pendingRequests.map(
+        (req) => `and(user_id.eq.${req.user_id},date.gte.${req.start_date},date.lte.${req.end_date})`
+      );
+      const { data: allWorkDays } = await (supabase as any)
+        .from('work_days')
+        .select('id, date, user_id')
+        .or(orClauses.join(','));
+
+      if (!allWorkDays || allWorkDays.length === 0) return conflicts;
+
+      const allWdIds = allWorkDays.map((wd: { id: string }) => wd.id);
+      const { data: allEntries } = await (supabase as any)
+        .from('time_entries')
+        .select('work_day_id')
+        .in('work_day_id', allWdIds)
+        .neq('entry_type', 'vacation');
+
+      const conflictWdIds = new Set(
+        (allEntries ?? []).map((e: { work_day_id: string }) => e.work_day_id)
+      );
+
       for (const req of pendingRequests) {
-        const { data: workDays } = await (supabase as any)
-          .from('work_days')
-          .select('id, date')
-          .eq('user_id', req.user_id)
-          .gte('date', req.start_date)
-          .lte('date', req.end_date);
-
-        if (!workDays || workDays.length === 0) continue;
-
-        const { data: entries } = await (supabase as any)
-          .from('time_entries')
-          .select('work_day_id')
-          .in('work_day_id', workDays.map((wd: { id: string }) => wd.id))
-          .neq('entry_type', 'vacation');
-
-        if (entries && entries.length > 0) {
-          const conflictWdIds = new Set(entries.map((e: { work_day_id: string }) => e.work_day_id));
-          const conflictDates = workDays
-            .filter((wd: { id: string }) => conflictWdIds.has(wd.id))
-            .map((wd: { date: string }) => wd.date);
+        const reqWorkDays = allWorkDays.filter(
+          (wd: { user_id: string; date: string }) =>
+            wd.user_id === req.user_id && wd.date >= req.start_date && wd.date <= req.end_date
+        );
+        const conflictDates = reqWorkDays
+          .filter((wd: { id: string }) => conflictWdIds.has(wd.id))
+          .map((wd: { date: string }) => wd.date);
+        if (conflictDates.length > 0) {
           conflicts.push({ requestId: req.id, dates: conflictDates });
         }
       }
@@ -573,49 +586,60 @@ export default function VacationPage() {
         const end = parseISO(request.end_date);
         const days = eachDayOfInterval({ start, end });
 
-        for (const day of days) {
-          if (isWeekend(day)) continue;
-          const dateStr = format(day, 'yyyy-MM-dd');
+        try {
+          for (const day of days) {
+            if (isWeekend(day)) continue;
+            const dateStr = format(day, 'yyyy-MM-dd');
 
-          // Find the work day for this date
-          const { data: workDay } = await (supabase as any)
-            .from('work_days')
-            .select('id, is_finalized')
-            .eq('user_id', request.user_id)
-            .eq('date', dateStr)
-            .maybeSingle();
-
-          if (!workDay) continue;
-
-          // Delete vacation time entries on this work day
-          const { error: deleteError } = await (supabase as any)
-            .from('time_entries')
-            .delete()
-            .eq('work_day_id', workDay.id)
-            .eq('entry_type', 'vacation');
-
-          if (deleteError) throw new Error(`Zeiteinträge für ${dateStr} konnten nicht gelöscht werden`);
-
-          // Check if work day has remaining entries
-          const { data: remaining } = await (supabase as any)
-            .from('time_entries')
-            .select('id')
-            .eq('work_day_id', workDay.id)
-            .limit(1);
-
-          if (!remaining || remaining.length === 0) {
-            // No entries left — delete the empty work day
-            await (supabase as any)
+            // Find the work day for this date
+            const { data: workDay } = await (supabase as any)
               .from('work_days')
+              .select('id, is_finalized')
+              .eq('user_id', request.user_id)
+              .eq('date', dateStr)
+              .maybeSingle();
+
+            if (!workDay) continue;
+
+            // Delete vacation time entries on this work day
+            const { error: deleteError } = await (supabase as any)
+              .from('time_entries')
               .delete()
-              .eq('id', workDay.id);
-          } else if (workDay.is_finalized) {
-            // Has other entries but was finalized by vacation — un-finalize
-            await (supabase as any)
-              .from('work_days')
-              .update({ is_finalized: false })
-              .eq('id', workDay.id);
+              .eq('work_day_id', workDay.id)
+              .eq('entry_type', 'vacation');
+
+            if (deleteError) throw new Error(`Zeiteinträge für ${dateStr} konnten nicht gelöscht werden`);
+
+            // Check if work day has remaining entries
+            const { data: remaining } = await (supabase as any)
+              .from('time_entries')
+              .select('id')
+              .eq('work_day_id', workDay.id)
+              .limit(1);
+
+            if (!remaining || remaining.length === 0) {
+              // No entries left — delete the empty work day
+              await (supabase as any)
+                .from('work_days')
+                .delete()
+                .eq('id', workDay.id);
+            } else if (workDay.is_finalized) {
+              // Has other entries but was finalized by vacation — un-finalize
+              await (supabase as any)
+                .from('work_days')
+                .update({ is_finalized: false })
+                .eq('id', workDay.id);
+            }
           }
+        } catch (cleanupError) {
+          // Partial failure — invalidate queries so UI stays in sync
+          queryClient.invalidateQueries({ queryKey: ['vacation-pending'] });
+          queryClient.invalidateQueries({ queryKey: ['vacation-approved'] });
+          queryClient.invalidateQueries({ queryKey: ['vacation-calendar'] });
+          queryClient.invalidateQueries({ queryKey: ['vacation-own'] });
+          queryClient.invalidateQueries({ queryKey: ['vacation-used-days'] });
+          toast.error('Stornierung teilweise fehlgeschlagen. Bitte prüfen Sie die Zeiteinträge.');
+          throw cleanupError;
         }
       }
 
@@ -757,11 +781,18 @@ export default function VacationPage() {
     >
       <PullToRefresh onRefresh={handleRefresh}>
         {/* Tab bar */}
-        <div className={cn(
-          'flex gap-1 mb-4 p-1 bg-muted rounded-lg',
-          canManageVacations ? '' : 'max-w-sm'
-        )}>
+        <div
+          role="tablist"
+          className={cn(
+            'flex gap-1 mb-4 p-1 bg-muted rounded-lg',
+            canManageVacations ? '' : 'max-w-sm'
+          )}
+        >
           <button
+            role="tab"
+            aria-selected={activeTab === 'kalender'}
+            aria-controls="tabpanel-kalender"
+            id="tab-kalender"
             onClick={() => setActiveTab('kalender')}
             className={cn(
               'flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors',
@@ -773,6 +804,10 @@ export default function VacationPage() {
             Kalender
           </button>
           <button
+            role="tab"
+            aria-selected={activeTab === 'saldo'}
+            aria-controls="tabpanel-saldo"
+            id="tab-saldo"
             onClick={() => setActiveTab('saldo')}
             className={cn(
               'flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors',
@@ -785,6 +820,10 @@ export default function VacationPage() {
           </button>
           {canManageVacations && (
             <button
+              role="tab"
+              aria-selected={activeTab === 'antraege'}
+              aria-controls="tabpanel-antraege"
+              id="tab-antraege"
               onClick={() => setActiveTab('antraege')}
               className={cn(
                 'flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors relative',
@@ -803,6 +842,10 @@ export default function VacationPage() {
           )}
           {canManageVacations && (
             <button
+              role="tab"
+              aria-selected={activeTab === 'uebersicht'}
+              aria-controls="tabpanel-uebersicht"
+              id="tab-uebersicht"
               onClick={() => setActiveTab('uebersicht')}
               className={cn(
                 'flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors',
@@ -817,12 +860,13 @@ export default function VacationPage() {
         </div>
         {/* ════════════════ TAB 1: KALENDER ════════════════ */}
         {activeTab === 'kalender' && (
-          <div>
+          <div role="tabpanel" id="tabpanel-kalender" aria-labelledby="tab-kalender">
             {/* Month navigation */}
             <div className="flex items-center justify-between mb-4">
               <Button
                 variant="ghost"
                 size="icon"
+                aria-label="Vorheriger Monat"
                 onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
               >
                 <ChevronLeft className="h-5 w-5" />
@@ -833,6 +877,7 @@ export default function VacationPage() {
               <Button
                 variant="ghost"
                 size="icon"
+                aria-label="Nächster Monat"
                 onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
               >
                 <ChevronRight className="h-5 w-5" />
@@ -840,11 +885,12 @@ export default function VacationPage() {
             </div>
 
             {/* Calendar grid */}
-            <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-lg overflow-hidden">
+            <div role="grid" className="grid grid-cols-7 gap-px bg-gray-200 rounded-lg overflow-hidden">
               {/* Weekday headers */}
               {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((day) => (
                 <div
                   key={day}
+                  role="columnheader"
                   className="bg-gray-50 text-center text-xs font-medium text-gray-500 py-2"
                 >
                   {day}
@@ -861,6 +907,7 @@ export default function VacationPage() {
                 return (
                   <div
                     key={day.toISOString()}
+                    role="gridcell"
                     className={cn(
                       'bg-white min-h-[60px] p-1 relative',
                       !isCurrentMonth && 'bg-gray-50',
@@ -908,6 +955,7 @@ export default function VacationPage() {
                                   : 'none',
                               }}
                               title={`${getUserName(req.user)} (${req.status === 'pending' ? 'beantragt' : 'bewilligt'}${periodLabel})`}
+                              aria-label={`${getUserName(req.user)} (${req.status === 'pending' ? 'beantragt' : 'bewilligt'}${periodLabel})`}
                             />
                           </div>
                         );
@@ -968,7 +1016,7 @@ export default function VacationPage() {
 
         {/* ════════════════ TAB 2: MEIN SALDO ════════════════ */}
         {activeTab === 'saldo' && (
-          <div>
+          <div role="tabpanel" id="tabpanel-saldo" aria-labelledby="tab-saldo">
             {/* Stats cards */}
             <div className="grid grid-cols-2 gap-3 mb-4">
               <Card>
@@ -1070,15 +1118,7 @@ export default function VacationPage() {
                           {/* Cancel button: pending (own) or approved (admin only) */}
                           {(req.status === 'pending' || (req.status === 'approved' && canManageVacations)) && (
                             <button
-                              onClick={() => {
-                                if (confirm(
-                                  req.status === 'approved'
-                                    ? 'Bewilligten Antrag stornieren? Die zugehörigen Zeiteinträge werden gelöscht.'
-                                    : 'Antrag stornieren?'
-                                )) {
-                                  cancelMutation.mutate(req);
-                                }
-                              }}
+                              onClick={() => setConfirmCancelRequest(req)}
                               disabled={cancelMutation.isPending}
                               className="p-2 -mr-1 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                               title="Stornieren"
@@ -1099,7 +1139,7 @@ export default function VacationPage() {
 
         {/* ════════════════ TAB 3: ANTRÄGE (Admin) ════════════════ */}
         {activeTab === 'antraege' && canManageVacations && (
-          <div className="space-y-6">
+          <div role="tabpanel" id="tabpanel-antraege" aria-labelledby="tab-antraege" className="space-y-6">
             {/* Pending requests */}
             <div>
               <h3 className="font-semibold mb-3">Offene Anträge</h3>
@@ -1210,11 +1250,7 @@ export default function VacationPage() {
                             variant="outline"
                             size="sm"
                             className="border-red-300 text-red-600 hover:bg-red-50"
-                            onClick={() => {
-                              if (confirm(`Bewilligte Ferien von ${getUserName(req.user)} stornieren? Die Zeiteinträge werden gelöscht.`)) {
-                                cancelMutation.mutate(req);
-                              }
-                            }}
+                            onClick={() => setConfirmCancelApprovedRequest(req)}
                             disabled={cancelMutation.isPending}
                           >
                             Stornieren
@@ -1265,11 +1301,7 @@ export default function VacationPage() {
                             variant="outline"
                             size="sm"
                             className="border-gray-300 text-gray-600 hover:bg-gray-50"
-                            onClick={() => {
-                              if (confirm(`Abgelehnten Antrag von ${getUserName(req.user)} endgültig entfernen?`)) {
-                                deleteRejectedMutation.mutate(req.id);
-                              }
-                            }}
+                            onClick={() => setConfirmDeleteRejectedId({ id: req.id, name: getUserName(req.user) })}
                             disabled={deleteRejectedMutation.isPending}
                           >
                             Entfernen
@@ -1285,7 +1317,7 @@ export default function VacationPage() {
         )}
         {/* ════════════════ TAB 4: ÜBERSICHT (Admin) ════════════════ */}
         {activeTab === 'uebersicht' && canManageVacations && (
-          <div>
+          <div role="tabpanel" id="tabpanel-uebersicht" aria-labelledby="tab-uebersicht">
             <h3 className="font-semibold mb-3">Feriensaldo aller Mitarbeiter ({currentYear})</h3>
             {overviewData.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
@@ -1388,6 +1420,117 @@ export default function VacationPage() {
               disabled={!rejectionReason.trim() || rejectMutation.isPending}
             >
               {rejectMutation.isPending ? 'Wird abgelehnt...' : 'Ablehnen'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel own request confirmation dialog */}
+      <Dialog
+        open={!!confirmCancelRequest}
+        onOpenChange={() => setConfirmCancelRequest(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Antrag stornieren</DialogTitle>
+            <DialogDescription>
+              {confirmCancelRequest?.status === 'approved'
+                ? 'Bewilligten Antrag stornieren? Die zugehörigen Zeiteinträge werden gelöscht.'
+                : 'Antrag stornieren?'}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmCancelRequest(null)}
+            >
+              Abbrechen
+            </Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={() => {
+                if (confirmCancelRequest) {
+                  cancelMutation.mutate(confirmCancelRequest);
+                  setConfirmCancelRequest(null);
+                }
+              }}
+              disabled={cancelMutation.isPending}
+            >
+              Stornieren
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel approved request confirmation dialog (admin) */}
+      <Dialog
+        open={!!confirmCancelApprovedRequest}
+        onOpenChange={() => setConfirmCancelApprovedRequest(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Bewilligte Ferien stornieren</DialogTitle>
+            <DialogDescription>
+              {confirmCancelApprovedRequest
+                ? `Bewilligte Ferien von ${getUserName(confirmCancelApprovedRequest.user)} stornieren? Die Zeiteinträge werden gelöscht.`
+                : ''}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmCancelApprovedRequest(null)}
+            >
+              Abbrechen
+            </Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={() => {
+                if (confirmCancelApprovedRequest) {
+                  cancelMutation.mutate(confirmCancelApprovedRequest);
+                  setConfirmCancelApprovedRequest(null);
+                }
+              }}
+              disabled={cancelMutation.isPending}
+            >
+              Stornieren
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete rejected request confirmation dialog */}
+      <Dialog
+        open={!!confirmDeleteRejectedId}
+        onOpenChange={() => setConfirmDeleteRejectedId(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Abgelehnten Antrag entfernen</DialogTitle>
+            <DialogDescription>
+              {confirmDeleteRejectedId
+                ? `Abgelehnten Antrag von ${confirmDeleteRejectedId.name} endgültig entfernen?`
+                : ''}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmDeleteRejectedId(null)}
+            >
+              Abbrechen
+            </Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={() => {
+                if (confirmDeleteRejectedId) {
+                  deleteRejectedMutation.mutate(confirmDeleteRejectedId.id);
+                  setConfirmDeleteRejectedId(null);
+                }
+              }}
+              disabled={deleteRejectedMutation.isPending}
+            >
+              Entfernen
             </Button>
           </DialogFooter>
         </DialogContent>

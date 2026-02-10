@@ -27,6 +27,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ) => {
     const generatedId = React.useId();
     const inputId = id || generatedId;
+    const errorId = error ? `${inputId}-error` : undefined;
+    const hintId = hint && !error ? `${inputId}-hint` : undefined;
+    const describedBy = errorId || hintId || undefined;
 
     return (
       <div className="w-full">
@@ -47,6 +50,8 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <input
             type={type}
             id={inputId}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={describedBy}
             className={cn(
               'flex h-12 w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-base text-slate-800',
               'ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium',
@@ -68,10 +73,10 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           )}
         </div>
         {error && (
-          <p className="mt-1 text-sm text-error-600">{error}</p>
+          <p id={errorId} className="mt-1 text-sm text-error-600">{error}</p>
         )}
         {hint && !error && (
-          <p className="mt-1 text-sm text-muted-foreground">{hint}</p>
+          <p id={hintId} className="mt-1 text-sm text-muted-foreground">{hint}</p>
         )}
       </div>
     );
@@ -91,6 +96,9 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, label, error, hint, id, ...props }, ref) => {
     const generatedId = React.useId();
     const textareaId = id || generatedId;
+    const errorId = error ? `${textareaId}-error` : undefined;
+    const hintId = hint && !error ? `${textareaId}-hint` : undefined;
+    const describedBy = errorId || hintId || undefined;
 
     return (
       <div className="w-full">
@@ -104,6 +112,8 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         )}
         <textarea
           id={textareaId}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
           className={cn(
             'flex min-h-[100px] w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-base text-slate-800',
             'ring-offset-background placeholder:text-slate-400',
@@ -116,10 +126,10 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           {...props}
         />
         {error && (
-          <p className="mt-1 text-sm text-error-600">{error}</p>
+          <p id={errorId} className="mt-1 text-sm text-error-600">{error}</p>
         )}
         {hint && !error && (
-          <p className="mt-1 text-sm text-slate-500">{hint}</p>
+          <p id={hintId} className="mt-1 text-sm text-slate-500">{hint}</p>
         )}
       </div>
     );

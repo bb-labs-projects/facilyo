@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify password against our Argon2 hash
+    // Verify password against our bcrypt hash
     const isValidPassword = await verifyPassword(password, credentials.password_hash);
 
     if (!isValidPassword) {

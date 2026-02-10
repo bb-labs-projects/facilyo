@@ -49,6 +49,8 @@ function SelectTrigger({ children, className }: SelectTriggerProps) {
     <button
       type="button"
       onClick={() => context.setOpen(!context.open)}
+      aria-expanded={context.open}
+      aria-haspopup="listbox"
       className={cn(
         'flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
         className
@@ -103,6 +105,7 @@ function SelectContent({ children, className }: SelectContentProps) {
   return (
     <div
       ref={contentRef}
+      role="listbox"
       className={cn(
         'absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border bg-popover p-1 text-popover-foreground shadow-md',
         className
@@ -125,12 +128,35 @@ function SelectItem({ value, children, className }: SelectItemProps) {
 
   const isSelected = context.value === value;
 
+  const handleSelect = () => {
+    context.onValueChange(value);
+    context.setOpen(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleSelect();
+    } else if (e.key === 'Escape') {
+      context.setOpen(false);
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const next = (e.currentTarget as HTMLElement).nextElementSibling as HTMLElement | null;
+      next?.focus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prev = (e.currentTarget as HTMLElement).previousElementSibling as HTMLElement | null;
+      prev?.focus();
+    }
+  };
+
   return (
     <div
-      onClick={() => {
-        context.onValueChange(value);
-        context.setOpen(false);
-      }}
+      role="option"
+      aria-selected={isSelected}
+      tabIndex={0}
+      onClick={handleSelect}
+      onKeyDown={handleKeyDown}
       className={cn(
         'relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 px-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground',
         isSelected && 'bg-accent text-accent-foreground',

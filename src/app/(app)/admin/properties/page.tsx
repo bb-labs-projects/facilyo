@@ -26,6 +26,7 @@ import {
 import { usePermissions } from '@/hooks/use-permissions';
 import { getClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
+import { ErrorBoundary } from '@/components/error-boundary';
 import type { Property, PropertyInsert, PropertyUpdate, PropertyType, Profile } from '@/types/database';
 import { getInitials } from '@/lib/utils';
 
@@ -39,6 +40,14 @@ const propertyTypeLabels: Record<PropertyType, string> = {
 };
 
 export default function AdminPropertiesPage() {
+  return (
+    <ErrorBoundary>
+      <AdminPropertiesPageContent />
+    </ErrorBoundary>
+  );
+}
+
+function AdminPropertiesPageContent() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const permissions = usePermissions();

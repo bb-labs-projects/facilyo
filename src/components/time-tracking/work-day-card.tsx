@@ -240,6 +240,7 @@ export function TimeEntryCard({
                   variant="ghost"
                   size="icon"
                   onClick={handleDeleteClick}
+                  aria-label="Zeiteintrag löschen"
                   className="h-8 w-8 text-slate-400 hover:text-red-600 hover:bg-red-50"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -557,7 +558,13 @@ export function PropertyGroupedEntries({
                     )}
                   </div>
                   {(hasMultipleActivities || visit.entries.length > 1) && (
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      aria-expanded={isExpanded}
+                      aria-label="Details ein-/ausblenden"
+                    >
                       {isExpanded ? (
                         <ChevronUp className="h-4 w-4" />
                       ) : (
@@ -641,6 +648,7 @@ export function PropertyGroupedEntries({
                                   e.stopPropagation();
                                   onEntryDelete(entry);
                                 }}
+                                aria-label="Zeiteintrag löschen"
                                 className="h-6 w-6 text-slate-400 hover:text-red-600 hover:bg-red-50"
                               >
                                 <Trash2 className="h-3 w-3" />

@@ -12,6 +12,7 @@ import {
 } from '@/stores/timer-store';
 import { swissFormat } from '@/lib/i18n';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 
 // Auto-stop time: 23:00 (11 PM)
 const AUTO_STOP_HOUR = 23;
@@ -78,8 +79,8 @@ export function useTimeTracking() {
       // Prevent multiple auto-stops
       autoStopRef.current = true;
 
-      // Calculate the exact 23:00 timestamp for today
-      const today = now.toISOString().split('T')[0];
+      // Calculate the exact 23:00 timestamp for today (use local date, not UTC)
+      const today = format(now, 'yyyy-MM-dd');
       const autoStopTime = new Date(`${today}T${String(AUTO_STOP_HOUR).padStart(2, '0')}:${String(AUTO_STOP_MINUTE).padStart(2, '0')}:00`);
       const autoStopTimeISO = autoStopTime.toISOString();
 

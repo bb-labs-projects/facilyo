@@ -69,6 +69,7 @@ import {
   getDay,
 } from 'date-fns';
 import { de } from 'date-fns/locale';
+import { ErrorBoundary } from '@/components/error-boundary';
 import type { Profile, TimeEntry, WorkDay, Property, ActivityType, TimeEntryType, PropertyType } from '@/types/database';
 
 type ViewMode = 'day' | 'week' | 'month';
@@ -116,6 +117,14 @@ function formatDuration(seconds: number): string {
 }
 
 export default function CalendarPage() {
+  return (
+    <ErrorBoundary>
+      <CalendarPageContent />
+    </ErrorBoundary>
+  );
+}
+
+function CalendarPageContent() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const permissions = usePermissions();

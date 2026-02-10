@@ -84,6 +84,29 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Role-based route protection for admin paths
+  if (user && request.nextUrl.pathname.startsWith('/admin')) {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      const adminRoles = ['admin', 'owner', 'manager'];
+      if (!profile || !adminRoles.includes(profile.role)) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/';
+        return NextResponse.redirect(url);
+      }
+    } catch {
+      // On error, redirect away from admin for safety
+      const url = request.nextUrl.clone();
+      url.pathname = '/';
+      return NextResponse.redirect(url);
+    }
+  }
+
   // Check mustChangePassword flag from client-side storage
   // This is handled client-side in the auth store, but we add additional protection here
   // by checking the cookie that zustand persist creates
