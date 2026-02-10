@@ -22,6 +22,7 @@ import {
   BarChart3,
   Users,
   TrendingUp,
+  Palmtree,
 } from 'lucide-react';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -227,6 +228,7 @@ export default function TimeOverviewPage() {
     let propertyTime = 0;
     let travelTime = 0;
     let breakTime = 0;
+    let vacationTime = 0;
 
     filteredEntries.forEach((entry) => {
       const duration = calculateEntryDuration(entry);
@@ -240,6 +242,9 @@ export default function TimeOverviewPage() {
         case 'break':
           breakTime += duration;
           break;
+        case 'vacation':
+          vacationTime += duration;
+          break;
       }
     });
 
@@ -247,13 +252,14 @@ export default function TimeOverviewPage() {
       propertyTime,
       travelTime,
       breakTime,
+      vacationTime,
       workTime: propertyTime + travelTime,
     };
   }, [filteredEntries]);
 
   // Group data by employee
   const employeeStats = useMemo(() => {
-    const stats = new Map<string, { name: string; propertyTime: number; travelTime: number; breakTime: number; workDays: Set<string> }>();
+    const stats = new Map<string, { name: string; propertyTime: number; travelTime: number; breakTime: number; vacationTime: number; workDays: Set<string> }>();
 
     filteredEntries.forEach((entry) => {
       const employee = employees.find(e => e.id === entry.userId);
@@ -262,7 +268,7 @@ export default function TimeOverviewPage() {
       const name = `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.email;
 
       if (!stats.has(entry.userId)) {
-        stats.set(entry.userId, { name, propertyTime: 0, travelTime: 0, breakTime: 0, workDays: new Set() });
+        stats.set(entry.userId, { name, propertyTime: 0, travelTime: 0, breakTime: 0, vacationTime: 0, workDays: new Set() });
       }
 
       const stat = stats.get(entry.userId)!;
@@ -281,6 +287,9 @@ export default function TimeOverviewPage() {
           break;
         case 'break':
           stat.breakTime += duration;
+          break;
+        case 'vacation':
+          stat.vacationTime += duration;
           break;
       }
     });
@@ -384,6 +393,7 @@ export default function TimeOverviewPage() {
       activities: Map<ActivityType, number>;
       travel: number;
       break_time: number;
+      vacation: number;
     }>>();
 
     filteredEntries.forEach((entry) => {
@@ -406,6 +416,7 @@ export default function TimeOverviewPage() {
           activities: new Map(),
           travel: 0,
           break_time: 0,
+          vacation: 0,
         });
       }
 
@@ -425,6 +436,9 @@ export default function TimeOverviewPage() {
         case 'break':
           dayStats.break_time += duration;
           break;
+        case 'vacation':
+          dayStats.vacation += duration;
+          break;
       }
     });
 
@@ -434,6 +448,7 @@ export default function TimeOverviewPage() {
       activities: Map<ActivityType, number>;
       travel: number;
       break_time: number;
+      vacation: number;
     }>();
 
     employeeDailyStats.forEach((days, employeeId) => {
@@ -449,6 +464,7 @@ export default function TimeOverviewPage() {
           activities: new Map(),
           travel: 0,
           break_time: 0,
+          vacation: 0,
         });
       }
       const empTotal = employeeTotals.get(employeeId)!;
@@ -487,11 +503,13 @@ export default function TimeOverviewPage() {
 
         row['Fahrtzeit'] = stats.travel > 0 ? formatDurationForExport(stats.travel) : '';
         row['Pause'] = stats.break_time > 0 ? formatDurationForExport(stats.break_time) : '';
+        row['Ferien'] = stats.vacation > 0 ? formatDurationForExport(stats.vacation) : '';
         row['Tagesgesamt'] = formatDurationForExport(dayTotal);
 
         // Add to employee totals
         empTotal.travel += stats.travel;
         empTotal.break_time += stats.break_time;
+        empTotal.vacation += stats.vacation;
 
         dailyData.push(row as typeof dailyData[0]);
       });
@@ -512,6 +530,7 @@ export default function TimeOverviewPage() {
 
       totalRow['Fahrtzeit'] = empTotal.travel > 0 ? formatDurationForExport(empTotal.travel) : '';
       totalRow['Pause'] = empTotal.break_time > 0 ? formatDurationForExport(empTotal.break_time) : '';
+      totalRow['Ferien'] = empTotal.vacation > 0 ? formatDurationForExport(empTotal.vacation) : '';
       totalRow['Tagesgesamt'] = formatDurationForExport(empPropertyTotal + empTotal.travel);
 
       dailyData.push(totalRow as typeof dailyData[0]);
@@ -535,6 +554,7 @@ export default function TimeOverviewPage() {
         ...activityKeys.map(() => ({ wch: 14 })), // Activity columns
         { wch: 10 }, // Fahrtzeit
         { wch: 10 }, // Pause
+        { wch: 10 }, // Ferien
         { wch: 12 }, // Tagesgesamt
       ];
       XLSX.utils.book_append_sheet(wb, wsDaily, 'Tagesübersicht');
@@ -546,6 +566,7 @@ export default function TimeOverviewPage() {
       'Arbeitszeit (Liegenschaft)': formatDurationForExport(stat.propertyTime),
       'Fahrtzeit': formatDurationForExport(stat.travelTime),
       'Pausenzeit': formatDurationForExport(stat.breakTime),
+      'Ferien': formatDurationForExport(stat.vacationTime),
       'Gesamtarbeitszeit': formatDurationForExport(stat.propertyTime + stat.travelTime),
       'Arbeitstage': stat.workDays,
     }));
@@ -555,13 +576,14 @@ export default function TimeOverviewPage() {
       'Arbeitszeit (Liegenschaft)': formatDurationForExport(totals.propertyTime),
       'Fahrtzeit': formatDurationForExport(totals.travelTime),
       'Pausenzeit': formatDurationForExport(totals.breakTime),
+      'Ferien': formatDurationForExport(totals.vacationTime),
       'Gesamtarbeitszeit': formatDurationForExport(totals.workTime),
       'Arbeitstage': employeeStats.reduce((sum, d) => sum + d.workDays, 0),
     });
 
     const wsSummary = XLSX.utils.json_to_sheet(summaryData);
     wsSummary['!cols'] = [
-      { wch: 25 }, { wch: 22 }, { wch: 12 }, { wch: 12 }, { wch: 18 }, { wch: 12 },
+      { wch: 25 }, { wch: 22 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 18 }, { wch: 12 },
     ];
     XLSX.utils.book_append_sheet(wb, wsSummary, 'Zusammenfassung');
 
@@ -717,6 +739,7 @@ export default function TimeOverviewPage() {
                 <option value="property">Liegenschaft</option>
                 <option value="travel">Fahrzeit</option>
                 <option value="break">Pause</option>
+                <option value="vacation">Ferien</option>
               </select>
             </div>
           </CardContent>
@@ -824,7 +847,22 @@ export default function TimeOverviewPage() {
             <p className="text-lg font-semibold">{formatDuration(totals.breakTime)}</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card
+          className={cn(
+            'cursor-pointer transition-all hover:ring-2 hover:ring-primary-300',
+            selectedEntryType === 'vacation' && 'ring-2 ring-primary-500'
+          )}
+          onClick={() => setSelectedEntryType(selectedEntryType === 'vacation' ? null : 'vacation')}
+        >
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <Palmtree className="h-4 w-4" />
+              <span className="text-xs">Ferien</span>
+            </div>
+            <p className="text-lg font-semibold">{formatDuration(totals.vacationTime)}</p>
+          </CardContent>
+        </Card>
+        <Card className="col-span-2">
           <CardContent className="p-3">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <Clock className="h-4 w-4" />
@@ -1009,6 +1047,12 @@ export default function TimeOverviewPage() {
                             <Coffee className="h-3 w-3 text-muted-foreground" />
                             {formatDuration(stat.breakTime)}
                           </span>
+                          {stat.vacationTime > 0 && (
+                            <span className="flex items-center gap-1">
+                              <Palmtree className="h-3 w-3 text-muted-foreground" />
+                              {formatDuration(stat.vacationTime)}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
