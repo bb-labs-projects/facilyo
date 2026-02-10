@@ -140,22 +140,31 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
                   <span className="relative flex-shrink-0">
                     <Icon className="h-5 w-5" />
                     {item.href === '/tasks' && newTasksCount > 0 && (
-                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center" aria-hidden="true">
                         {newTasksCount}
                       </span>
                     )}
                     {item.href === '/issues' && openIssuesCount > 0 && (
-                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center" aria-hidden="true">
                         {openIssuesCount}
                       </span>
                     )}
                     {item.href === '/vacation' && vacationCount > 0 && (
-                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center" aria-hidden="true">
                         {vacationCount}
                       </span>
                     )}
                   </span>
                   <span>{item.label}</span>
+                  {item.href === '/tasks' && newTasksCount > 0 && (
+                    <span className="sr-only">, {newTasksCount} neue</span>
+                  )}
+                  {item.href === '/issues' && openIssuesCount > 0 && (
+                    <span className="sr-only">, {openIssuesCount} offen</span>
+                  )}
+                  {item.href === '/vacation' && vacationCount > 0 && (
+                    <span className="sr-only">, {vacationCount} offen</span>
+                  )}
                 </Link>
               );
             })}
@@ -188,12 +197,15 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
                       <span className="relative flex-shrink-0">
                         <Icon className="h-5 w-5" />
                         {item.href === '/admin/activity' && completedTasksCount > 0 && (
-                          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center" aria-hidden="true">
                             {completedTasksCount}
                           </span>
                         )}
                       </span>
                       <span>{item.label}</span>
+                      {item.href === '/admin/activity' && completedTasksCount > 0 && (
+                        <span className="sr-only">, {completedTasksCount} erledigt</span>
+                      )}
                     </Link>
                   );
                 })}

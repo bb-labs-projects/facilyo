@@ -942,6 +942,30 @@ function EditEntryDialog({ entry, properties, onClose, onSave, isLoading }: Edit
   const [activityType, setActivityType] = useState<ActivityType | null>(entry.activity_type || null);
   const [notes, setNotes] = useState(entry.notes || '');
 
+  // Property-type-aware activity filtering (same logic as NewEntryDialog)
+  const selectedProperty = propertyId ? properties.find(p => p.id === propertyId) : null;
+  const isCleaningOnly = selectedProperty && CLEANING_ONLY_PROPERTY_TYPES.includes(selectedProperty.type);
+
+  const availableActivities: { value: ActivityType; label: string }[] = isCleaningOnly
+    ? [{ value: 'reinigung', label: 'Reinigung' }]
+    : [
+        { value: 'hauswartung', label: 'Hauswartung' },
+        { value: 'rasen_maehen', label: 'Rasen mähen' },
+        { value: 'hecken_schneiden', label: 'Hecken schneiden' },
+        { value: 'regie', label: 'Regie' },
+      ];
+
+  const handlePropertyChange = (newPropertyId: string | null) => {
+    setPropertyId(newPropertyId);
+    const newProperty = newPropertyId ? properties.find(p => p.id === newPropertyId) : null;
+    const newIsCleaningOnly = newProperty && CLEANING_ONLY_PROPERTY_TYPES.includes(newProperty.type);
+    if (newIsCleaningOnly) {
+      setActivityType('reinigung');
+    } else if (activityType === 'reinigung') {
+      setActivityType(null);
+    }
+  };
+
   const handleSave = () => {
     onSave({
       start_time: new Date(startTime).toISOString(),
@@ -1011,7 +1035,7 @@ function EditEntryDialog({ entry, properties, onClose, onSave, isLoading }: Edit
                 <Label>Liegenschaft</Label>
                 <Select
                   value={propertyId || ''}
-                  onValueChange={(v) => setPropertyId(v || null)}
+                  onValueChange={(v) => handlePropertyChange(v || null)}
                 >
                   <SelectTrigger>
                     <span className={!propertyId ? 'text-muted-foreground' : ''}>
@@ -1039,18 +1063,16 @@ function EditEntryDialog({ entry, properties, onClose, onSave, isLoading }: Edit
                   <SelectTrigger>
                     <span className={!activityType ? 'text-muted-foreground' : ''}>
                       {activityType
-                        ? activityType === 'hauswartung' ? 'Hauswartung'
-                          : activityType === 'rasen_maehen' ? 'Rasen mähen'
-                          : activityType === 'hecken_schneiden' ? 'Hecken schneiden'
-                          : 'Regie'
+                        ? availableActivities.find(a => a.value === activityType)?.label || 'Tätigkeit wählen...'
                         : 'Tätigkeit wählen...'}
                     </span>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="hauswartung">Hauswartung</SelectItem>
-                    <SelectItem value="rasen_maehen">Rasen mähen</SelectItem>
-                    <SelectItem value="hecken_schneiden">Hecken schneiden</SelectItem>
-                    <SelectItem value="regie">Regie</SelectItem>
+                    {availableActivities.map((activity) => (
+                      <SelectItem key={activity.value} value={activity.value}>
+                        {activity.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

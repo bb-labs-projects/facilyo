@@ -47,8 +47,6 @@ export default function AdminPropertiesPage() {
   const [showInactiveProperties, setShowInactiveProperties] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [deletingProperty, setDeletingProperty] = useState<Property | null>(null);
   const [showDeactivateDialog, setShowDeactivateDialog] = useState(false);
   const [deactivatingProperty, setDeactivatingProperty] = useState<Property | null>(null);
   const [showUsersSheet, setShowUsersSheet] = useState(false);
@@ -238,44 +236,7 @@ export default function AdminPropertiesPage() {
     },
   });
 
-  // Delete mutation
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const supabase = getClient();
-
-      // Ensure valid session before delete
-      await ensureValidSession();
-
-      const { error } = await (supabase as any)
-        .from('properties')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        // Check if it's a permission/auth error
-        if (error.code === '42501' || error.message?.includes('permission') || error.code === 'PGRST301') {
-          await supabase.auth.refreshSession();
-          const { error: retryError } = await (supabase as any)
-            .from('properties')
-            .delete()
-            .eq('id', id);
-
-          if (retryError) throw retryError;
-          return;
-        }
-        throw error;
-      }
-    },
-    onSuccess: () => {
-      toast.success('Liegenschaft wurde gelöscht');
-      queryClient.invalidateQueries({ queryKey: ['admin-properties'] });
-      setShowDeleteDialog(false);
-      setDeletingProperty(null);
-    },
-    onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
-    },
-  });
+  // Hard-delete removed — use deactivate (soft-delete) to preserve historical data
 
   // Toggle property active status mutation
   const toggleActiveMutation = useMutation({
@@ -626,10 +587,10 @@ export default function AdminPropertiesPage() {
                         variant="ghost"
                         size="icon"
                         onClick={() => {
-                          setDeletingProperty(property);
-                          setShowDeleteDialog(true);
+                          setDeactivatingProperty(property);
+                          setShowDeactivateDialog(true);
                         }}
-                        title="Löschen"
+                        title="Deaktivieren"
                       >
                         <Trash2 className="h-4 w-4 text-error-600" />
                       </Button>
@@ -799,30 +760,7 @@ export default function AdminPropertiesPage() {
         </SheetContent>
       </Sheet>
 
-      {/* Delete confirmation dialog */}
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Liegenschaft löschen</DialogTitle>
-            <DialogDescription>
-              Sind Sie sicher, dass Sie &quot;{deletingProperty?.name}&quot; löschen möchten?
-              Alle zugehörigen Daten (Zeiteinträge, Meldungen, Checklisten) werden ebenfalls gelöscht.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-              Abbrechen
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => deletingProperty && deleteMutation.mutate(deletingProperty.id)}
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? 'Wird gelöscht...' : 'Löschen'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Hard-delete dialog removed — use deactivate instead to preserve historical data */}
 
       {/* Deactivate confirmation dialog */}
       <Dialog open={showDeactivateDialog} onOpenChange={setShowDeactivateDialog}>

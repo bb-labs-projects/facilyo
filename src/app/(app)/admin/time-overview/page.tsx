@@ -49,7 +49,7 @@ import {
 } from 'date-fns';
 import { de } from 'date-fns/locale';
 import type { Profile, TimeEntry, WorkDay, Property, ActivityType, TimeEntryType } from '@/types/database';
-import * as XLSX from 'xlsx';
+// xlsx is dynamically imported in handleExportXLSX to avoid loading ~90KB upfront
 
 type ViewMode = 'daily' | 'weekly' | 'monthly';
 
@@ -373,7 +373,8 @@ export default function TimeOverviewPage() {
 
   const activeFilterCount = [selectedEmployeeId, selectedPropertyId, selectedActivityType, selectedEntryType].filter(Boolean).length;
 
-  const handleExportXLSX = () => {
+  const handleExportXLSX = async () => {
+    const XLSX = await import('xlsx');
     // Create workbook
     const wb = XLSX.utils.book_new();
 

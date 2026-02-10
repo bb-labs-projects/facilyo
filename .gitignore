@@ -45,3 +45,7 @@ supabase/.branches
 supabase/.temp
 test-results/
 playwright-report/
+
+# Sensitive files
+user-credentials.csv
+*.csv
