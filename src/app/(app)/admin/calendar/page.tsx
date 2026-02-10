@@ -69,7 +69,7 @@ import {
   getDay,
 } from 'date-fns';
 import { de } from 'date-fns/locale';
-import type { Profile, TimeEntry, WorkDay, Property, ActivityType, TimeEntryType } from '@/types/database';
+import type { Profile, TimeEntry, WorkDay, Property, ActivityType, TimeEntryType, PropertyType } from '@/types/database';
 
 type ViewMode = 'day' | 'week' | 'month';
 
@@ -80,6 +80,9 @@ interface TimeEntryWithProperty extends TimeEntry {
 interface WorkDayWithEntries extends WorkDay {
   time_entries: TimeEntryWithProperty[];
 }
+
+// Property types that only allow "Reinigung" activity
+const CLEANING_ONLY_PROPERTY_TYPES: PropertyType[] = ['office', 'private_maintenance'];
 
 // Activity type display configuration
 const ACTIVITY_CONFIG: Record<ActivityType, { label: string; icon: typeof Wrench; color: string }> = {
@@ -120,6 +123,7 @@ export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [editingEntry, setEditingEntry] = useState<TimeEntryWithProperty | null>(null);
+  const [showNewEntryDialog, setShowNewEntryDialog] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Check permission
@@ -266,6 +270,72 @@ export default function CalendarPage() {
     },
     onError: (error: any) => {
       toast.error(error.message || 'Fehler beim Löschen');
+    },
+  });
+
+  // Create time entry mutation
+  type CreateEntryInput = {
+    date: Date;
+    entry_type: TimeEntryType;
+    property_id: string | null;
+    activity_type: ActivityType | null;
+    start_time: string;
+    end_time: string;
+    notes: string | null;
+  };
+
+  const createEntryMutation = useMutation({
+    mutationFn: async (input: CreateEntryInput) => {
+      if (!selectedUserId) throw new Error('Kein Benutzer ausgewählt');
+      const supabase = getClient();
+      const dateStr = format(input.date, 'yyyy-MM-dd');
+
+      // Find or create work day
+      const { data: existingWorkDay } = await supabase
+        .from('work_days')
+        .select('id')
+        .eq('user_id', selectedUserId)
+        .eq('date', dateStr)
+        .maybeSingle() as { data: { id: string } | null };
+
+      let workDayId: string;
+      if (existingWorkDay) {
+        workDayId = existingWorkDay.id;
+      } else {
+        const { data: newWorkDay, error: wdError } = await (supabase
+          .from('work_days') as any)
+          .insert({ user_id: selectedUserId, date: dateStr, start_time: input.start_time })
+          .select()
+          .single();
+        if (wdError) throw wdError;
+        workDayId = newWorkDay.id;
+      }
+
+      // Insert time entry
+      const { error } = await (supabase
+        .from('time_entries') as any)
+        .insert({
+          work_day_id: workDayId,
+          user_id: selectedUserId,
+          entry_type: input.entry_type,
+          property_id: input.entry_type === 'property' ? input.property_id : null,
+          activity_type: input.entry_type === 'property' ? input.activity_type : null,
+          start_time: input.start_time,
+          end_time: input.end_time,
+          status: 'completed',
+          pause_duration: 0,
+          notes: input.notes,
+        });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Eintrag erstellt');
+      queryClient.invalidateQueries({ queryKey: ['calendar-work-days'] });
+      setShowNewEntryDialog(false);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Fehler beim Erstellen');
     },
   });
 
@@ -449,6 +519,7 @@ export default function CalendarPage() {
             if (entry.entry_type === 'vacation') { toast.error('Ferieneinträge können nur über die Ferien-Seite verwaltet werden'); return; }
             deleteEntryMutation.mutate(entry.id);
           }}
+          onAddEntry={() => setShowNewEntryDialog(true)}
         />
       ) : viewMode === 'week' ? (
         <WeekView
@@ -485,6 +556,17 @@ export default function CalendarPage() {
           isLoading={updateEntryMutation.isPending}
         />
       )}
+
+      {/* New Entry Dialog */}
+      {showNewEntryDialog && selectedUserId && (
+        <NewEntryDialog
+          date={currentDate}
+          properties={properties}
+          onClose={() => setShowNewEntryDialog(false)}
+          onSave={(input) => createEntryMutation.mutate(input)}
+          isLoading={createEntryMutation.isPending}
+        />
+      )}
     </PageContainer>
   );
 }
@@ -495,9 +577,10 @@ interface DayViewProps {
   entries: TimeEntryWithProperty[];
   onEditEntry: (entry: TimeEntryWithProperty) => void;
   onDeleteEntry: (entry: TimeEntryWithProperty) => void;
+  onAddEntry?: () => void;
 }
 
-function DayView({ date, entries, onEditEntry, onDeleteEntry }: DayViewProps) {
+function DayView({ date, entries, onEditEntry, onDeleteEntry, onAddEntry }: DayViewProps) {
   const sortedEntries = [...entries].sort(
     (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
   );
@@ -512,8 +595,15 @@ function DayView({ date, entries, onEditEntry, onDeleteEntry }: DayViewProps) {
             <CalendarIcon className="h-5 w-5" />
             {format(date, 'EEEE, d. MMMM yyyy', { locale: de })}
           </CardTitle>
-          <div className="text-sm font-medium">
-            Gesamt: {formatDuration(totalTime)}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">
+              Gesamt: {formatDuration(totalTime)}
+            </span>
+            {onAddEntry && (
+              <Button variant="outline" size="icon" className="h-7 w-7" onClick={onAddEntry}>
+                <Plus className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -1004,6 +1094,199 @@ function EditEntryDialog({ entry, properties, onClose, onSave, isLoading }: Edit
           </Button>
           <Button onClick={handleSave} disabled={isLoading}>
             {isLoading ? 'Speichern...' : 'Speichern'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// New Entry Dialog
+interface NewEntryDialogProps {
+  date: Date;
+  properties: Property[];
+  onClose: () => void;
+  onSave: (input: {
+    date: Date;
+    entry_type: TimeEntryType;
+    property_id: string | null;
+    activity_type: ActivityType | null;
+    start_time: string;
+    end_time: string;
+    notes: string | null;
+  }) => void;
+  isLoading: boolean;
+}
+
+function NewEntryDialog({ date, properties, onClose, onSave, isLoading }: NewEntryDialogProps) {
+  const dateStr = format(date, 'yyyy-MM-dd');
+  const [entryType, setEntryType] = useState<TimeEntryType>('property');
+  const [propertyId, setPropertyId] = useState<string | null>(null);
+  const [activityType, setActivityType] = useState<ActivityType | null>(null);
+  const [startTime, setStartTime] = useState(`${dateStr}T08:00`);
+  const [endTime, setEndTime] = useState(`${dateStr}T09:00`);
+  const [notes, setNotes] = useState('');
+
+  // Get selected property's type for activity filtering
+  const selectedProperty = propertyId ? properties.find(p => p.id === propertyId) : null;
+  const isCleaningOnly = selectedProperty && CLEANING_ONLY_PROPERTY_TYPES.includes(selectedProperty.type);
+
+  // Available activities based on selected property
+  const availableActivities: { value: ActivityType; label: string }[] = isCleaningOnly
+    ? [{ value: 'reinigung', label: 'Reinigung' }]
+    : [
+        { value: 'hauswartung', label: 'Hauswartung' },
+        { value: 'rasen_maehen', label: 'Rasen mähen' },
+        { value: 'hecken_schneiden', label: 'Hecken schneiden' },
+        { value: 'regie', label: 'Regie' },
+      ];
+
+  // Reset activity when property changes and current activity is no longer available
+  const handlePropertyChange = (newPropertyId: string | null) => {
+    setPropertyId(newPropertyId);
+    const newProperty = newPropertyId ? properties.find(p => p.id === newPropertyId) : null;
+    const newIsCleaningOnly = newProperty && CLEANING_ONLY_PROPERTY_TYPES.includes(newProperty.type);
+    if (newIsCleaningOnly) {
+      setActivityType('reinigung');
+    } else if (activityType === 'reinigung') {
+      setActivityType(null);
+    }
+  };
+
+  const canSave = () => {
+    if (!startTime || !endTime) return false;
+    if (new Date(endTime) <= new Date(startTime)) return false;
+    if (entryType === 'property' && (!propertyId || !activityType)) return false;
+    return true;
+  };
+
+  const handleSave = () => {
+    if (!canSave()) return;
+    onSave({
+      date,
+      entry_type: entryType,
+      property_id: entryType === 'property' ? propertyId : null,
+      activity_type: entryType === 'property' ? activityType : null,
+      start_time: new Date(startTime).toISOString(),
+      end_time: new Date(endTime).toISOString(),
+      notes: notes || null,
+    });
+  };
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Neuer Zeiteintrag</DialogTitle>
+          <DialogDescription>
+            {format(date, 'EEEE, d. MMMM yyyy', { locale: de })}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          {/* Entry Type */}
+          <div className="space-y-2">
+            <Label>Eintragstyp</Label>
+            <Select value={entryType} onValueChange={(v) => setEntryType(v as TimeEntryType)}>
+              <SelectTrigger>
+                <span>{ENTRY_TYPE_CONFIG[entryType]?.label ?? entryType}</span>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="property">Liegenschaft</SelectItem>
+                <SelectItem value="travel">Fahrzeit</SelectItem>
+                <SelectItem value="break">Pause</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Property (only for property type) */}
+          {entryType === 'property' && (
+            <>
+              <div className="space-y-2">
+                <Label>Liegenschaft</Label>
+                <Select
+                  value={propertyId || ''}
+                  onValueChange={(v) => handlePropertyChange(v || null)}
+                >
+                  <SelectTrigger>
+                    <span className={!propertyId ? 'text-muted-foreground' : ''}>
+                      {propertyId
+                        ? properties.find(p => p.id === propertyId)?.name || 'Liegenschaft wählen...'
+                        : 'Liegenschaft wählen...'}
+                    </span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {properties.map((property) => (
+                      <SelectItem key={property.id} value={property.id}>
+                        {property.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Tätigkeit</Label>
+                <Select
+                  value={activityType || ''}
+                  onValueChange={(v) => setActivityType((v as ActivityType) || null)}
+                >
+                  <SelectTrigger>
+                    <span className={!activityType ? 'text-muted-foreground' : ''}>
+                      {activityType
+                        ? availableActivities.find(a => a.value === activityType)?.label || 'Tätigkeit wählen...'
+                        : 'Tätigkeit wählen...'}
+                    </span>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableActivities.map((activity) => (
+                      <SelectItem key={activity.value} value={activity.value}>
+                        {activity.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
+
+          {/* Start Time */}
+          <div className="space-y-2">
+            <Label>Startzeit</Label>
+            <Input
+              type="datetime-local"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+            />
+          </div>
+
+          {/* End Time */}
+          <div className="space-y-2">
+            <Label>Endzeit</Label>
+            <Input
+              type="datetime-local"
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+            />
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-2">
+            <Label>Notizen</Label>
+            <Input
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Optionale Notizen..."
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Abbrechen
+          </Button>
+          <Button onClick={handleSave} disabled={isLoading || !canSave()}>
+            {isLoading ? 'Erstellen...' : 'Erstellen'}
           </Button>
         </DialogFooter>
       </DialogContent>
