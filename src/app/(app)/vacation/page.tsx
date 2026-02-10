@@ -135,17 +135,37 @@ export default function VacationPage() {
     enabled: !!profile?.id && canManageVacations,
   });
 
-  // ─── All approved requests (admin tab - for cancellation) ───
+  // ─── All approved requests (admin tab) ───
   const { data: approvedRequests = [], refetch: refetchApproved } = useQuery({
-    queryKey: ['vacation-approved'],
+    queryKey: ['vacation-approved', currentYear],
     queryFn: async () => {
       const supabase = getClient();
       const { data, error } = await (supabase as any)
         .from('vacation_requests')
         .select('*, user:profiles!vacation_requests_user_id_fkey(*)')
         .eq('status', 'approved')
-        .gte('end_date', format(new Date(), 'yyyy-MM-dd'))
-        .order('start_date', { ascending: true });
+        .gte('start_date', `${currentYear}-01-01`)
+        .lte('start_date', `${currentYear}-12-31`)
+        .order('start_date', { ascending: false });
+
+      if (error) throw error;
+      return data as VacationRequestWithUser[];
+    },
+    enabled: !!profile?.id && canManageVacations,
+  });
+
+  // ─── All rejected requests (admin tab) ───
+  const { data: rejectedRequests = [], refetch: refetchRejected } = useQuery({
+    queryKey: ['vacation-rejected', currentYear],
+    queryFn: async () => {
+      const supabase = getClient();
+      const { data, error } = await (supabase as any)
+        .from('vacation_requests')
+        .select('*, user:profiles!vacation_requests_user_id_fkey(*)')
+        .eq('status', 'rejected')
+        .gte('start_date', `${currentYear}-01-01`)
+        .lte('start_date', `${currentYear}-12-31`)
+        .order('start_date', { ascending: false });
 
       if (error) throw error;
       return data as VacationRequestWithUser[];
@@ -455,8 +475,31 @@ export default function VacationPage() {
     },
   });
 
+  // ─── Delete rejected request mutation ───
+  const deleteRejectedMutation = useMutation({
+    mutationFn: async (requestId: string) => {
+      const supabase = getClient();
+      const { error } = await (supabase as any)
+        .from('vacation_requests')
+        .delete()
+        .eq('id', requestId)
+        .eq('status', 'rejected');
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Abgelehnter Antrag entfernt');
+      queryClient.invalidateQueries({ queryKey: ['vacation-rejected'] });
+      queryClient.invalidateQueries({ queryKey: ['vacation-own'] });
+      queryClient.invalidateQueries({ queryKey: ['vacation-used-days'] });
+    },
+    onError: (error: Error) => {
+      toast.error(`Fehler: ${error.message}`);
+    },
+  });
+
   const handleRefresh = async () => {
-    await Promise.all([refetchCalendar(), refetchOwn(), refetchPending(), refetchApproved()]);
+    await Promise.all([refetchCalendar(), refetchOwn(), refetchPending(), refetchApproved(), refetchRejected()]);
   };
 
   // ─── Calendar helpers ───
@@ -910,10 +953,12 @@ export default function VacationPage() {
               )}
             </div>
 
-            {/* Approved requests (admin can cancel) */}
-            {approvedRequests.length > 0 && (
-              <div>
-                <h3 className="font-semibold mb-3">Bewilligte Ferien (kommende)</h3>
+            {/* Approved requests */}
+            <div>
+              <h3 className="font-semibold mb-3">Bewilligte Ferien ({currentYear})</h3>
+              {approvedRequests.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">Keine bewilligten Anträge</p>
+              ) : (
                 <div className="space-y-3">
                   {approvedRequests.map((req) => (
                     <Card key={req.id}>
@@ -939,7 +984,8 @@ export default function VacationPage() {
                           </div>
                           <Button
                             variant="outline"
-                            className="h-10 border-red-300 text-red-600 hover:bg-red-50"
+                            size="sm"
+                            className="border-red-300 text-red-600 hover:bg-red-50"
                             onClick={() => {
                               if (confirm(`Bewilligte Ferien von ${getUserName(req.user)} stornieren? Die Zeiteinträge werden gelöscht.`)) {
                                 cancelMutation.mutate(req);
@@ -954,8 +1000,63 @@ export default function VacationPage() {
                     </Card>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+
+            {/* Rejected requests */}
+            <div>
+              <h3 className="font-semibold mb-3">Abgelehnte Anträge ({currentYear})</h3>
+              {rejectedRequests.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">Keine abgelehnten Anträge</p>
+              ) : (
+                <div className="space-y-3">
+                  {rejectedRequests.map((req) => (
+                    <Card key={req.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <p className="font-semibold">
+                              {getUserName(req.user)}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {format(parseISO(req.start_date), 'dd.MM.yyyy', {
+                                locale: de,
+                              })}{' '}
+                              &ndash;{' '}
+                              {format(parseISO(req.end_date), 'dd.MM.yyyy', {
+                                locale: de,
+                              })}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {req.total_days} {req.total_days === 1 ? 'Tag' : 'Tage'}
+                              {req.is_half_day && ` (${req.half_day_period === 'afternoon' ? 'Nachmittag' : 'Vormittag'})`}
+                            </p>
+                            {req.rejection_reason && (
+                              <p className="text-xs text-red-600 mt-1">
+                                Grund: {req.rejection_reason}
+                              </p>
+                            )}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-gray-300 text-gray-600 hover:bg-gray-50"
+                            onClick={() => {
+                              if (confirm(`Abgelehnten Antrag von ${getUserName(req.user)} endgültig entfernen?`)) {
+                                deleteRejectedMutation.mutate(req.id);
+                              }
+                            }}
+                            disabled={deleteRejectedMutation.isPending}
+                          >
+                            Entfernen
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </PullToRefresh>
