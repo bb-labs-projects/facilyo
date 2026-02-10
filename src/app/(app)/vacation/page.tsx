@@ -57,7 +57,7 @@ const USER_COLORS = [
   '#F97316',
 ];
 
-type Tab = 'kalender' | 'saldo' | 'antraege';
+type Tab = 'kalender' | 'saldo' | 'antraege' | 'uebersicht';
 
 export default function VacationPage() {
   const router = useRouter();
@@ -172,6 +172,69 @@ export default function VacationPage() {
     },
     enabled: !!profile?.id && canManageVacations,
   });
+
+  // ─── All active profiles (overview tab) ───
+  const { data: allProfiles = [] } = useQuery({
+    queryKey: ['vacation-overview-profiles'],
+    queryFn: async () => {
+      const supabase = getClient();
+      const { data, error } = await (supabase as any)
+        .from('profiles')
+        .select('id, first_name, last_name, email, vacation_days_per_year, is_active')
+        .eq('is_active', true)
+        .order('last_name', { ascending: true });
+
+      if (error) throw error;
+      return data as Pick<Profile, 'id' | 'first_name' | 'last_name' | 'email' | 'vacation_days_per_year' | 'is_active'>[];
+    },
+    enabled: !!profile?.id && canManageVacations && activeTab === 'uebersicht',
+  });
+
+  // ─── All vacation requests for current year (overview tab) ───
+  const { data: allYearRequests = [], refetch: refetchOverview } = useQuery({
+    queryKey: ['vacation-overview-requests', currentYear],
+    queryFn: async () => {
+      const supabase = getClient();
+      const { data, error } = await (supabase as any)
+        .from('vacation_requests')
+        .select('user_id, total_days, status')
+        .in('status', ['approved', 'pending'])
+        .gte('start_date', `${currentYear}-01-01`)
+        .lte('start_date', `${currentYear}-12-31`);
+
+      if (error) throw error;
+      return data as { user_id: string; total_days: number; status: string }[];
+    },
+    enabled: !!profile?.id && canManageVacations && activeTab === 'uebersicht',
+  });
+
+  // ─── Overview calculations ───
+  const overviewData = useMemo(() => {
+    if (allProfiles.length === 0) return [];
+
+    return allProfiles.map((p) => {
+      const userRequests = allYearRequests.filter((r) => r.user_id === p.id);
+      const allowance = p.vacation_days_per_year ?? 25;
+      const approved = userRequests
+        .filter((r) => r.status === 'approved')
+        .reduce((sum, r) => sum + r.total_days, 0);
+      const pending = userRequests
+        .filter((r) => r.status === 'pending')
+        .reduce((sum, r) => sum + r.total_days, 0);
+      const available = allowance - approved - pending;
+
+      return {
+        id: p.id,
+        name: (p.first_name || p.last_name)
+          ? `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim()
+          : p.email,
+        allowance,
+        approved,
+        pending,
+        available,
+      };
+    });
+  }, [allProfiles, allYearRequests]);
 
   // ─── Approve mutation ───
   const approveMutation = useMutation({
@@ -506,7 +569,7 @@ export default function VacationPage() {
   });
 
   const handleRefresh = async () => {
-    await Promise.all([refetchCalendar(), refetchOwn(), refetchPending(), refetchApproved(), refetchRejected()]);
+    await Promise.all([refetchCalendar(), refetchOwn(), refetchPending(), refetchApproved(), refetchRejected(), refetchOverview()]);
   };
 
   // ─── Calendar helpers ───
@@ -639,6 +702,19 @@ export default function VacationPage() {
                   {pendingRequests.length}
                 </span>
               )}
+            </button>
+          )}
+          {canManageVacations && (
+            <button
+              onClick={() => setActiveTab('uebersicht')}
+              className={cn(
+                'flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors',
+                activeTab === 'uebersicht'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              Übersicht
             </button>
           )}
         </div>
@@ -1095,6 +1171,51 @@ export default function VacationPage() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+        {/* ════════════════ TAB 4: ÜBERSICHT (Admin) ════════════════ */}
+        {activeTab === 'uebersicht' && canManageVacations && (
+          <div>
+            <h3 className="font-semibold mb-3">Feriensaldo aller Mitarbeiter ({currentYear})</h3>
+            {overviewData.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Calendar className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                <p>Keine aktiven Mitarbeiter gefunden</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {overviewData.map((emp) => (
+                  <Card key={emp.id}>
+                    <CardContent className="p-4">
+                      <p className="font-semibold text-sm mb-2">{emp.name}</p>
+                      <div className="grid grid-cols-4 gap-2 text-center">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Anspruch</p>
+                          <p className="text-lg font-bold text-primary-700">{emp.allowance}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Bewilligt</p>
+                          <p className="text-lg font-bold text-orange-600">{emp.approved}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Beantragt</p>
+                          <p className="text-lg font-bold text-yellow-600">{emp.pending}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Verfügbar</p>
+                          <p className={cn(
+                            'text-lg font-bold',
+                            emp.available >= 0 ? 'text-green-600' : 'text-red-600'
+                          )}>
+                            {emp.available}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </PullToRefresh>
