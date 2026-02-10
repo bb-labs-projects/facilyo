@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import {
@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/sheet';
 import { useAuthStore } from '@/stores/auth-store';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useNewTasksNotificationCount } from '@/hooks/use-new-tasks-notification-count';
 import { getClient } from '@/lib/supabase/client';
 import { swissFormat } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
@@ -58,6 +59,13 @@ export default function TasksPage() {
   const profile = useAuthStore((state) => state.profile);
   const queryClient = useQueryClient();
   const permissions = usePermissions();
+  const { markAsSeen } = useNewTasksNotificationCount();
+
+  // Mark task notifications as seen when visiting this page
+  useEffect(() => {
+    markAsSeen();
+  }, [markAsSeen]);
+
   const [activeTab, setActiveTabRaw] = useState<TabType>('aufgaben');
   const setActiveTab = useCallback((tab: TabType) => {
     setActiveTabRaw(tab);

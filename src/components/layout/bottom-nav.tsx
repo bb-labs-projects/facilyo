@@ -12,6 +12,7 @@ import {
 import { cn, hapticFeedback } from '@/lib/utils';
 import { useOpenIssuesCount } from '@/hooks/use-open-issues-count';
 import { useVacationNotificationCount } from '@/hooks/use-vacation-notification-count';
+import { useNewTasksNotificationCount } from '@/hooks/use-new-tasks-notification-count';
 
 interface NavItem {
   href: string;
@@ -33,6 +34,7 @@ export function BottomNav() {
   const pathname = usePathname();
   const openIssuesCount = useOpenIssuesCount();
   const { count: vacationCount } = useVacationNotificationCount();
+  const { count: newTasksCount } = useNewTasksNotificationCount();
 
   const isActive = (href: string) => {
     if (href === '/') {
@@ -70,6 +72,11 @@ export function BottomNav() {
                     active ? 'text-primary-600' : 'text-muted-foreground'
                   )}
                 />
+                {item.href === '/tasks' && newTasksCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                    {newTasksCount}
+                  </span>
+                )}
                 {item.href === '/issues' && openIssuesCount > 0 && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
                     {openIssuesCount}

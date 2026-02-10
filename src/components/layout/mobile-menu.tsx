@@ -21,6 +21,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { useAuthStore } from '@/stores/auth-store';
 import { useOpenIssuesCount } from '@/hooks/use-open-issues-count';
 import { useVacationNotificationCount } from '@/hooks/use-vacation-notification-count';
+import { useNewTasksNotificationCount } from '@/hooks/use-new-tasks-notification-count';
 import {
   Sheet,
   SheetContent,
@@ -68,6 +69,7 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
   const { user, profile } = useAuthStore();
   const openIssuesCount = useOpenIssuesCount();
   const { count: vacationCount } = useVacationNotificationCount();
+  const { count: newTasksCount } = useNewTasksNotificationCount();
 
   const isActive = (href: string) => {
     if (href === '/') {
@@ -135,6 +137,11 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
                 >
                   <span className="relative flex-shrink-0">
                     <Icon className="h-5 w-5" />
+                    {item.href === '/tasks' && newTasksCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                        {newTasksCount}
+                      </span>
+                    )}
                     {item.href === '/issues' && openIssuesCount > 0 && (
                       <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
                         {openIssuesCount}
