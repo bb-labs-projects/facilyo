@@ -99,7 +99,7 @@ export const useTimerStore = create<TimerStore>()(
         if (existingWorkDay) {
           // Don't reopen finalized work days (e.g. vacation days)
           if (existingWorkDay.is_finalized) {
-            throw new Error('Der Arbeitstag wurde bereits endgültig beendet und kann nicht erneut gestartet werden');
+            throw new Error('Dieser Tag ist als Ferientag erfasst. Arbeitstag kann nicht gestartet werden.');
           }
 
           // Re-open existing work day
