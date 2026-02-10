@@ -226,6 +226,11 @@ export default function HomePage() {
   };
 
   const handleDeleteEntry = async (entry: TimeEntryWithProperty) => {
+    if (entry.entry_type === 'vacation') {
+      toast.error('Ferieneinträge können nur über die Ferien-Seite verwaltet werden');
+      return;
+    }
+
     try {
       const supabase = getClient();
       const { error } = await (supabase as any)

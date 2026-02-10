@@ -97,6 +97,11 @@ export const useTimerStore = create<TimerStore>()(
           .maybeSingle();
 
         if (existingWorkDay) {
+          // Don't reopen finalized work days (e.g. vacation days)
+          if (existingWorkDay.is_finalized) {
+            throw new Error('Der Arbeitstag wurde bereits endgültig beendet und kann nicht erneut gestartet werden');
+          }
+
           // Re-open existing work day
           const { data, error } = await (supabase
             .from('work_days') as any)

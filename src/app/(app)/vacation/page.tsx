@@ -384,13 +384,15 @@ export default function VacationPage() {
         const rangeStart = `${request.start_date}T00:00:00`;
         const rangeEnd = `${request.end_date}T23:59:59`;
 
-        await (supabase as any)
+        const { error: deleteError } = await (supabase as any)
           .from('time_entries')
           .delete()
           .eq('user_id', request.user_id)
           .eq('entry_type', 'vacation')
           .gte('start_time', rangeStart)
           .lte('start_time', rangeEnd);
+
+        if (deleteError) throw new Error('Zeiteinträge konnten nicht gelöscht werden');
       }
 
       // Delete the vacation request
