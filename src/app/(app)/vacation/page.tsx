@@ -245,14 +245,23 @@ export default function VacationPage() {
         const useHalfDay = request.is_half_day && isSingleDay;
         const period = request.half_day_period || 'morning';
 
-        // Determine vacation time range
-        const vacationStart = useHalfDay && period === 'afternoon' ? 'T13:00:00' : 'T08:00:00';
-        const vacationEnd = useHalfDay && period === 'morning' ? 'T12:00:00' : useHalfDay ? 'T17:00:00' : 'T16:00:00';
+        // Determine vacation hours (local time)
+        const vacationStartHour = useHalfDay && period === 'afternoon' ? 13 : 8;
+        const vacationEndHour = useHalfDay && period === 'morning' ? 12 : useHalfDay ? 17 : 16;
 
         for (const day of days) {
           if (isWeekend(day)) continue;
 
           const dateStr = format(day, 'yyyy-MM-dd');
+          const y = day.getFullYear();
+          const m = day.getMonth();
+          const d = day.getDate();
+
+          // Create proper local-time Date objects so TIMESTAMPTZ stores correctly
+          const wdStart = new Date(y, m, d, 8, 0, 0).toISOString();
+          const wdEnd = new Date(y, m, d, useHalfDay ? (period === 'morning' ? 12 : 17) : 16, 0, 0).toISOString();
+          const entryStart = new Date(y, m, d, vacationStartHour, 0, 0).toISOString();
+          const entryEnd = new Date(y, m, d, vacationEndHour, 0, 0).toISOString();
 
           // Check for existing work day first (don't overwrite real data)
           const { data: existingWd } = await (supabase as any)
@@ -272,10 +281,8 @@ export default function VacationPage() {
               .insert({
                 user_id: request.user_id,
                 date: dateStr,
-                start_time: `${dateStr}T08:00:00`,
-                end_time: useHalfDay
-                  ? (period === 'morning' ? `${dateStr}T12:00:00` : `${dateStr}T17:00:00`)
-                  : `${dateStr}T16:00:00`,
+                start_time: wdStart,
+                end_time: wdEnd,
                 is_finalized: !useHalfDay,
               })
               .select()
@@ -302,8 +309,8 @@ export default function VacationPage() {
                 user_id: request.user_id,
                 property_id: null,
                 entry_type: 'vacation',
-                start_time: `${dateStr}${vacationStart}`,
-                end_time: `${dateStr}${vacationEnd}`,
+                start_time: entryStart,
+                end_time: entryEnd,
                 status: 'completed',
               })
               .select('id')
