@@ -10,6 +10,7 @@ import {
   Calendar,
   FileText,
   X,
+  AlertTriangle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Header, PageContainer } from '@/components/layout/header';
@@ -173,6 +174,51 @@ export default function VacationPage() {
     enabled: !!profile?.id && canManageVacations,
   });
 
+  // ─── Conflict detection for pending requests ───
+  const { data: pendingConflicts = [] } = useQuery({
+    queryKey: ['vacation-pending-conflicts', pendingRequests.map((r) => r.id).join(',')],
+    queryFn: async () => {
+      const supabase = getClient();
+      const conflicts: { requestId: string; dates: string[] }[] = [];
+
+      for (const req of pendingRequests) {
+        const { data: workDays } = await (supabase as any)
+          .from('work_days')
+          .select('id, date')
+          .eq('user_id', req.user_id)
+          .gte('date', req.start_date)
+          .lte('date', req.end_date);
+
+        if (!workDays || workDays.length === 0) continue;
+
+        const { data: entries } = await (supabase as any)
+          .from('time_entries')
+          .select('work_day_id')
+          .in('work_day_id', workDays.map((wd: { id: string }) => wd.id))
+          .neq('entry_type', 'vacation');
+
+        if (entries && entries.length > 0) {
+          const conflictWdIds = new Set(entries.map((e: { work_day_id: string }) => e.work_day_id));
+          const conflictDates = workDays
+            .filter((wd: { id: string }) => conflictWdIds.has(wd.id))
+            .map((wd: { date: string }) => wd.date);
+          conflicts.push({ requestId: req.id, dates: conflictDates });
+        }
+      }
+
+      return conflicts;
+    },
+    enabled: !!profile?.id && canManageVacations && pendingRequests.length > 0,
+  });
+
+  const conflictMap = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const c of pendingConflicts) {
+      map.set(c.requestId, c.dates);
+    }
+    return map;
+  }, [pendingConflicts]);
+
   // ─── All active profiles (overview tab) ───
   const { data: allProfiles = [] } = useQuery({
     queryKey: ['vacation-overview-profiles'],
@@ -283,6 +329,35 @@ export default function VacationPage() {
         throw new Error(
           `Nicht genügend Ferientage: ${allowance - usedDays} verfügbar, ${request.total_days} beantragt`
         );
+      }
+
+      // 2b. Check for conflicting non-vacation time entries
+      const { data: existingWorkDays } = await (supabase as any)
+        .from('work_days')
+        .select('id, date')
+        .eq('user_id', request.user_id)
+        .gte('date', request.start_date)
+        .lte('date', request.end_date);
+
+      if (existingWorkDays && existingWorkDays.length > 0) {
+        const wdIds = existingWorkDays.map((wd: { id: string }) => wd.id);
+        const { data: conflictEntries } = await (supabase as any)
+          .from('time_entries')
+          .select('work_day_id')
+          .in('work_day_id', wdIds)
+          .neq('entry_type', 'vacation');
+
+        if (conflictEntries && conflictEntries.length > 0) {
+          const conflictWdIds = new Set(conflictEntries.map((e: { work_day_id: string }) => e.work_day_id));
+          const conflictDates = existingWorkDays
+            .filter((wd: { id: string }) => conflictWdIds.has(wd.id))
+            .map((wd: { date: string }) => format(parseISO(wd.date), 'dd.MM.yyyy'))
+            .join(', ');
+
+          throw new Error(
+            `Konflikt: Es bestehen bereits Arbeitseinträge am ${conflictDates}. Bitte zuerst die bestehenden Einträge entfernen.`
+          );
+        }
       }
 
       // 3. Update vacation request status (only if still pending)
@@ -1040,11 +1115,24 @@ export default function VacationPage() {
                           )}
                         </div>
 
+                        {conflictMap.has(req.id) && (
+                          <div className="mb-3 flex items-start gap-2 p-2 bg-orange-50 border border-orange-200 rounded-lg">
+                            <AlertTriangle className="h-4 w-4 text-orange-600 flex-shrink-0 mt-0.5" />
+                            <p className="text-xs text-orange-800">
+                              Arbeitseinträge vorhanden am{' '}
+                              {conflictMap.get(req.id)!.map((d) =>
+                                format(parseISO(d), 'dd.MM.yyyy')
+                              ).join(', ')}
+                              {' '}&ndash; Bewilligung nicht möglich.
+                            </p>
+                          </div>
+                        )}
+
                         <div className="flex gap-2">
                           <Button
                             className="flex-1 h-11 bg-green-600 hover:bg-green-700 text-white"
                             onClick={() => approveMutation.mutate(req)}
-                            disabled={approveMutation.isPending}
+                            disabled={approveMutation.isPending || conflictMap.has(req.id)}
                           >
                             {approveMutation.isPending ? 'Wird bewilligt...' : 'Bewilligen'}
                           </Button>
