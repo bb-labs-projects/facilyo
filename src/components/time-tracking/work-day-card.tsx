@@ -369,7 +369,7 @@ interface PropertyGroupedEntriesProps {
 // A "visit" represents a continuous work session at a property (or a travel/break entry)
 interface PropertyVisit {
   id: string; // Unique identifier for the visit
-  type: 'property' | 'travel' | 'break';
+  type: 'property' | 'travel' | 'break' | 'vacation';
   property: TimeEntryWithProperty['property'];
   propertyId: string | null;
   entries: TimeEntryWithProperty[];
@@ -414,7 +414,7 @@ export function PropertyGroupedEntries({
       // Create a single-entry visit for travel/break
       visits.push({
         id: `${entryType}-${entry.id}`,
-        type: entryType as 'travel' | 'break',
+        type: entryType as 'travel' | 'break' | 'vacation',
         property: null,
         propertyId: null,
         entries: [entry],
@@ -503,7 +503,7 @@ export function PropertyGroupedEntries({
     <div className={cn('space-y-3', className)}>
       {visits.map((visit) => {
         // Render travel/break entries as simple cards
-        if (visit.type === 'travel' || visit.type === 'break') {
+        if (visit.type !== 'property') {
           return (
             <TimeEntryCard
               key={visit.id}
