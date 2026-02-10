@@ -103,6 +103,24 @@ export default function NewVacationRequestPage() {
     mutationFn: async () => {
       const supabase = getClient();
 
+      // Check for overlapping vacation requests (pending or approved)
+      const { data: overlapping, error: overlapError } = await (supabase as any)
+        .from('vacation_requests')
+        .select('id, start_date, end_date')
+        .eq('user_id', profile!.id)
+        .in('status', ['pending', 'approved'])
+        .lte('start_date', endDate)
+        .gte('end_date', startDate);
+
+      if (overlapError) throw overlapError;
+
+      if (overlapping && overlapping.length > 0) {
+        const existing = overlapping[0];
+        throw new Error(
+          `Überschneidung mit bestehendem Antrag (${format(parseISO(existing.start_date), 'dd.MM.yyyy', { locale: de })} - ${format(parseISO(existing.end_date), 'dd.MM.yyyy', { locale: de })})`
+        );
+      }
+
       const insert: VacationRequestInsert = {
         user_id: profile!.id,
         start_date: startDate,
