@@ -133,6 +133,8 @@ export default function AufgabeDetailPage() {
       toast.success('Aufgabe als erledigt markiert');
       queryClient.invalidateQueries({ queryKey: ['aufgabe', aufgabeId] });
       queryClient.invalidateQueries({ queryKey: ['aufgaben'] });
+      queryClient.invalidateQueries({ queryKey: ['completed-tasks-notification-count'] });
+      queryClient.invalidateQueries({ queryKey: ['new-tasks-notification-count'] });
       setShowCompleteDialog(false);
       setCompletionPhotos([]);
       setCompletionNotes('');

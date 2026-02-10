@@ -61,6 +61,7 @@ export default function NewIssuePage() {
       toast.success('Problem wurde gemeldet');
       // Invalidate all meldungen queries to refresh the list
       queryClient.invalidateQueries({ queryKey: ['meldungen'] });
+      queryClient.invalidateQueries({ queryKey: ['open-issues-count'] });
       router.push('/issues');
     },
     onError: (error: Error) => {

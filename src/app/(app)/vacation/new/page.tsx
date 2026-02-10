@@ -145,6 +145,7 @@ export default function NewVacationRequestPage() {
       queryClient.invalidateQueries({ queryKey: ['vacation-pending'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-calendar'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-used-days'] });
+      queryClient.invalidateQueries({ queryKey: ['vacation-notification-count'] });
       router.push('/vacation');
     },
     onError: (error: Error) => {

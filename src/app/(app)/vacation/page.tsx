@@ -504,6 +504,7 @@ export default function VacationPage() {
       queryClient.invalidateQueries({ queryKey: ['vacation-calendar'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-own'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-used-days'] });
+      queryClient.invalidateQueries({ queryKey: ['vacation-notification-count'] });
     },
     onError: (error: Error) => {
       toast.error(`Fehler: ${error.message}`);
@@ -554,6 +555,7 @@ export default function VacationPage() {
       queryClient.invalidateQueries({ queryKey: ['vacation-calendar'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-own'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-used-days'] });
+      queryClient.invalidateQueries({ queryKey: ['vacation-notification-count'] });
     },
     onError: (error: Error) => {
       toast.error(`Fehler: ${error.message}`);
@@ -632,6 +634,7 @@ export default function VacationPage() {
       queryClient.invalidateQueries({ queryKey: ['vacation-calendar'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-own'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-used-days'] });
+      queryClient.invalidateQueries({ queryKey: ['vacation-notification-count'] });
     },
     onError: (error: Error) => {
       toast.error(`Fehler: ${error.message}`);
@@ -655,6 +658,7 @@ export default function VacationPage() {
       queryClient.invalidateQueries({ queryKey: ['vacation-rejected'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-own'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-used-days'] });
+      queryClient.invalidateQueries({ queryKey: ['vacation-notification-count'] });
     },
     onError: (error: Error) => {
       toast.error(`Fehler: ${error.message}`);

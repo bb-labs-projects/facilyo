@@ -112,6 +112,7 @@ export default function IssueDetailPage() {
     onSuccess: () => {
       toast.success('Meldung wurde gelöscht');
       queryClient.invalidateQueries({ queryKey: ['issues'] });
+      queryClient.invalidateQueries({ queryKey: ['open-issues-count'] });
       router.push('/issues');
     },
     onError: (error: Error) => {
@@ -136,6 +137,8 @@ export default function IssueDetailPage() {
         queryClient.invalidateQueries({ queryKey: ['meldungen'] }),
         queryClient.invalidateQueries({ queryKey: ['aufgaben'] }),
         queryClient.invalidateQueries({ queryKey: ['issue', issueId] }),
+        queryClient.invalidateQueries({ queryKey: ['open-issues-count'] }),
+        queryClient.invalidateQueries({ queryKey: ['new-tasks-notification-count'] }),
       ]);
       router.push('/issues');
     },
