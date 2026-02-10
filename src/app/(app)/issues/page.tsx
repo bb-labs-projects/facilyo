@@ -1,10 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { Plus, Filter, AlertTriangle, ArrowRightCircle } from 'lucide-react';
-import { toast } from 'sonner';
+import { Plus, Filter, AlertTriangle } from 'lucide-react';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
 import { IssueCard } from '@/components/issues/issue-card';
@@ -16,14 +15,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
 import { useAuthStore } from '@/stores/auth-store';
 import { usePermissions } from '@/hooks/use-permissions';
 import { getClient } from '@/lib/supabase/client';
@@ -48,13 +39,11 @@ const priorityOptions: { value: IssuePriority | 'all'; label: string }[] = [
 
 export default function IssuesPage() {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const profile = useAuthStore((state) => state.profile);
   const permissions = usePermissions();
   const [statusFilter, setStatusFilter] = useState<IssueStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<IssuePriority | 'all'>('all');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [convertingMeldung, setConvertingMeldung] = useState<IssueWithRelations | null>(null);
 
   // Fetch meldungen (issues)
   const { data: issues = [], refetch } = useQuery({
@@ -92,30 +81,6 @@ export default function IssuesPage() {
       return data as IssueWithRelations[];
     },
     enabled: !!profile?.id,
-  });
-
-  // Convert meldung to aufgabe mutation
-  const convertMutation = useMutation({
-    mutationFn: async (meldungId: string) => {
-      const supabase = getClient();
-      const { data, error } = await (supabase as any).rpc('convert_meldung_to_aufgabe', {
-        p_meldung_id: meldungId,
-        p_user_id: profile!.id,
-      });
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: async () => {
-      toast.success('Meldung wurde in Aufgabe umgewandelt');
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['meldungen'] }),
-        queryClient.invalidateQueries({ queryKey: ['aufgaben'] })
-      ]);
-      setConvertingMeldung(null);
-    },
-    onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
-    },
   });
 
   const handleIssueClick = (issue: Issue | IssueWithRelations) => {
@@ -252,68 +217,17 @@ export default function IssuesPage() {
         ) : (
           <div className="space-y-3">
             {issues.map((issue) => (
-              <div key={issue.id} className="relative">
-                <IssueCard
-                  issue={issue}
-                  onClick={() => handleIssueClick(issue)}
-                  showProperty
-                />
-                {permissions.canConvertMeldungen && !issue.converted_to_task && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setConvertingMeldung(issue);
-                    }}
-                    className="absolute top-2 right-2 p-1.5 bg-primary-100 text-primary-700 rounded-lg hover:bg-primary-200 transition-colors"
-                    title="In Aufgabe umwandeln"
-                  >
-                    <ArrowRightCircle className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
+              <IssueCard
+                key={issue.id}
+                issue={issue}
+                onClick={() => handleIssueClick(issue)}
+                showProperty
+              />
             ))}
           </div>
         )}
 
       </PullToRefresh>
-
-      {/* Convert to Aufgabe Dialog */}
-      <Dialog open={!!convertingMeldung} onOpenChange={() => setConvertingMeldung(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>In Aufgabe umwandeln</DialogTitle>
-            <DialogDescription>
-              Möchten Sie diese Meldung in eine Aufgabe umwandeln?
-            </DialogDescription>
-          </DialogHeader>
-
-          {convertingMeldung && (
-            <div className="py-4">
-              <div className="p-3 bg-muted rounded-lg">
-                <h4 className="font-medium">{convertingMeldung.title}</h4>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {convertingMeldung.property?.name}
-                </p>
-              </div>
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setConvertingMeldung(null)}
-            >
-              Abbrechen
-            </Button>
-            <Button
-              onClick={() => convertingMeldung && convertMutation.mutate(convertingMeldung.id)}
-              disabled={convertMutation.isPending}
-            >
-              {convertMutation.isPending ? 'Wird umgewandelt...' : 'Umwandeln'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </PageContainer>
   );
 }

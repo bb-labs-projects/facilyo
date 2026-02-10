@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { MapPin, Clock, User, Building2, Trash2 } from 'lucide-react';
+import { MapPin, Clock, User, Building2, Trash2, ArrowRightCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,6 +16,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { useAuthStore } from '@/stores/auth-store';
 import { usePermissions } from '@/hooks/use-permissions';
 import { getClient } from '@/lib/supabase/client';
 import { swissFormat } from '@/lib/i18n';
@@ -48,8 +49,10 @@ export default function IssueDetailPage() {
   const params = useParams();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const profile = useAuthStore((state) => state.profile);
   const permissions = usePermissions();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showConvertDialog, setShowConvertDialog] = useState(false);
   const issueId = params.id as string;
 
   const { data: issue, isLoading } = useQuery({
@@ -109,6 +112,31 @@ export default function IssueDetailPage() {
     onSuccess: () => {
       toast.success('Meldung wurde gelöscht');
       queryClient.invalidateQueries({ queryKey: ['issues'] });
+      router.push('/issues');
+    },
+    onError: (error: Error) => {
+      toast.error(`Fehler: ${error.message}`);
+    },
+  });
+
+  // Convert meldung to aufgabe mutation
+  const convertMutation = useMutation({
+    mutationFn: async () => {
+      const supabase = getClient();
+      const { data, error } = await (supabase as any).rpc('convert_meldung_to_aufgabe', {
+        p_meldung_id: issueId,
+        p_user_id: profile!.id,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: async () => {
+      toast.success('Meldung wurde in Aufgabe umgewandelt');
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['meldungen'] }),
+        queryClient.invalidateQueries({ queryKey: ['aufgaben'] }),
+        queryClient.invalidateQueries({ queryKey: ['issue', issueId] }),
+      ]);
       router.push('/issues');
     },
     onError: (error: Error) => {
@@ -284,6 +312,21 @@ export default function IssueDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Convert to Aufgabe button */}
+      {permissions.canConvertMeldungen && !issue.converted_to_task && (
+        <div className="mt-6">
+          <Button
+            variant="outline"
+            size="touch"
+            className="w-full border-primary-300 text-primary-600 hover:bg-primary-50"
+            onClick={() => setShowConvertDialog(true)}
+            leftIcon={<ArrowRightCircle className="h-5 w-5" />}
+          >
+            In Aufgabe umwandeln
+          </Button>
+        </div>
+      )}
+
       {/* Delete button */}
       {permissions.canManageAufgaben && (
         <div className="mt-6">
@@ -318,6 +361,37 @@ export default function IssueDetailPage() {
               disabled={deleteMutation.isPending}
             >
               {deleteMutation.isPending ? 'Wird gelöscht...' : 'Löschen'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Convert to Aufgabe dialog */}
+      <Dialog open={showConvertDialog} onOpenChange={setShowConvertDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>In Aufgabe umwandeln</DialogTitle>
+            <DialogDescription>
+              Möchten Sie diese Meldung in eine Aufgabe umwandeln?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="p-3 bg-muted rounded-lg">
+              <h4 className="font-medium">{issue.title}</h4>
+              <p className="text-sm text-muted-foreground mt-1">
+                {issue.property?.name}
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowConvertDialog(false)}>
+              Abbrechen
+            </Button>
+            <Button
+              onClick={() => convertMutation.mutate()}
+              disabled={convertMutation.isPending}
+            >
+              {convertMutation.isPending ? 'Wird umgewandelt...' : 'Umwandeln'}
             </Button>
           </DialogFooter>
         </DialogContent>

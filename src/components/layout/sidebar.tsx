@@ -20,6 +20,7 @@ import {
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useAuthStore } from '@/stores/auth-store';
+import { useOpenIssuesCount } from '@/hooks/use-open-issues-count';
 
 interface NavItem {
   href: string;
@@ -53,6 +54,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const permissions = usePermissions();
   const { user, profile } = useAuthStore();
+  const openIssuesCount = useOpenIssuesCount();
 
   const isActive = (href: string) => {
     if (href === '/') {
@@ -112,7 +114,14 @@ export function Sidebar() {
                     : 'text-slate-300 hover:bg-primary-800 hover:text-white'
                 )}
               >
-                <Icon className="h-5 w-5 flex-shrink-0" />
+                <span className="relative flex-shrink-0">
+                  <Icon className="h-5 w-5" />
+                  {item.href === '/issues' && openIssuesCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                      {openIssuesCount}
+                    </span>
+                  )}
+                </span>
                 <span>{item.label}</span>
               </Link>
             );
