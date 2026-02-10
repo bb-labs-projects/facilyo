@@ -621,6 +621,13 @@ export const useTimerStore = create<TimerStore>()(
               currentEntryType: entry.entry_type,
               currentActivityType: entry.activity_type || null,
             });
+          } else {
+            // Work day active but no active entry — auto-resume with travel
+            try {
+              await get().startTravelTime();
+            } catch (e) {
+              console.error('Auto-start travel on init failed:', e);
+            }
           }
         } else {
           // No active work day for this user - ensure state is clean

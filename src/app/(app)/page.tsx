@@ -403,6 +403,39 @@ export default function HomePage() {
               {isOnBreak && (
                 <BreakControls onEndBreak={handleEndBreak} />
               )}
+
+              {/* Fallback: work day active but no active entry (stuck state) */}
+              {!isTraveling && !isWorkingOnProperty && !isOnBreak && (
+                <>
+                  <PropertySelector
+                    properties={properties}
+                    selectedProperty={selectedProperty}
+                    onSelect={setSelectedProperty}
+                    userCoords={coords}
+                    isLoadingLocation={isLoadingLocation}
+                    onRequestLocation={handleRequestLocation}
+                    autoSelectNearest={true}
+                    className="mb-4"
+                  />
+
+                  {selectedProperty && (
+                    <ActivityTypeSelector
+                      selectedActivity={selectedActivityType}
+                      onSelect={setSelectedActivityType}
+                      propertyType={selectedProperty.type}
+                      className="mb-6"
+                    />
+                  )}
+
+                  <TravelControls
+                    onStartProperty={handleStartPropertyWork}
+                    onStartBreak={handleStartBreak}
+                    onEndWorkDay={handleEndWorkDay}
+                    showPropertyButton={!!selectedProperty}
+                    propertyDisabled={!selectedProperty || !selectedActivityType}
+                  />
+                </>
+              )}
             </CardContent>
           </Card>
 
