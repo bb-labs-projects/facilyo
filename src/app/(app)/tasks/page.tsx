@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { useQueries } from '@tanstack/react-query';
+import { useState, useMemo, useCallback } from 'react';
+import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import {
   ClipboardList,
@@ -56,8 +56,14 @@ const statusConfig = {
 export default function TasksPage() {
   const router = useRouter();
   const profile = useAuthStore((state) => state.profile);
+  const queryClient = useQueryClient();
   const permissions = usePermissions();
-  const [activeTab, setActiveTab] = useState<TabType>('aufgaben');
+  const [activeTab, setActiveTabRaw] = useState<TabType>('aufgaben');
+  const setActiveTab = useCallback((tab: TabType) => {
+    setActiveTabRaw(tab);
+    queryClient.invalidateQueries({ queryKey: ['aufgaben'] });
+    queryClient.invalidateQueries({ queryKey: ['checklists'] });
+  }, [queryClient]);
   const [selectedChecklist, setSelectedChecklist] = useState<ChecklistWithProperty | null>(null);
 
   // Fetch aufgaben and checklists in parallel for better performance

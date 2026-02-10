@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueries, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -118,7 +118,13 @@ export default function AdminActivityPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const permissions = usePermissions();
-  const [activeTab, setActiveTab] = useState<TabType>('aufgaben');
+  const [activeTab, setActiveTabRaw] = useState<TabType>('aufgaben');
+  const setActiveTab = useCallback((tab: TabType) => {
+    setActiveTabRaw(tab);
+    queryClient.invalidateQueries({ queryKey: ['all-properties'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-completed-aufgaben'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-checklist-instances'] });
+  }, [queryClient]);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
   const [selectedChecklist, setSelectedChecklist] = useState<ChecklistInstanceWithRelations | null>(null);
