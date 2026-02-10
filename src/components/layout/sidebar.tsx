@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useAuthStore } from '@/stores/auth-store';
 import { useOpenIssuesCount } from '@/hooks/use-open-issues-count';
+import { useVacationNotificationCount } from '@/hooks/use-vacation-notification-count';
 
 interface NavItem {
   href: string;
@@ -55,6 +56,7 @@ export function Sidebar() {
   const permissions = usePermissions();
   const { user, profile } = useAuthStore();
   const openIssuesCount = useOpenIssuesCount();
+  const { count: vacationCount } = useVacationNotificationCount();
 
   const isActive = (href: string) => {
     if (href === '/') {
@@ -119,6 +121,11 @@ export function Sidebar() {
                   {item.href === '/issues' && openIssuesCount > 0 && (
                     <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
                       {openIssuesCount}
+                    </span>
+                  )}
+                  {item.href === '/vacation' && vacationCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                      {vacationCount}
                     </span>
                   )}
                 </span>

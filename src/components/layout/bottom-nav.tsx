@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { cn, hapticFeedback } from '@/lib/utils';
 import { useOpenIssuesCount } from '@/hooks/use-open-issues-count';
+import { useVacationNotificationCount } from '@/hooks/use-vacation-notification-count';
 
 interface NavItem {
   href: string;
@@ -31,6 +32,7 @@ const navItems: NavItem[] = [
 export function BottomNav() {
   const pathname = usePathname();
   const openIssuesCount = useOpenIssuesCount();
+  const { count: vacationCount } = useVacationNotificationCount();
 
   const isActive = (href: string) => {
     if (href === '/') {
@@ -71,6 +73,11 @@ export function BottomNav() {
                 {item.href === '/issues' && openIssuesCount > 0 && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
                     {openIssuesCount}
+                  </span>
+                )}
+                {item.href === '/vacation' && vacationCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center">
+                    {vacationCount}
                   </span>
                 )}
               </span>

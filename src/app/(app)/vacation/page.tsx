@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import {
@@ -28,6 +28,7 @@ import { Input } from '@/components/ui/input';
 import { PullToRefresh } from '@/components/layout/pull-to-refresh';
 import { useAuthStore } from '@/stores/auth-store';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useVacationNotificationCount } from '@/hooks/use-vacation-notification-count';
 import { getClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import {
@@ -65,6 +66,12 @@ export default function VacationPage() {
   const queryClient = useQueryClient();
   const profile = useAuthStore((state) => state.profile);
   const { canManageVacations } = usePermissions();
+  const { markAsSeen } = useVacationNotificationCount();
+
+  // Mark vacation notifications as seen when visiting this page
+  useEffect(() => {
+    markAsSeen();
+  }, [markAsSeen]);
 
   const [activeTab, setActiveTabRaw] = useState<Tab>('kalender');
   const setActiveTab = useCallback((tab: Tab) => {
