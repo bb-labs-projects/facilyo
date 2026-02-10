@@ -439,6 +439,7 @@ export default function VacationPage() {
   }, [monthStart, monthEnd]);
 
   const getRequestsForDay = (day: Date) => {
+    if (isWeekend(day)) return [];
     return calendarRequests.filter((req) => {
       const start = parseISO(req.start_date);
       const end = parseISO(req.end_date);
