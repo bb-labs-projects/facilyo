@@ -97,8 +97,37 @@ export const useTimerStore = create<TimerStore>()(
           .maybeSingle();
 
         if (existingWorkDay) {
-          // Don't reopen finalized work days (e.g. vacation days)
+          // Don't reopen finalized work days (e.g. full-day vacation)
           if (existingWorkDay.is_finalized) {
+            // Check if this is a half-day vacation (allow work on the other half)
+            const { data: vacationEntries } = await (supabase
+              .from('time_entries') as any)
+              .select('start_time, end_time')
+              .eq('work_day_id', existingWorkDay.id)
+              .eq('entry_type', 'vacation');
+
+            const hasOnlyHalfDayVacation = vacationEntries?.length === 1
+              && vacationEntries[0].start_time && vacationEntries[0].end_time
+              && Math.abs(
+                (new Date(vacationEntries[0].end_time).getTime() - new Date(vacationEntries[0].start_time).getTime()) / 3600000
+              ) <= 4;
+
+            if (hasOnlyHalfDayVacation) {
+              // Un-finalize so the user can work the other half
+              const { data, error } = await (supabase
+                .from('work_days') as any)
+                .update({ is_finalized: false, end_time: null })
+                .eq('id', existingWorkDay.id)
+                .select()
+                .single();
+
+              if (error) throw error;
+              set({ workDay: data });
+
+              await get().startTravelTime();
+              return data;
+            }
+
             throw new Error('Dieser Tag ist als Ferientag erfasst. Arbeitstag kann nicht gestartet werden.');
           }
 

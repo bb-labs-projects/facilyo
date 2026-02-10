@@ -223,6 +223,11 @@ export default function VacationPage() {
         const days = eachDayOfInterval({ start, end });
         const isSingleDay = request.start_date === request.end_date;
         const useHalfDay = request.is_half_day && isSingleDay;
+        const period = request.half_day_period || 'morning';
+
+        // Determine vacation time range
+        const vacationStart = useHalfDay && period === 'afternoon' ? 'T13:00:00' : 'T08:00:00';
+        const vacationEnd = useHalfDay && period === 'morning' ? 'T12:00:00' : useHalfDay ? 'T17:00:00' : 'T16:00:00';
 
         for (const day of days) {
           if (isWeekend(day)) continue;
@@ -249,9 +254,9 @@ export default function VacationPage() {
                 date: dateStr,
                 start_time: `${dateStr}T08:00:00`,
                 end_time: useHalfDay
-                  ? `${dateStr}T12:00:00`
+                  ? (period === 'morning' ? `${dateStr}T12:00:00` : `${dateStr}T17:00:00`)
                   : `${dateStr}T16:00:00`,
-                is_finalized: true,
+                is_finalized: !useHalfDay,
               })
               .select()
               .single();
@@ -277,10 +282,8 @@ export default function VacationPage() {
                 user_id: request.user_id,
                 property_id: null,
                 entry_type: 'vacation',
-                start_time: `${dateStr}T08:00:00`,
-                end_time: useHalfDay
-                  ? `${dateStr}T12:00:00`
-                  : `${dateStr}T16:00:00`,
+                start_time: `${dateStr}${vacationStart}`,
+                end_time: `${dateStr}${vacationEnd}`,
                 status: 'completed',
               })
               .select('id')
@@ -760,7 +763,7 @@ export default function VacationPage() {
                           </p>
                           <p className="text-xs text-muted-foreground mt-0.5">
                             {req.total_days} {req.total_days === 1 ? 'Tag' : 'Tage'}
-                            {req.is_half_day && ' (halber Tag)'}
+                            {req.is_half_day && ` (${req.half_day_period === 'afternoon' ? 'Nachmittag' : 'Vormittag'})`}
                           </p>
                           {req.notes && (
                             <p className="text-xs text-muted-foreground mt-1">
@@ -836,7 +839,7 @@ export default function VacationPage() {
                           </p>
                           <p className="text-xs text-muted-foreground mt-0.5">
                             {req.total_days} {req.total_days === 1 ? 'Tag' : 'Tage'}
-                            {req.is_half_day && ' (halber Tag)'}
+                            {req.is_half_day && ` (${req.half_day_period === 'afternoon' ? 'Nachmittag' : 'Vormittag'})`}
                           </p>
                           {req.notes && (
                             <p className="text-sm text-muted-foreground mt-1">
@@ -896,7 +899,7 @@ export default function VacationPage() {
                             </p>
                             <p className="text-xs text-muted-foreground mt-0.5">
                               {req.total_days} {req.total_days === 1 ? 'Tag' : 'Tage'}
-                              {req.is_half_day && ' (halber Tag)'}
+                              {req.is_half_day && ` (${req.half_day_period === 'afternoon' ? 'Nachmittag' : 'Vormittag'})`}
                             </p>
                           </div>
                           <Button

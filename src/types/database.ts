@@ -26,6 +26,7 @@ export type PropertyType = 'residential' | 'commercial' | 'industrial' | 'mixed'
 export type TimeEntryStatus = 'active' | 'paused' | 'completed';
 export type TimeEntryType = 'property' | 'travel' | 'break' | 'vacation';
 export type VacationStatus = 'pending' | 'approved' | 'rejected';
+export type HalfDayPeriod = 'morning' | 'afternoon';
 export type ActivityType = 'hauswartung' | 'rasen_maehen' | 'hecken_schneiden' | 'regie' | 'reinigung';
 export type IssuePriority = 'low' | 'medium' | 'high' | 'urgent';
 export type IssueStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
@@ -560,6 +561,7 @@ export interface Database {
           start_date: string;
           end_date: string;
           is_half_day: boolean;
+          half_day_period: HalfDayPeriod | null;
           total_days: number;
           status: VacationStatus;
           notes: string | null;
@@ -575,6 +577,7 @@ export interface Database {
           start_date: string;
           end_date: string;
           is_half_day?: boolean;
+          half_day_period?: HalfDayPeriod | null;
           total_days: number;
           status?: VacationStatus;
           notes?: string | null;
@@ -590,6 +593,7 @@ export interface Database {
           start_date?: string;
           end_date?: string;
           is_half_day?: boolean;
+          half_day_period?: HalfDayPeriod | null;
           total_days?: number;
           status?: VacationStatus;
           notes?: string | null;

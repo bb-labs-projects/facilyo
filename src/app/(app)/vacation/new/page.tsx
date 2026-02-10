@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
-import type { VacationRequestInsert } from '@/types/database';
+import type { VacationRequestInsert, HalfDayPeriod } from '@/types/database';
 
 function calculateBusinessDays(start: string, end: string, isHalfDay: boolean): number {
   const startDate = parseISO(start);
@@ -35,6 +35,7 @@ export default function NewVacationRequestPage() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [isHalfDay, setIsHalfDay] = useState(false);
+  const [halfDayPeriod, setHalfDayPeriod] = useState<HalfDayPeriod>('morning');
   const [notes, setNotes] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -121,11 +122,13 @@ export default function NewVacationRequestPage() {
         );
       }
 
+      const isHalfDayRequest = isHalfDay && !!isSingleDay;
       const insert: VacationRequestInsert = {
         user_id: profile!.id,
         start_date: startDate,
         end_date: endDate,
-        is_half_day: isHalfDay && !!isSingleDay,
+        is_half_day: isHalfDayRequest,
+        half_day_period: isHalfDayRequest ? halfDayPeriod : null,
         total_days: totalDays,
         notes: notes.trim() || null,
       };
@@ -225,15 +228,48 @@ export default function NewVacationRequestPage() {
 
             {/* Half-day toggle */}
             {isSingleDay && (
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isHalfDay}
-                  onChange={(e) => setIsHalfDay(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm text-slate-700">Halber Tag</span>
-              </label>
+              <div className="space-y-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isHalfDay}
+                    onChange={(e) => {
+                      setIsHalfDay(e.target.checked);
+                      if (!e.target.checked) setHalfDayPeriod('morning');
+                    }}
+                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-slate-700">Halber Tag</span>
+                </label>
+                {isHalfDay && (
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setHalfDayPeriod('morning')}
+                      className={cn(
+                        'flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors',
+                        halfDayPeriod === 'morning'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      )}
+                    >
+                      Vormittag
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setHalfDayPeriod('afternoon')}
+                      className={cn(
+                        'flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors',
+                        halfDayPeriod === 'afternoon'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      )}
+                    >
+                      Nachmittag
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </CardContent>
         </Card>
