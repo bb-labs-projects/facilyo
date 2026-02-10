@@ -711,21 +711,32 @@ export default function VacationPage() {
                       {dayRequests.slice(0, 3).map((req) => {
                         const color = userColorMap.get(req.user_id) ?? '#999';
                         const isPending = req.status === 'pending';
+                        const isHalfDay = req.is_half_day && req.start_date === req.end_date;
+                        const isMorning = isHalfDay && req.half_day_period === 'morning';
+                        const isAfternoon = isHalfDay && req.half_day_period === 'afternoon';
+                        const periodLabel = isMorning ? ', Vormittag' : isAfternoon ? ', Nachmittag' : '';
                         return (
                           <div
                             key={req.id}
-                            className={cn(
-                              'h-1.5 rounded-full text-[8px] truncate',
-                              isPending && 'opacity-50'
-                            )}
-                            style={{
-                              backgroundColor: isPending ? 'transparent' : color,
-                              border: isPending
-                                ? `1px dashed ${color}`
-                                : 'none',
-                            }}
-                            title={`${getUserName(req.user)} (${req.status === 'pending' ? 'beantragt' : 'bewilligt'})`}
-                          />
+                            className="flex"
+                          >
+                            {/* Spacer for afternoon half-days */}
+                            {isAfternoon && <div className="w-1/2" />}
+                            <div
+                              className={cn(
+                                'h-1.5 rounded-full',
+                                isHalfDay ? 'w-1/2' : 'w-full',
+                                isPending && 'opacity-50'
+                              )}
+                              style={{
+                                backgroundColor: isPending ? 'transparent' : color,
+                                border: isPending
+                                  ? `1px dashed ${color}`
+                                  : 'none',
+                              }}
+                              title={`${getUserName(req.user)} (${req.status === 'pending' ? 'beantragt' : 'bewilligt'}${periodLabel})`}
+                            />
+                          </div>
                         );
                       })}
                       {dayRequests.length > 3 && (
@@ -741,22 +752,42 @@ export default function VacationPage() {
 
             {/* Legend */}
             {calendarRequests.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-3">
-                {Array.from(
-                  new Map(
-                    calendarRequests.map((r) => [r.user_id, r.user])
-                  ).entries()
-                ).map(([userId, user]) => (
-                  <div key={userId} className="flex items-center gap-1.5 text-xs">
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{
-                        backgroundColor: userColorMap.get(userId) ?? '#999',
-                      }}
-                    />
-                    <span className="text-gray-600">{getUserName(user)}</span>
+              <div className="mt-4 space-y-2">
+                <div className="flex flex-wrap gap-3">
+                  {Array.from(
+                    new Map(
+                      calendarRequests.map((r) => [r.user_id, r.user])
+                    ).entries()
+                  ).map(([userId, user]) => (
+                    <div key={userId} className="flex items-center gap-1.5 text-xs">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{
+                          backgroundColor: userColorMap.get(userId) ?? '#999',
+                        }}
+                      />
+                      <span className="text-gray-600">{getUserName(user)}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-4 text-[10px] text-gray-400">
+                  <div className="flex items-center gap-1">
+                    <div className="w-6 h-1.5 rounded-full bg-gray-300" />
+                    <span>Ganztag</span>
                   </div>
-                ))}
+                  <div className="flex items-center gap-1">
+                    <div className="flex w-6">
+                      <div className="w-3 h-1.5 rounded-full bg-gray-300" />
+                    </div>
+                    <span>Vormittag</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="flex w-6 justify-end">
+                      <div className="w-3 h-1.5 rounded-full bg-gray-300" />
+                    </div>
+                    <span>Nachmittag</span>
+                  </div>
+                </div>
               </div>
             )}
           </div>
