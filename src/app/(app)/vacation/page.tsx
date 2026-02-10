@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import {
@@ -66,7 +66,18 @@ export default function VacationPage() {
   const profile = useAuthStore((state) => state.profile);
   const { canManageVacations } = usePermissions();
 
-  const [activeTab, setActiveTab] = useState<Tab>('kalender');
+  const [activeTab, setActiveTabRaw] = useState<Tab>('kalender');
+  const setActiveTab = useCallback((tab: Tab) => {
+    setActiveTabRaw(tab);
+    queryClient.invalidateQueries({ queryKey: ['vacation-calendar'] });
+    queryClient.invalidateQueries({ queryKey: ['vacation-own'] });
+    queryClient.invalidateQueries({ queryKey: ['vacation-pending'] });
+    queryClient.invalidateQueries({ queryKey: ['vacation-approved'] });
+    queryClient.invalidateQueries({ queryKey: ['vacation-rejected'] });
+    queryClient.invalidateQueries({ queryKey: ['vacation-pending-conflicts'] });
+    queryClient.invalidateQueries({ queryKey: ['vacation-overview-profiles'] });
+    queryClient.invalidateQueries({ queryKey: ['vacation-overview-requests'] });
+  }, [queryClient]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [rejectingRequest, setRejectingRequest] = useState<VacationRequestWithUser | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
