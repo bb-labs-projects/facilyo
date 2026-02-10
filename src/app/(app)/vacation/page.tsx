@@ -382,21 +382,56 @@ export default function VacationPage() {
     mutationFn: async (request: VacationRequestWithUser) => {
       const supabase = getClient();
 
-      // If approved, delete associated vacation time entries first
+      // If approved, delete associated vacation time entries and clean up work days
       if (request.status === 'approved') {
-        // Delete all vacation time entries in the date range (using gte/lte to catch modified times)
-        const rangeStart = `${request.start_date}T00:00:00`;
-        const rangeEnd = `${request.end_date}T23:59:59`;
+        const start = parseISO(request.start_date);
+        const end = parseISO(request.end_date);
+        const days = eachDayOfInterval({ start, end });
 
-        const { error: deleteError } = await (supabase as any)
-          .from('time_entries')
-          .delete()
-          .eq('user_id', request.user_id)
-          .eq('entry_type', 'vacation')
-          .gte('start_time', rangeStart)
-          .lte('start_time', rangeEnd);
+        for (const day of days) {
+          if (isWeekend(day)) continue;
+          const dateStr = format(day, 'yyyy-MM-dd');
 
-        if (deleteError) throw new Error('Zeiteinträge konnten nicht gelöscht werden');
+          // Find the work day for this date
+          const { data: workDay } = await (supabase as any)
+            .from('work_days')
+            .select('id, is_finalized')
+            .eq('user_id', request.user_id)
+            .eq('date', dateStr)
+            .maybeSingle();
+
+          if (!workDay) continue;
+
+          // Delete vacation time entries on this work day
+          const { error: deleteError } = await (supabase as any)
+            .from('time_entries')
+            .delete()
+            .eq('work_day_id', workDay.id)
+            .eq('entry_type', 'vacation');
+
+          if (deleteError) throw new Error(`Zeiteinträge für ${dateStr} konnten nicht gelöscht werden`);
+
+          // Check if work day has remaining entries
+          const { data: remaining } = await (supabase as any)
+            .from('time_entries')
+            .select('id')
+            .eq('work_day_id', workDay.id)
+            .limit(1);
+
+          if (!remaining || remaining.length === 0) {
+            // No entries left — delete the empty work day
+            await (supabase as any)
+              .from('work_days')
+              .delete()
+              .eq('id', workDay.id);
+          } else if (workDay.is_finalized) {
+            // Has other entries but was finalized by vacation — un-finalize
+            await (supabase as any)
+              .from('work_days')
+              .update({ is_finalized: false })
+              .eq('id', workDay.id);
+          }
+        }
       }
 
       // Delete the vacation request
