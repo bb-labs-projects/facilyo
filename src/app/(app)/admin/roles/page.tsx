@@ -42,7 +42,7 @@ export default function AdminRolesPage() {
 
   // Fetch all role permissions
   const { data: rolePermissions = [], isLoading } = useQuery({
-    queryKey: ['role-permissions'],
+    queryKey: ['admin-role-permissions'],
     queryFn: async () => {
       const supabase = getClient();
       const { data, error } = await (supabase as any)
@@ -87,6 +87,7 @@ export default function AdminRolesPage() {
     onSuccess: () => {
       toast.success('Berechtigung aktualisiert');
       clearPermissionsCache();
+      queryClient.invalidateQueries({ queryKey: ['admin-role-permissions'] });
       queryClient.invalidateQueries({ queryKey: ['role-permissions'] });
     },
     onError: (error: Error) => {
