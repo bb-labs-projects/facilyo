@@ -556,8 +556,8 @@ export default function AdminChecklistsPage() {
               ) : imageUrl ? (
                 <div className="relative rounded-lg overflow-hidden bg-slate-100 border border-slate-200 inline-block">
                   {isPdfUrl(imageUrl) ? (
-                    <a href={imageUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-4 hover:bg-slate-200 transition-colors">
-                      <FileText className="h-10 w-10 text-red-500 flex-shrink-0" />
+                    <a href={imageUrl} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 p-4 hover:bg-slate-200 transition-colors">
+                      <FileText className="h-10 w-10 text-red-500" />
                       <span className="text-sm font-medium">PDF anzeigen</span>
                     </a>
                   ) : (

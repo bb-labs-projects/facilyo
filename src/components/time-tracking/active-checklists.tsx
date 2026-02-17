@@ -328,7 +328,7 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
                           className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors"
                         >
                           <FileText className="h-8 w-8 text-red-500 flex-shrink-0" />
-                          <span className="text-sm font-medium">Pflichtenheft (PDF) anzeigen</span>
+                          <span className="text-sm font-medium">Pflichtenheft anzeigen</span>
                         </a>
                       ) : (
                         <button
