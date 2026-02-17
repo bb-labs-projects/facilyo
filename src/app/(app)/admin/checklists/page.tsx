@@ -554,25 +554,34 @@ export default function AdminChecklistsPage() {
                   <span className="text-sm text-primary-600">Wird hochgeladen...</span>
                 </div>
               ) : imageUrl ? (
-                <div className="relative rounded-lg overflow-hidden bg-slate-100 border border-slate-200 inline-block">
-                  {isPdfUrl(imageUrl) ? (
-                    <a href={imageUrl} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 p-4 hover:bg-slate-200 transition-colors">
-                      <FileText className="h-10 w-10 text-red-500" />
-                      <span className="text-sm font-medium">PDF anzeigen</span>
+                isPdfUrl(imageUrl) ? (
+                  <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                    <FileText className="h-5 w-5 text-red-500 flex-shrink-0" />
+                    <a href={imageUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-medium flex-1 hover:underline">
+                      PDF anzeigen
                     </a>
-                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setImageUrl('')}
+                      className="p-1 text-muted-foreground hover:text-error-600 rounded"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative rounded-lg overflow-hidden bg-slate-100 border border-slate-200 inline-block">
                     <a href={imageUrl} target="_blank" rel="noopener noreferrer" className="block w-[200px] h-[200px]">
                       <img src={imageUrl} alt="Pflichtenheft" className="w-full h-full object-contain" />
                     </a>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setImageUrl('')}
-                    className="absolute top-0.5 right-0.5 p-0.5 bg-error-500 text-white rounded-full shadow-md"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
+                    <button
+                      type="button"
+                      onClick={() => setImageUrl('')}
+                      className="absolute top-0.5 right-0.5 p-0.5 bg-error-500 text-white rounded-full shadow-md"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                )
               ) : (
                 <button
                   type="button"
