@@ -309,7 +309,7 @@ export default function AdminActivityPage() {
           .filter((item) => item.type === 'photo')
           .map((item) => item.id);
 
-        // Collect photo URLs from completed items (NOT reference image)
+        // Collect photo URLs from completed items (NOT Pflichtenheft)
         const photoUrls: string[] = [];
         const completed = instance.completed_items || {};
         for (const itemId of photoItemIds) {

@@ -15,6 +15,7 @@ import {
   Hash,
   Camera,
   ImagePlus,
+  FileText,
   Loader2,
   X,
 } from 'lucide-react';
@@ -50,6 +51,8 @@ import type {
 interface ChecklistTemplateWithProperty extends ChecklistTemplate {
   property: Property;
 }
+
+const isPdfUrl = (url: string) => /\.pdf(\?|$)/i.test(url);
 
 const itemTypeConfig: Record<ChecklistItemType, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
   checkbox: { label: 'Checkbox', icon: Check },
@@ -334,22 +337,24 @@ export default function AdminChecklistsPage() {
     setIsUploadingImage(true);
     try {
       const supabase = getClient();
-      const compressedFile = await compressImage(files[0]);
+      const file = files[0];
+      const isPdf = file.type === 'application/pdf';
+      const fileToUpload = isPdf ? file : await compressImage(file);
       const timestamp = Date.now();
-      const extension = files[0].name.split('.').pop() || 'jpg';
+      const extension = file.name.split('.').pop() || (isPdf ? 'pdf' : 'jpg');
       const filename = `${timestamp}-${Math.random().toString(36).substr(2, 9)}.${extension}`;
       const path = `checklists/templates/${filename}`;
 
       const { data, error } = await supabase.storage
         .from('photos')
-        .upload(path, compressedFile, { cacheControl: '3600', upsert: false });
+        .upload(path, fileToUpload, { cacheControl: '3600', upsert: false });
 
       if (error) throw error;
 
       const { data: { publicUrl } } = supabase.storage.from('photos').getPublicUrl(data.path);
       setImageUrl(publicUrl);
     } catch (error: any) {
-      toast.error(error?.message || 'Bild konnte nicht hochgeladen werden');
+      toast.error(error?.message || 'Datei konnte nicht hochgeladen werden');
     } finally {
       setIsUploadingImage(false);
     }
@@ -419,8 +424,12 @@ export default function AdminChecklistsPage() {
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between gap-3">
                           {template.image_url && (
-                            <div className="w-12 h-12 rounded-md overflow-hidden bg-slate-100 border border-slate-200 flex-shrink-0">
-                              <img src={template.image_url} alt="" className="w-full h-full object-cover" />
+                            <div className="w-12 h-12 rounded-md overflow-hidden bg-slate-100 border border-slate-200 flex-shrink-0 flex items-center justify-center">
+                              {isPdfUrl(template.image_url) ? (
+                                <FileText className="h-6 w-6 text-red-500" />
+                              ) : (
+                                <img src={template.image_url} alt="" className="w-full h-full object-cover" />
+                              )}
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
@@ -538,17 +547,24 @@ export default function AdminChecklistsPage() {
 
             {/* Image upload */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Referenzbild</label>
+              <label className="text-sm font-medium">Pflichtenheft</label>
               {isUploadingImage ? (
                 <div className="w-full h-24 border-2 border-dashed border-primary-300 rounded-lg flex flex-col items-center justify-center gap-2 bg-primary-50">
                   <Loader2 className="h-6 w-6 text-primary-500 animate-spin" />
                   <span className="text-sm text-primary-600">Wird hochgeladen...</span>
                 </div>
               ) : imageUrl ? (
-                <div className="relative w-[200px] h-[200px] rounded-lg overflow-hidden bg-slate-100 border border-slate-200">
-                  <a href={imageUrl} target="_blank" rel="noopener noreferrer" className="block w-full h-full">
-                    <img src={imageUrl} alt="Referenzbild" className="w-full h-full object-contain" />
-                  </a>
+                <div className="relative rounded-lg overflow-hidden bg-slate-100 border border-slate-200 inline-block">
+                  {isPdfUrl(imageUrl) ? (
+                    <a href={imageUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-4 hover:bg-slate-200 transition-colors">
+                      <FileText className="h-10 w-10 text-red-500 flex-shrink-0" />
+                      <span className="text-sm font-medium">PDF anzeigen</span>
+                    </a>
+                  ) : (
+                    <a href={imageUrl} target="_blank" rel="noopener noreferrer" className="block w-[200px] h-[200px]">
+                      <img src={imageUrl} alt="Pflichtenheft" className="w-full h-full object-contain" />
+                    </a>
+                  )}
                   <button
                     type="button"
                     onClick={() => setImageUrl('')}
@@ -564,13 +580,13 @@ export default function AdminChecklistsPage() {
                   className="w-full h-24 border-2 border-dashed border-muted-foreground/50 rounded-lg flex flex-col items-center justify-center gap-2 hover:border-primary-500 transition-colors"
                 >
                   <ImagePlus className="h-6 w-6 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Referenzbild hochladen</span>
+                  <span className="text-sm text-muted-foreground">Pflichtenheft hochladen (Bild/PDF)</span>
                 </button>
               )}
               <input
                 ref={imageInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/*,.pdf"
                 onChange={(e) => handleImageUpload(e.target.files)}
                 className="hidden"
               />

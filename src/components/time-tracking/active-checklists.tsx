@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ClipboardList, ChevronDown, ChevronUp, Check, Camera, Save, Loader2, X, ImageIcon } from 'lucide-react';
+import { ClipboardList, ChevronDown, ChevronUp, Check, Camera, Save, Loader2, X, ImageIcon, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 // browser-image-compression is dynamically imported when needed to reduce initial bundle size
@@ -16,6 +16,8 @@ import type { ChecklistTemplate, ChecklistItem, Property } from '@/types/databas
 interface ChecklistWithProperty extends ChecklistTemplate {
   property: Property;
 }
+
+const isPdfUrl = (url: string) => /\.pdf(\?|$)/i.test(url);
 
 interface ChecklistInstance {
   id: string;
@@ -254,16 +256,28 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
               <CardHeader className="py-3 px-4">
                 <div className="flex items-center justify-between">
                   {checklist.image_url && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEnlargedImageUrl(checklist.image_url);
-                      }}
-                      className="w-10 h-10 rounded-md overflow-hidden bg-slate-100 border border-slate-200 flex-shrink-0 mr-3"
-                    >
-                      <img src={checklist.image_url} alt="" className="w-full h-full object-cover" />
-                    </button>
+                    isPdfUrl(checklist.image_url) ? (
+                      <a
+                        href={checklist.image_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-10 h-10 rounded-md bg-slate-100 border border-slate-200 flex-shrink-0 mr-3 flex items-center justify-center"
+                      >
+                        <FileText className="h-5 w-5 text-red-500" />
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEnlargedImageUrl(checklist.image_url);
+                        }}
+                        className="w-10 h-10 rounded-md overflow-hidden bg-slate-100 border border-slate-200 flex-shrink-0 mr-3"
+                      >
+                        <img src={checklist.image_url} alt="" className="w-full h-full object-cover" />
+                      </button>
+                    )
                   )}
                   <div className="flex-1 min-w-0">
                     <CardTitle className="text-base">{checklist.name}</CardTitle>
@@ -306,17 +320,29 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
                 >
                   <CardContent className="pt-0 pb-4 px-4 space-y-3">
                     {checklist.image_url && (
-                      <button
-                        type="button"
-                        onClick={() => setEnlargedImageUrl(checklist.image_url)}
-                        className="w-full rounded-lg overflow-hidden border border-slate-200 bg-slate-50"
-                      >
-                        <img
-                          src={checklist.image_url}
-                          alt="Referenzbild"
-                          className="w-full max-h-48 object-contain"
-                        />
-                      </button>
+                      isPdfUrl(checklist.image_url) ? (
+                        <a
+                          href={checklist.image_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors"
+                        >
+                          <FileText className="h-8 w-8 text-red-500 flex-shrink-0" />
+                          <span className="text-sm font-medium">Pflichtenheft (PDF) anzeigen</span>
+                        </a>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setEnlargedImageUrl(checklist.image_url)}
+                          className="w-full rounded-lg overflow-hidden border border-slate-200 bg-slate-50"
+                        >
+                          <img
+                            src={checklist.image_url}
+                            alt="Pflichtenheft"
+                            className="w-full max-h-48 object-contain"
+                          />
+                        </button>
+                      )
                     )}
 
                     {items.map((item) => (
@@ -360,7 +386,7 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
           </button>
           <img
             src={enlargedImageUrl}
-            alt="Referenzbild"
+            alt="Pflichtenheft"
             className="max-w-full max-h-full object-contain rounded-lg"
           />
         </div>
