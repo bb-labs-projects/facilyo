@@ -18,6 +18,8 @@ import {
   X,
   Filter,
   Trash2,
+  AlertCircle,
+  Clock,
 } from 'lucide-react';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
@@ -62,13 +64,17 @@ interface AufgabeWithRelations {
   title: string;
   description: string | null;
   status: string;
+  priority: string | null;
+  due_date: string | null;
   completed_at: string | null;
   completed_by: string | null;
   completion_photo_urls: string[];
   completion_notes: string | null;
   property_id: string;
+  created_at: string;
   property: Property;
   completer: Profile | null;
+  assignee: Profile | null;
   source_meldung: SourceMeldung | null;
 }
 
@@ -96,6 +102,12 @@ const itemTypeConfig: Record<ChecklistItemType, { label: string; icon: React.Com
   text: { label: 'Text', icon: Type },
   number: { label: 'Zahl', icon: Hash },
   photo: { label: 'Foto', icon: Camera },
+};
+
+const statusConfig: Record<string, { label: string; badgeClass: string; iconBg: string; iconColor: string }> = {
+  open: { label: 'Offen', badgeClass: 'badge-warning', iconBg: 'bg-warning-100', iconColor: 'text-warning-600' },
+  in_progress: { label: 'In Bearbeitung', badgeClass: 'badge-info', iconBg: 'bg-primary-100', iconColor: 'text-primary-600' },
+  resolved: { label: 'Erledigt', badgeClass: 'badge-success', iconBg: 'bg-success-100', iconColor: 'text-success-600' },
 };
 
 function formatDateTime(dateString: string): string {
@@ -130,8 +142,8 @@ export default function AdminActivityPage() {
   const setActiveTab = useCallback((tab: TabType) => {
     setActiveTabRaw(tab);
     queryClient.invalidateQueries({ queryKey: ['all-properties'] });
-    queryClient.invalidateQueries({ queryKey: ['admin-completed-aufgaben'] });
-    queryClient.invalidateQueries({ queryKey: ['admin-checklist-instances'] });
+    if (tab === 'aufgaben') queryClient.invalidateQueries({ queryKey: ['admin-all-aufgaben'] });
+    if (tab === 'checklists') queryClient.invalidateQueries({ queryKey: ['admin-checklist-instances'] });
   }, [queryClient]);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
@@ -159,7 +171,7 @@ export default function AdminActivityPage() {
         },
       },
       {
-        queryKey: ['admin-completed-aufgaben', selectedPropertyId],
+        queryKey: ['admin-all-aufgaben', selectedPropertyId],
         queryFn: async () => {
           const supabase = getClient();
           let query = (supabase as any)
@@ -168,11 +180,10 @@ export default function AdminActivityPage() {
               *,
               property:properties (*),
               completer:profiles!aufgaben_completed_by_fkey (*),
+              assignee:profiles!aufgaben_assigned_to_fkey (*),
               source_meldung:issues (*)
             `)
-            .eq('status', 'resolved')
-            .not('completed_at', 'is', null)
-            .order('completed_at', { ascending: false });
+            .order('created_at', { ascending: false });
 
           if (selectedPropertyId) {
             query = query.eq('property_id', selectedPropertyId);
@@ -282,7 +293,7 @@ export default function AdminActivityPage() {
     },
     onSuccess: () => {
       toast.success('Aufgabe wurde gelöscht');
-      queryClient.invalidateQueries({ queryKey: ['admin-completed-aufgaben'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-all-aufgaben'] });
       setDeleteAufgabeId(null);
       setSelectedAufgabe(null);
     },
@@ -452,13 +463,18 @@ export default function AdminActivityPage() {
         aufgaben.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <CheckCircle2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Keine erledigten Aufgaben vorhanden</p>
+            <p>Keine Aufgaben vorhanden</p>
           </div>
         ) : (
           <div className="space-y-3">
             {aufgaben.map((aufgabe) => {
               const hasPhotos = (aufgabe.completion_photo_urls && aufgabe.completion_photo_urls.length > 0) || (aufgabe.source_meldung?.photo_urls && aufgabe.source_meldung.photo_urls.length > 0);
               const hasNotes = !!aufgabe.completion_notes;
+              const status = statusConfig[aufgabe.status] || statusConfig.open;
+              const StatusIcon = aufgabe.status === 'resolved' ? CheckCircle2 : aufgabe.status === 'in_progress' ? Clock : AlertCircle;
+              const displayPerson = aufgabe.status === 'resolved' ? aufgabe.completer : aufgabe.assignee;
+              const personLabel = aufgabe.status === 'resolved' ? formatName(aufgabe.completer) : (aufgabe.assignee ? formatName(aufgabe.assignee) : 'Nicht zugewiesen');
+
               return (
                 <Card
                   key={aufgabe.id}
@@ -469,8 +485,8 @@ export default function AdminActivityPage() {
                   <CardContent className="p-4">
                     <div className="space-y-2">
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-success-100 flex items-center justify-center flex-shrink-0">
-                          <CheckCircle2 className="h-5 w-5 text-success-600" />
+                        <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0', status.iconBg)}>
+                          <StatusIcon className={cn('h-5 w-5', status.iconColor)} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="font-medium truncate">{aufgabe.title}</h3>
@@ -505,18 +521,23 @@ export default function AdminActivityPage() {
                         </div>
                         <div className="flex items-center gap-1.5">
                           <User className="h-3.5 w-3.5" />
-                          <span>{formatName(aufgabe.completer)}</span>
+                          <span>{personLabel}</span>
                         </div>
-                        {aufgabe.completed_at && (
+                        {aufgabe.completed_at ? (
                           <div className="flex items-center gap-1.5">
                             <Calendar className="h-3.5 w-3.5" />
                             <span>{formatDateTime(aufgabe.completed_at)}</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="h-3.5 w-3.5" />
+                            <span>{formatDateTime(aufgabe.created_at)}</span>
                           </div>
                         )}
                       </div>
 
                       <div className="pl-13 flex items-center gap-2">
-                        <span className="badge badge-success text-xs">Erledigt</span>
+                        <span className={cn('badge text-xs', status.badgeClass)}>{status.label}</span>
                         {hasPhotos && (
                           <span className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Camera className="h-3 w-3" />
@@ -727,11 +748,29 @@ export default function AdminActivityPage() {
               <SheetHeader>
                 <SheetTitle>{selectedAufgabe.title}</SheetTitle>
                 <p className="text-sm text-muted-foreground">
-                  {formatName(selectedAufgabe.completer)} • {selectedAufgabe.completed_at && formatDateTime(selectedAufgabe.completed_at)}
+                  {selectedAufgabe.status === 'resolved'
+                    ? `${formatName(selectedAufgabe.completer)} • ${selectedAufgabe.completed_at && formatDateTime(selectedAufgabe.completed_at)}`
+                    : `Erstellt am ${formatDateTime(selectedAufgabe.created_at)}`
+                  }
                 </p>
               </SheetHeader>
 
               <div className="mt-6 space-y-6 overflow-y-auto max-h-[calc(85vh-120px)]">
+                {/* Status & Assignment Info */}
+                {(() => {
+                  const status = statusConfig[selectedAufgabe.status] || statusConfig.open;
+                  return (
+                    <div className="flex flex-wrap gap-2">
+                      <span className={cn('badge text-xs', status.badgeClass)}>{status.label}</span>
+                      {selectedAufgabe.assignee && selectedAufgabe.status !== 'resolved' && (
+                        <span className="badge bg-muted text-muted-foreground text-xs">
+                          Zugewiesen: {formatName(selectedAufgabe.assignee)}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 {/* Task Description */}
                 {selectedAufgabe.description && (
                   <div className="space-y-2">
@@ -863,7 +902,7 @@ export default function AdminActivityPage() {
           <DialogHeader>
             <DialogTitle>Aufgabe löschen</DialogTitle>
             <DialogDescription>
-              Möchten Sie diese erledigte Aufgabe wirklich löschen?
+              Möchten Sie diese Aufgabe wirklich löschen?
               {aufgabeToDelete && (
                 <>
                   <br />
@@ -872,8 +911,10 @@ export default function AdminActivityPage() {
                   </span>
                   <br />
                   <span className="text-xs">
-                    Erledigt von {formatName(aufgabeToDelete.completer)}
-                    {aufgabeToDelete.completed_at && ` am ${formatDateTime(aufgabeToDelete.completed_at)}`}
+                    {aufgabeToDelete.status === 'resolved'
+                      ? `Erledigt von ${formatName(aufgabeToDelete.completer)}${aufgabeToDelete.completed_at ? ` am ${formatDateTime(aufgabeToDelete.completed_at)}` : ''}`
+                      : `Status: ${(statusConfig[aufgabeToDelete.status] || statusConfig.open).label}`
+                    }
                   </span>
                 </>
               )}

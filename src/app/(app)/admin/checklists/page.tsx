@@ -18,6 +18,7 @@ import {
   FileText,
   Loader2,
   X,
+  Filter,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Header, PageContainer } from '@/components/layout/header';
@@ -70,6 +71,8 @@ export default function AdminChecklistsPage() {
   const [editingTemplate, setEditingTemplate] = useState<ChecklistTemplateWithProperty | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deletingTemplate, setDeletingTemplate] = useState<ChecklistTemplateWithProperty | null>(null);
+  const [filterPropertyId, setFilterPropertyId] = useState<string>('');
+  const [showFilters, setShowFilters] = useState(false);
 
   // Form state
   const [name, setName] = useState('');
@@ -360,8 +363,12 @@ export default function AdminChecklistsPage() {
     }
   };
 
-  // Group templates by property
-  const templatesByProperty = templates.reduce((acc, template) => {
+  // Filter and group templates by property
+  const filteredTemplates = filterPropertyId
+    ? templates.filter((t) => t.property_id === filterPropertyId)
+    : templates;
+
+  const templatesByProperty = filteredTemplates.reduce((acc, template) => {
     const propertyId = template.property_id;
     if (!acc[propertyId]) {
       acc[propertyId] = {
@@ -386,13 +393,44 @@ export default function AdminChecklistsPage() {
           title="Checklisten"
           showBack
           rightElement={
-            <Button size="icon" onClick={() => setShowForm(true)}>
-              <Plus className="h-5 w-5" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowFilters(!showFilters)}
+                className={cn(filterPropertyId && 'text-primary-600')}
+              >
+                <Filter className="h-5 w-5" />
+              </Button>
+              <Button size="icon" onClick={() => setShowForm(true)}>
+                <Plus className="h-5 w-5" />
+              </Button>
+            </div>
           }
         />
       }
     >
+      {/* Filter Section */}
+      {showFilters && (
+        <Card className="mb-4">
+          <CardContent className="p-4">
+            <label className="text-sm font-medium block mb-2">Liegenschaft</label>
+            <select
+              value={filterPropertyId}
+              onChange={(e) => setFilterPropertyId(e.target.value)}
+              className="flex h-11 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+            >
+              <option value="">Alle Liegenschaften</option>
+              {properties.map((property) => (
+                <option key={property.id} value={property.id}>
+                  {property.name}
+                </option>
+              ))}
+            </select>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Templates list */}
       {isLoading ? (
         <div className="text-center py-12 text-muted-foreground">
