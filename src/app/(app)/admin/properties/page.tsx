@@ -74,6 +74,7 @@ function AdminPropertiesPageContent() {
   // Validation state
   const [latitudeError, setLatitudeError] = useState<string | null>(null);
   const [longitudeError, setLongitudeError] = useState<string | null>(null);
+  const [isGeocoding, setIsGeocoding] = useState(false);
 
   // Fetch properties
   const { data: properties = [], isLoading } = useQuery({
@@ -432,16 +433,59 @@ function AdminPropertiesPageContent() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const geocodeAddress = async (addr: string, postal: string, cityName: string): Promise<{ lat: number; lng: number } | null> => {
+    const query = [addr, postal, cityName].filter(Boolean).join(', ');
+    const url = `https://nominatim.openstreetmap.org/search?${new URLSearchParams({
+      format: 'json',
+      q: query,
+      limit: '1',
+      countrycodes: 'ch',
+    })}`;
+
+    try {
+      const response = await fetch(url, {
+        headers: { 'User-Agent': 'FacilityTrack/1.0' },
+      });
+      if (!response.ok) return null;
+      const results = await response.json();
+      if (results.length > 0) {
+        return { lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon) };
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const parsedLatitude = parseCoordinate(latitude, -90, 90);
-    const parsedLongitude = parseCoordinate(longitude, -180, 180);
+    let parsedLatitude = parseCoordinate(latitude, -90, 90);
+    let parsedLongitude = parseCoordinate(longitude, -180, 180);
 
     // Validate: if one coordinate is set, both must be set
     if ((parsedLatitude !== null) !== (parsedLongitude !== null)) {
       toast.error('Bitte geben Sie sowohl Breitengrad als auch Längengrad an, oder lassen Sie beide leer.');
       return;
+    }
+
+    // Auto-geocode if both coordinates are empty and address is available
+    if (parsedLatitude === null && parsedLongitude === null && address.trim() && city.trim()) {
+      setIsGeocoding(true);
+      try {
+        const result = await geocodeAddress(address.trim(), postalCode.trim(), city.trim());
+        if (result) {
+          parsedLatitude = result.lat;
+          parsedLongitude = result.lng;
+          setLatitude(result.lat.toString());
+          setLongitude(result.lng.toString());
+          toast.success('Koordinaten wurden automatisch ermittelt');
+        } else {
+          toast.warning('Adresse konnte nicht geocodiert werden – Liegenschaft wird ohne Koordinaten gespeichert.');
+        }
+      } finally {
+        setIsGeocoding(false);
+      }
     }
 
     const parsedRadius = parseInt(geofenceRadius.trim());
@@ -477,7 +521,7 @@ function AdminPropertiesPageContent() {
     );
   });
 
-  const isSubmitting = createMutation.isPending || updateMutation.isPending;
+  const isSubmitting = createMutation.isPending || updateMutation.isPending || isGeocoding;
 
   if (!permissions.canManageProperties) {
     return null;
@@ -758,7 +802,9 @@ function AdminPropertiesPageContent() {
                 className="flex-1"
                 disabled={isSubmitting || !name.trim() || !address.trim() || !city.trim() || !postalCode.trim() || !!latitudeError || !!longitudeError}
               >
-                {isSubmitting
+                {isGeocoding
+                  ? 'Koordinaten werden ermittelt...'
+                  : isSubmitting
                   ? 'Wird gespeichert...'
                   : editingProperty
                   ? 'Speichern'
