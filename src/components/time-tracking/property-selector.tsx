@@ -63,7 +63,7 @@ export function PropertySelector({
       p.city.toLowerCase().includes(search.toLowerCase())
     ), [properties, search]);
 
-  // Sort by distance if user coords available (memoized)
+  // Sort by distance if user coords available, otherwise alphabetically (memoized)
   const sortedProperties = useMemo(() =>
     userCoords
       ? [...filteredProperties].sort((a, b) => {
@@ -83,7 +83,7 @@ export function PropertySelector({
           );
           return distA - distB;
         })
-      : filteredProperties
+      : [...filteredProperties].sort((a, b) => a.name.localeCompare(b.name, 'de'))
   , [filteredProperties, userCoords]);
 
   const handleSelect = (property: Property) => {
