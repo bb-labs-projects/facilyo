@@ -159,12 +159,48 @@ export function TimeEntryEditSheet({
       }
 
       const supabase = getClient();
+
+      // Fetch checklist instances with photo items before deleting (cascade will remove them)
+      const { data: instances } = await (supabase as any)
+        .from('checklist_instances')
+        .select('completed_items, template:checklist_templates(items)')
+        .eq('time_entry_id', entry.id);
+
+      // Delete the time entry (cascades to checklist_instances)
       const { error } = await (supabase as any)
         .from('time_entries')
         .delete()
         .eq('id', entry.id);
 
       if (error) throw error;
+
+      // Clean up photos from storage (best-effort after row deletion)
+      if (instances && instances.length > 0) {
+        const storagePaths: string[] = [];
+
+        for (const instance of instances) {
+          const items = (instance.template?.items || []) as { id: string; type: string }[];
+          const photoItemIds = items
+            .filter((item) => item.type === 'photo')
+            .map((item) => item.id);
+
+          const completed = instance.completed_items || {};
+          for (const itemId of photoItemIds) {
+            const value = completed[itemId];
+            if (typeof value === 'string' && value.length > 0) {
+              const match = value.match(/\/storage\/v1\/object\/public\/photos\/([^?]+)/);
+              if (match) storagePaths.push(decodeURIComponent(match[1]));
+            }
+          }
+        }
+
+        if (storagePaths.length > 0) {
+          const { error: storageError } = await supabase.storage.from('photos').remove(storagePaths);
+          if (storageError) {
+            console.error('Failed to delete checklist photos from storage:', storageError);
+          }
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['work-days'] });
