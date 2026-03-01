@@ -2,6 +2,7 @@ import { cn } from '@/lib/utils';
 
 interface LogoProps {
   size?: 'sm' | 'lg';
+  variant?: 'light' | 'dark';
   className?: string;
 }
 
@@ -21,7 +22,7 @@ function LogoIcon({ className }: { className?: string }) {
   );
 }
 
-export function Logo({ size = 'sm', className }: LogoProps) {
+export function Logo({ size = 'sm', variant = 'dark', className }: LogoProps) {
   return (
     <div className={cn('flex items-center gap-2.5', className)}>
       <LogoIcon
@@ -31,7 +32,8 @@ export function Logo({ size = 'sm', className }: LogoProps) {
       />
       <span
         className={cn(
-          'font-bold tracking-tight text-gray-900',
+          'font-bold tracking-tight',
+          variant === 'light' ? 'text-white' : 'text-gray-900',
           size === 'sm' ? 'text-xl' : 'text-2xl'
         )}
       >

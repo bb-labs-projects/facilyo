@@ -107,8 +107,8 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
       <SheetContent side="left" className="w-[280px] bg-primary-900 p-0 text-slate-100 border-primary-800 flex flex-col">
         <SheetTitle className="sr-only">Navigation</SheetTitle>
         {/* Logo/Branding */}
-        <div className="flex items-center border-b border-primary-800 px-6 py-4 bg-slate-50">
-          <Logo />
+        <div className="flex items-center border-b border-primary-800 px-6 py-4">
+          <Logo variant="light" />
         </div>
 
         {/* Navigation */}
