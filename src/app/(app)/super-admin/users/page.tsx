@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Search, Users } from 'lucide-react';
+import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 
@@ -22,12 +23,7 @@ export default function GlobalUsersPage() {
   });
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Users className="h-6 w-6" />
-        <h1 className="text-2xl font-bold">Alle Benutzer</h1>
-      </div>
-
+    <PageContainer header={<Header title="Alle Benutzer" showBack />}>
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
@@ -67,6 +63,6 @@ export default function GlobalUsersPage() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </PageContainer>
   );
 }

@@ -2,11 +2,11 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Building2, Users, Trash2 } from 'lucide-react';
+import { Building2, Users, Trash2 } from 'lucide-react';
+import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import Link from 'next/link';
 
 export default function OrganizationDetailPage() {
   const params = useParams();
@@ -59,20 +59,24 @@ export default function OrganizationDetailPage() {
     onError: (err: Error) => toast.error(err.message),
   });
 
-  if (isLoading) return <p className="text-muted-foreground">Laden...</p>;
-  if (!org) return <p>Nicht gefunden</p>;
+  if (isLoading) {
+    return (
+      <PageContainer header={<Header title="Organisation" showBack backHref="/super-admin/organizations" />}>
+        <p className="text-muted-foreground">Laden...</p>
+      </PageContainer>
+    );
+  }
+
+  if (!org) {
+    return (
+      <PageContainer header={<Header title="Organisation" showBack backHref="/super-admin/organizations" />}>
+        <p>Nicht gefunden</p>
+      </PageContainer>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Link href="/super-admin/organizations">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
-        <h1 className="text-2xl font-bold">{org.organization?.name || 'Organisation'}</h1>
-      </div>
-
+    <PageContainer header={<Header title={org.organization?.name || 'Organisation'} showBack backHref="/super-admin/organizations" />}>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -153,6 +157,6 @@ export default function OrganizationDetailPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

@@ -411,7 +411,7 @@ function CalendarPageContent() {
   if (!hasPermission) {
     return (
       <PageContainer
-        header={<Header title="Benutzerkalender" subtitle="Keine Berechtigung" />}
+        header={<Header title="Benutzerkalender" subtitle="Keine Berechtigung" showBack />}
       >
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
@@ -428,6 +428,7 @@ function CalendarPageContent() {
         <Header
           title="Benutzerkalender"
           subtitle="Zeiteinträge anzeigen und bearbeiten"
+          showBack
           showRefresh={true}
           onRefresh={handleRefresh}
         />

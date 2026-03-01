@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Building2, Plus, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -62,13 +63,19 @@ export default function OrganizationsPage() {
   });
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Organisationen</h1>
-        <Button onClick={() => setShowCreate(!showCreate)} leftIcon={<Plus className="h-4 w-4" />}>
-          Neu
-        </Button>
-      </div>
+    <PageContainer
+      header={
+        <Header
+          title="Organisationen"
+          showBack
+          rightElement={
+            <Button size="sm" onClick={() => setShowCreate(!showCreate)} leftIcon={<Plus className="h-4 w-4" />}>
+              Neu
+            </Button>
+          }
+        />
+      }
+    >
 
       {showCreate && (
         <Card>
@@ -137,6 +144,6 @@ export default function OrganizationsPage() {
           ))}
         </div>
       )}
-    </div>
+    </PageContainer>
   );
 }

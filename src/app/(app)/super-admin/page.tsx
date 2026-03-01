@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { Building2, Users, Activity } from 'lucide-react';
+import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 
@@ -16,9 +17,7 @@ export default function SuperAdminDashboard() {
   });
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Super-Admin Dashboard</h1>
-
+    <PageContainer header={<Header title="Super-Admin" showBack />}>
       <div className="grid gap-4 sm:grid-cols-3">
         <Link href="/super-admin/organizations">
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
@@ -81,6 +80,6 @@ export default function SuperAdminDashboard() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </PageContainer>
   );
 }
