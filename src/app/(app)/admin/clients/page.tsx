@@ -43,6 +43,7 @@ function AdminClientsPageContent() {
   const queryClient = useQueryClient();
   const permissions = usePermissions();
   const organizationId = useAuthStore((state) => state.organizationId);
+  const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showInactiveClients, setShowInactiveClients] = useState(false);
@@ -70,11 +71,11 @@ function AdminClientsPageContent() {
       const supabase = getClient();
       const { data, error } = await (supabase as any)
         .from('clients')
-        .select('*')
+        .select('*, organizations:organization_id(name)')
         .order('name');
 
       if (error) throw error;
-      return data as Client[];
+      return data as (Client & { organizations?: { name: string } })[];
     },
   });
 
@@ -403,6 +404,11 @@ function AdminClientsPageContent() {
                         {inactive && (
                           <span className="badge bg-gray-100 text-gray-700 text-xs">
                             Inaktiv
+                          </span>
+                        )}
+                        {isSuperAdmin && client.organizations?.name && (
+                          <span className="badge bg-purple-100 text-purple-700 text-xs">
+                            {client.organizations.name}
                           </span>
                         )}
                       </div>

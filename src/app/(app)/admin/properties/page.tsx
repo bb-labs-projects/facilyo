@@ -53,6 +53,7 @@ function AdminPropertiesPageContent() {
   const queryClient = useQueryClient();
   const permissions = usePermissions();
   const organizationId = useAuthStore((state) => state.organizationId);
+  const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showInactiveProperties, setShowInactiveProperties] = useState(false);
@@ -96,11 +97,11 @@ function AdminPropertiesPageContent() {
       const supabase = getClient();
       const { data, error } = await (supabase as any)
         .from('properties')
-        .select('*')
+        .select('*, organizations:organization_id(name)')
         .order('name');
 
       if (error) throw error;
-      return data as Property[];
+      return data as (Property & { organizations?: { name: string } })[];
     },
   });
 
@@ -667,6 +668,11 @@ function AdminPropertiesPageContent() {
                         {inactive && (
                           <span className="badge bg-gray-100 text-gray-700 text-xs">
                             Inaktiv
+                          </span>
+                        )}
+                        {isSuperAdmin && property.organizations?.name && (
+                          <span className="badge bg-purple-100 text-purple-700 text-xs">
+                            {property.organizations.name}
                           </span>
                         )}
                       </div>

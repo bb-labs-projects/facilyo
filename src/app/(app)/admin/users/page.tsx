@@ -43,6 +43,7 @@ interface AuthCredentials {
 }
 
 interface UserWithAssignments extends Profile {
+  organizations?: { name: string };
   property_assignments: { property_id: string; property: Property }[];
   auth_credentials?: AuthCredentials[];
 }
@@ -60,6 +61,7 @@ function AdminUsersPageContent() {
   const queryClient = useQueryClient();
   const profile = useAuthStore((state) => state.profile);
   const organizationId = useAuthStore((state) => state.organizationId);
+  const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
   const permissions = usePermissions();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -98,6 +100,7 @@ function AdminUsersPageContent() {
             .from('profiles')
             .select(`
               *,
+              organizations:organization_id(name),
               property_assignments (
                 property_id,
                 property:properties (*)
@@ -569,6 +572,11 @@ function AdminUsersPageContent() {
                         {needsPasswordChange && !locked && !inactive && (
                           <span className="badge bg-amber-100 text-amber-700 text-xs">
                             Passwort ändern
+                          </span>
+                        )}
+                        {isSuperAdmin && user.organizations?.name && (
+                          <span className="badge bg-purple-100 text-purple-700 text-xs">
+                            {user.organizations.name}
                           </span>
                         )}
                         <span className="text-xs text-muted-foreground">
