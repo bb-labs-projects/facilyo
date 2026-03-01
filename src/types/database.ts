@@ -115,6 +115,53 @@ export interface Database {
           updated_at?: string;
         };
       };
+      clients: {
+        Row: {
+          id: string;
+          organization_id: string;
+          name: string;
+          contact_person: string | null;
+          email: string | null;
+          phone: string | null;
+          address: string | null;
+          postal_code: string | null;
+          city: string | null;
+          notes: string | null;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          name: string;
+          contact_person?: string | null;
+          email?: string | null;
+          phone?: string | null;
+          address?: string | null;
+          postal_code?: string | null;
+          city?: string | null;
+          notes?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          name?: string;
+          contact_person?: string | null;
+          email?: string | null;
+          phone?: string | null;
+          address?: string | null;
+          postal_code?: string | null;
+          city?: string | null;
+          notes?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       properties: {
         Row: {
           id: string;
@@ -128,6 +175,7 @@ export interface Database {
           geofence_radius: number;
           is_active: boolean;
           organization_id: string;
+          client_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -143,6 +191,7 @@ export interface Database {
           geofence_radius?: number;
           is_active?: boolean;
           organization_id: string;
+          client_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -158,6 +207,7 @@ export interface Database {
           geofence_radius?: number;
           is_active?: boolean;
           organization_id?: string;
+          client_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -714,6 +764,7 @@ export type Aufgabe = Database['public']['Tables']['aufgaben']['Row'];
 export type ChecklistItemCompletion = Database['public']['Tables']['checklist_item_completions']['Row'];
 export type AuthCredentials = Database['public']['Tables']['auth_credentials']['Row'];
 export type AuthAuditLog = Database['public']['Tables']['auth_audit_log']['Row'];
+export type Client = Database['public']['Tables']['clients']['Row'];
 export type RolePermission = Database['public']['Tables']['role_permissions']['Row'];
 export type VacationRequest = Database['public']['Tables']['vacation_requests']['Row'];
 
@@ -726,6 +777,7 @@ export type ChecklistTemplateInsert = Database['public']['Tables']['checklist_te
 export type IssueInsert = Database['public']['Tables']['issues']['Insert'];
 export type AufgabeInsert = Database['public']['Tables']['aufgaben']['Insert'];
 export type ChecklistItemCompletionInsert = Database['public']['Tables']['checklist_item_completions']['Insert'];
+export type ClientInsert = Database['public']['Tables']['clients']['Insert'];
 export type VacationRequestInsert = Database['public']['Tables']['vacation_requests']['Insert'];
 
 // Update types
@@ -736,6 +788,7 @@ export type TimeEntryUpdate = Database['public']['Tables']['time_entries']['Upda
 export type ChecklistTemplateUpdate = Database['public']['Tables']['checklist_templates']['Update'];
 export type IssueUpdate = Database['public']['Tables']['issues']['Update'];
 export type AufgabeUpdate = Database['public']['Tables']['aufgaben']['Update'];
+export type ClientUpdate = Database['public']['Tables']['clients']['Update'];
 export type VacationRequestUpdate = Database['public']['Tables']['vacation_requests']['Update'];
 
 // Checklist item structure
@@ -767,6 +820,10 @@ export interface AufgabeWithRelations extends Aufgabe {
   creator: Profile;
   assignee: Profile | null;
   source_meldung: Issue | null;
+}
+
+export interface PropertyWithClient extends Property {
+  clients: Client | null;
 }
 
 export interface VacationRequestWithUser extends VacationRequest {

@@ -12,6 +12,7 @@ import {
   User,
   Users,
   Building2,
+  Briefcase,
   Shield,
   CalendarDays,
   Palmtree,
@@ -53,6 +54,7 @@ const mainNavItems: NavItem[] = [
 const adminNavItems: NavItem[] = [
   { href: '/admin/users', label: 'Benutzer', icon: Users, requireAdmin: true, requireOwner: true },
   { href: '/admin/properties', label: 'Liegenschaften', icon: Building2, requireAdmin: true },
+  { href: '/admin/clients', label: 'Kunden', icon: Briefcase, requireAdmin: true },
   { href: '/admin/checklists', label: 'Checklisten', icon: ClipboardList, requireAdmin: true },
   { href: '/admin/activity', label: 'Aktivitäten', icon: Activity, requireAdmin: true },
   { href: '/admin/time-overview', label: 'Zeitübersicht', icon: Clock, requireAdmin: true },

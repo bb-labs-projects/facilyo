@@ -28,7 +28,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { ErrorBoundary } from '@/components/error-boundary';
-import type { Property, PropertyInsert, PropertyUpdate, PropertyType, Profile } from '@/types/database';
+import type { Property, PropertyInsert, PropertyUpdate, PropertyType, Profile, Client, ClientInsert } from '@/types/database';
 import { getInitials } from '@/lib/utils';
 
 const propertyTypeLabels: Record<PropertyType, string> = {
@@ -73,6 +73,17 @@ function AdminPropertiesPageContent() {
   const [longitude, setLongitude] = useState('');
   const [geofenceRadius, setGeofenceRadius] = useState('100');
 
+  // Client selection state
+  const [selectedClientId, setSelectedClientId] = useState<string>('');
+  const [creatingNewClient, setCreatingNewClient] = useState(false);
+  const [newClientName, setNewClientName] = useState('');
+  const [newClientContactPerson, setNewClientContactPerson] = useState('');
+  const [newClientEmail, setNewClientEmail] = useState('');
+  const [newClientPhone, setNewClientPhone] = useState('');
+  const [newClientAddress, setNewClientAddress] = useState('');
+  const [newClientPostalCode, setNewClientPostalCode] = useState('');
+  const [newClientCity, setNewClientCity] = useState('');
+
   // Validation state
   const [latitudeError, setLatitudeError] = useState<string | null>(null);
   const [longitudeError, setLongitudeError] = useState<string | null>(null);
@@ -106,6 +117,22 @@ function AdminPropertiesPageContent() {
 
       if (error) throw error;
       return data as Profile[];
+    },
+  });
+
+  // Fetch active clients for dropdown
+  const { data: activeClients = [] } = useQuery({
+    queryKey: ['active-clients'],
+    queryFn: async () => {
+      const supabase = getClient();
+      const { data, error } = await (supabase as any)
+        .from('clients')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      return data as Client[];
     },
   });
 
@@ -372,6 +399,15 @@ function AdminPropertiesPageContent() {
     setGeofenceRadius('100');
     setLatitudeError(null);
     setLongitudeError(null);
+    setSelectedClientId('');
+    setCreatingNewClient(false);
+    setNewClientName('');
+    setNewClientContactPerson('');
+    setNewClientEmail('');
+    setNewClientPhone('');
+    setNewClientAddress('');
+    setNewClientPostalCode('');
+    setNewClientCity('');
     setEditingProperty(null);
     setShowForm(false);
   };
@@ -387,6 +423,8 @@ function AdminPropertiesPageContent() {
     setGeofenceRadius(property.geofence_radius.toString());
     setLatitudeError(null);
     setLongitudeError(null);
+    setSelectedClientId(property.client_id || '');
+    setCreatingNewClient(false);
     setEditingProperty(property);
     setShowForm(true);
   };
@@ -491,6 +529,38 @@ function AdminPropertiesPageContent() {
     }
 
     const parsedRadius = parseInt(geofenceRadius.trim());
+
+    // If creating a new client inline, insert it first
+    let clientId: string | null = selectedClientId || null;
+    if (creatingNewClient && newClientName.trim()) {
+      try {
+        const supabase = getClient();
+        await ensureValidSession();
+        const { data: newClient, error } = await (supabase as any)
+          .from('clients')
+          .insert({
+            organization_id: organizationId,
+            name: newClientName.trim(),
+            contact_person: newClientContactPerson.trim() || null,
+            email: newClientEmail.trim() || null,
+            phone: newClientPhone.trim() || null,
+            address: newClientAddress.trim() || null,
+            postal_code: newClientPostalCode.trim() || null,
+            city: newClientCity.trim() || null,
+          } as ClientInsert)
+          .select()
+          .single();
+
+        if (error) throw error;
+        clientId = newClient.id;
+        queryClient.invalidateQueries({ queryKey: ['active-clients'] });
+        queryClient.invalidateQueries({ queryKey: ['admin-clients'] });
+      } catch (err: any) {
+        toast.error(`Fehler beim Erstellen des Kunden: ${err.message}`);
+        return;
+      }
+    }
+
     const data: PropertyInsert | PropertyUpdate = {
       name: name.trim(),
       address: address.trim(),
@@ -500,6 +570,7 @@ function AdminPropertiesPageContent() {
       latitude: parsedLatitude,
       longitude: parsedLongitude,
       geofence_radius: isNaN(parsedRadius) || parsedRadius < 0 ? 100 : parsedRadius,
+      client_id: clientId,
     };
 
     if (editingProperty) {
@@ -790,6 +861,103 @@ function AdminPropertiesPageContent() {
               />
             </div>
 
+            {/* Client selector */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Kunde</label>
+              <select
+                value={creatingNewClient ? '__new__' : selectedClientId}
+                onChange={(e) => {
+                  if (e.target.value === '__new__') {
+                    setCreatingNewClient(true);
+                    setSelectedClientId('');
+                  } else {
+                    setCreatingNewClient(false);
+                    setSelectedClientId(e.target.value);
+                  }
+                }}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="">Kein Kunde</option>
+                {activeClients.map((client) => (
+                  <option key={client.id} value={client.id}>
+                    {client.name}
+                  </option>
+                ))}
+                <option value="__new__">+ Neuen Kunden erstellen</option>
+              </select>
+            </div>
+
+            {/* Inline new client fields */}
+            {creatingNewClient && (
+              <div className="space-y-3 rounded-lg border border-dashed border-primary-300 bg-primary-50/50 p-4">
+                <p className="text-sm font-medium text-primary-700">Neuer Kunde</p>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    Name <span className="text-error-500">*</span>
+                  </label>
+                  <Input
+                    value={newClientName}
+                    onChange={(e) => setNewClientName(e.target.value)}
+                    placeholder="Firmenname oder Person"
+                    required={creatingNewClient}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Kontaktperson</label>
+                  <Input
+                    value={newClientContactPerson}
+                    onChange={(e) => setNewClientContactPerson(e.target.value)}
+                    placeholder="Ansprechpartner"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">E-Mail</label>
+                    <Input
+                      type="email"
+                      value={newClientEmail}
+                      onChange={(e) => setNewClientEmail(e.target.value)}
+                      placeholder="email@beispiel.ch"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Telefon</label>
+                    <Input
+                      value={newClientPhone}
+                      onChange={(e) => setNewClientPhone(e.target.value)}
+                      placeholder="+41 79 123 45 67"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Adresse</label>
+                  <Input
+                    value={newClientAddress}
+                    onChange={(e) => setNewClientAddress(e.target.value)}
+                    placeholder="Strasse und Hausnummer"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">PLZ</label>
+                    <Input
+                      value={newClientPostalCode}
+                      onChange={(e) => setNewClientPostalCode(e.target.value)}
+                      placeholder="8000"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Ort</label>
+                    <Input
+                      value={newClientCity}
+                      onChange={(e) => setNewClientCity(e.target.value)}
+                      placeholder="Zürich"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="flex gap-3 pt-4">
               <Button
                 type="button"
@@ -802,7 +970,7 @@ function AdminPropertiesPageContent() {
               <Button
                 type="submit"
                 className="flex-1"
-                disabled={isSubmitting || !name.trim() || !address.trim() || !city.trim() || !postalCode.trim() || !!latitudeError || !!longitudeError}
+                disabled={isSubmitting || !name.trim() || !address.trim() || !city.trim() || !postalCode.trim() || !!latitudeError || !!longitudeError || (creatingNewClient && !newClientName.trim())}
               >
                 {isGeocoding
                   ? 'Koordinaten werden ermittelt...'
