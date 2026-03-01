@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { cn, hapticFeedback } from '@/lib/utils';
 import { getClient } from '@/lib/supabase/client';
+import { useAuthStore } from '@/stores/auth-store';
 
 interface PhotoCaptureProps {
   photos: string[];
@@ -21,6 +22,7 @@ export function PhotoCapture({
   maxPhotos = 5,
   className,
 }: PhotoCaptureProps) {
+  const organizationId = useAuthStore((state) => state.organizationId);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -52,7 +54,7 @@ export function PhotoCapture({
     const timestamp = Date.now();
     const extension = file.name.split('.').pop() || 'jpg';
     const filename = `${timestamp}-${Math.random().toString(36).substr(2, 9)}.${extension}`;
-    const path = `issues/${filename}`;
+    const path = `${organizationId}/issues/${filename}`;
 
     // Upload to Supabase Storage
     const { data, error } = await supabase.storage

@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { cn, hapticFeedback } from '@/lib/utils';
 import { getClient } from '@/lib/supabase/client';
+import { useAuthStore } from '@/stores/auth-store';
 import type { ChecklistItem as ChecklistItemType } from '@/types/database';
 
 interface ChecklistItemProps {
@@ -210,6 +211,7 @@ interface PhotoInputProps {
 }
 
 function PhotoInput({ value, onChange, label, required }: PhotoInputProps) {
+  const organizationId = useAuthStore((state) => state.organizationId);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -236,7 +238,7 @@ function PhotoInput({ value, onChange, label, required }: PhotoInputProps) {
     const timestamp = Date.now();
     const extension = file.name.split('.').pop() || 'jpg';
     const filename = `${timestamp}-${Math.random().toString(36).substr(2, 9)}.${extension}`;
-    const path = `checklists/${filename}`;
+    const path = `${organizationId}/checklists/${filename}`;
 
     const { data, error } = await supabase.storage
       .from('photos')

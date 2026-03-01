@@ -564,6 +564,7 @@ function PhotoItem({
   onChange: (value: string) => void;
   required?: boolean;
 }) {
+  const organizationId = useAuthStore((state) => state.organizationId);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -590,7 +591,7 @@ function PhotoItem({
     const timestamp = Date.now();
     const extension = file.name.split('.').pop() || 'jpg';
     const filename = `${timestamp}-${Math.random().toString(36).substr(2, 9)}.${extension}`;
-    const path = `checklists/${filename}`;
+    const path = `${organizationId}/checklists/${filename}`;
 
     const { data, error } = await supabase.storage
       .from('photos')

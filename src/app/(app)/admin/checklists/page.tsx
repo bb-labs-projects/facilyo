@@ -349,7 +349,7 @@ export default function AdminChecklistsPage() {
       const timestamp = Date.now();
       const extension = file.name.split('.').pop() || (isPdf ? 'pdf' : 'jpg');
       const filename = `${timestamp}-${Math.random().toString(36).substr(2, 9)}.${extension}`;
-      const path = `checklists/templates/${filename}`;
+      const path = `${organizationId}/checklists/templates/${filename}`;
 
       const { data, error } = await supabase.storage
         .from('photos')
