@@ -66,7 +66,7 @@ export function Header({
         className
       )}
     >
-      <div className="flex h-14 items-center px-4">
+      <div className="flex h-[60px] items-center px-4">
         {/* Left section */}
         <div className="flex items-center gap-2 flex-1">
           {/* Hamburger menu for mobile */}
