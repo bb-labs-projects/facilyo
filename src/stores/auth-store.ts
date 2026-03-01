@@ -272,7 +272,7 @@ export const useAuthStore = create<AuthStore>()(
       },
     }),
     {
-      name: 'facility-track-auth',
+      name: 'facilyo-auth',
       partialize: (state) => ({
         // Only persist minimal data
         isAuthenticated: state.isAuthenticated,

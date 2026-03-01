@@ -133,7 +133,7 @@ export async function middleware(request: NextRequest) {
   // by checking the cookie that zustand persist creates
   if (user && !isChangePasswordAllowedPath) {
     try {
-      const authCookie = request.cookies.get('facility-track-auth')?.value;
+      const authCookie = request.cookies.get('facilyo-auth')?.value;
       if (authCookie) {
         const authState = JSON.parse(authCookie);
         if (authState.state?.mustChangePassword) {

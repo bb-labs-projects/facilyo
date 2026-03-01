@@ -4,57 +4,57 @@
 
 @layer base {
   :root {
-    --background: 206 20% 98%;
-    --foreground: 206 21% 15%;
+    --background: 155 20% 98%;
+    --foreground: 155 21% 15%;
     --card: 0 0% 100%;
-    --card-foreground: 206 21% 15%;
+    --card-foreground: 155 21% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 206 21% 15%;
-    --primary: 206 21% 52%;
+    --popover-foreground: 155 21% 15%;
+    --primary: 155 100% 43%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 206 20% 96%;
-    --secondary-foreground: 206 21% 15%;
-    --muted: 206 20% 96%;
-    --muted-foreground: 206 15% 45%;
-    --accent: 206 20% 96%;
-    --accent-foreground: 206 21% 15%;
+    --secondary: 155 20% 96%;
+    --secondary-foreground: 155 21% 15%;
+    --muted: 155 20% 96%;
+    --muted-foreground: 155 15% 45%;
+    --accent: 155 20% 96%;
+    --accent-foreground: 155 21% 15%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 206 40% 98%;
-    --border: 206 20% 91%;
-    --input: 206 20% 91%;
-    --ring: 206 21% 52%;
+    --destructive-foreground: 155 40% 98%;
+    --border: 155 20% 91%;
+    --input: 155 20% 91%;
+    --ring: 155 100% 43%;
     --radius: 0.75rem;
 
     /* Sidebar-specific variables */
-    --sidebar: 206 21% 35%;
-    --sidebar-foreground: 206 20% 98%;
+    --sidebar: 220 46% 9%;
+    --sidebar-foreground: 155 20% 98%;
 
-    /* Flückiger brand colors */
-    --brand: 206 21% 52%;
-    --brand-light: 206 21% 62%;
-    --brand-dark: 206 21% 35%;
+    /* Facilyo brand colors */
+    --brand: 155 100% 43%;
+    --brand-light: 155 80% 55%;
+    --brand-dark: 155 100% 30%;
   }
 
   .dark {
-    --background: 206 15% 6%;
-    --foreground: 206 20% 98%;
-    --card: 206 15% 6%;
-    --card-foreground: 206 20% 98%;
-    --popover: 206 15% 6%;
-    --popover-foreground: 206 20% 98%;
-    --primary: 206 21% 62%;
-    --primary-foreground: 206 15% 6%;
-    --secondary: 206 15% 18%;
-    --secondary-foreground: 206 20% 98%;
-    --muted: 206 15% 18%;
-    --muted-foreground: 206 15% 65%;
-    --accent: 206 15% 18%;
-    --accent-foreground: 206 20% 98%;
+    --background: 220 46% 6%;
+    --foreground: 155 20% 98%;
+    --card: 220 46% 6%;
+    --card-foreground: 155 20% 98%;
+    --popover: 220 46% 6%;
+    --popover-foreground: 155 20% 98%;
+    --primary: 155 100% 43%;
+    --primary-foreground: 220 46% 6%;
+    --secondary: 220 30% 18%;
+    --secondary-foreground: 155 20% 98%;
+    --muted: 220 30% 18%;
+    --muted-foreground: 155 15% 65%;
+    --accent: 220 30% 18%;
+    --accent-foreground: 155 20% 98%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 206 20% 98%;
-    --border: 206 15% 18%;
-    --input: 206 15% 18%;
-    --ring: 206 21% 62%;
+    --destructive-foreground: 155 20% 98%;
+    --border: 220 30% 18%;
+    --input: 220 30% 18%;
+    --ring: 155 100% 43%;
   }
 
   * {

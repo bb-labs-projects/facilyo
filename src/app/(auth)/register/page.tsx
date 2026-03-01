@@ -129,7 +129,7 @@ export default function RegisterPage() {
               <Input
                 label="Firmenname"
                 type="text"
-                placeholder="Muster Hauswartung GmbH"
+                placeholder="Muster Facility GmbH"
                 error={errors.companyName?.message}
                 {...register('companyName')}
                 onChange={handleCompanyNameChange}

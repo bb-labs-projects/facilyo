@@ -64,7 +64,7 @@ export default function LoginPage() {
       <div className="flex justify-center mb-8 w-full">
         <Image
           src="/logo.png"
-          alt="Flückiger Hauswartung"
+          alt="Facilyo"
           width={400}
           height={120}
           className="w-full max-w-sm object-contain"

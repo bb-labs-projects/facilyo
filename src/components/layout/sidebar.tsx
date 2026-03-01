@@ -94,7 +94,7 @@ export function Sidebar() {
       <div className="flex items-center justify-center border-b border-primary-800 p-4 bg-slate-50">
         <Image
           src="/logo.png"
-          alt="Flückiger Hauswartung"
+          alt="Facilyo"
           width={200}
           height={60}
           className="w-full object-contain"
