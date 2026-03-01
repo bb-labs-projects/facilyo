@@ -91,7 +91,7 @@ export function Sidebar() {
   return (
     <aside className="hidden lg:flex fixed inset-y-0 left-0 z-50 w-64 flex-col bg-primary-900 text-slate-100">
       {/* Logo/Branding */}
-      <div className="flex items-center border-b border-primary-800 px-6 py-4">
+      <div className="flex h-14 items-center border-b border-primary-800 px-6">
         <Logo variant="light" />
       </div>
 
