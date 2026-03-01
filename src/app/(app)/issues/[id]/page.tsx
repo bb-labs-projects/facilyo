@@ -125,7 +125,7 @@ export default function IssueDetailPage() {
     },
     onSuccess: async () => {
       toast.success('Meldung wurde gelöscht');
-      await queryClient.invalidateQueries({ queryKey: ['issues'] });
+      await queryClient.invalidateQueries({ queryKey: ['meldungen'] });
       await queryClient.invalidateQueries({ queryKey: ['open-issues-count'] });
       router.push('/issues');
     },
