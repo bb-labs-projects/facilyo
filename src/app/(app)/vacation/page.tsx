@@ -65,6 +65,7 @@ export default function VacationPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const profile = useAuthStore((state) => state.profile);
+  const organizationId = useAuthStore((state) => state.organizationId);
   const { canManageVacations } = usePermissions();
   const { markAsSeen } = useVacationNotificationCount();
 
@@ -453,6 +454,7 @@ export default function VacationPage() {
                 start_time: wdStart,
                 end_time: wdEnd,
                 is_finalized: !useHalfDay,
+                organization_id: organizationId,
               })
               .select()
               .single();
@@ -481,6 +483,7 @@ export default function VacationPage() {
                 start_time: entryStart,
                 end_time: entryEnd,
                 status: 'completed',
+                organization_id: organizationId,
               })
               .select('id')
               .single();

@@ -30,10 +30,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fetch auth credentials by username
+    // Fetch auth credentials by username (join profiles and organizations)
     const { data: credentials, error: credError } = await (supabase as any)
       .from('auth_credentials')
-      .select('*, profiles(*)')
+      .select('*, profiles(*, organizations:organization_id(*))')
       .eq('username', username.toLowerCase())
       .single();
 
@@ -97,6 +97,23 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json(
         { error: 'Ihr Konto ist deaktiviert. Bitte kontaktieren Sie den Administrator.' },
+        { status: 403 }
+      );
+    }
+
+    // Check if organization is active (skip for super admins)
+    const organization = profile.organizations as any;
+    if (!profile.is_super_admin && organization && organization.is_active === false) {
+      await logAuditEvent(supabase, {
+        user_id: credentials.user_id,
+        username,
+        event_type: 'login_failed_org_deactivated',
+        ip_address: ip,
+        user_agent: userAgent,
+      });
+
+      return NextResponse.json(
+        { error: 'Ihre Organisation ist deaktiviert. Bitte kontaktieren Sie den Support.' },
         { status: 403 }
       );
     }
@@ -206,6 +223,8 @@ export async function POST(request: NextRequest) {
         lastName: profile.last_name,
         role: profile.role,
       },
+      organizationId: profile.organization_id,
+      isSuperAdmin: profile.is_super_admin || false,
       mustChangePassword: credentials.must_change_password,
     });
   } catch (error) {

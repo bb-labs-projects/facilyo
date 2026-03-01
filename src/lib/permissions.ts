@@ -72,15 +72,17 @@ const defaultPermissions: Record<UserRole, Record<PermissionName, boolean>> = {
   },
 };
 
-// Permission cache
-let permissionsCache: Map<string, boolean> | null = null;
-let cacheTimestamp = 0;
+// Permission cache scoped by organization
+const permissionsCacheByOrg = new Map<string, { map: Map<string, boolean>; timestamp: number }>();
 const CACHE_TTL = 60000; // 1 minute
 
-// Load permissions from database
-export async function loadPermissions(supabase: any): Promise<Map<string, boolean>> {
-  if (permissionsCache && Date.now() - cacheTimestamp < CACHE_TTL) {
-    return permissionsCache;
+// Load permissions from database (scoped by organization)
+export async function loadPermissions(supabase: any, organizationId?: string): Promise<Map<string, boolean>> {
+  const cacheKey = organizationId || '__default__';
+  const cached = permissionsCacheByOrg.get(cacheKey);
+
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.map;
   }
 
   try {
@@ -98,8 +100,7 @@ export async function loadPermissions(supabase: any): Promise<Map<string, boolea
       map.set(`${row.role}:${row.permission}`, row.enabled);
     });
 
-    permissionsCache = map;
-    cacheTimestamp = Date.now();
+    permissionsCacheByOrg.set(cacheKey, { map, timestamp: Date.now() });
     return map;
   } catch (error) {
     console.error('Failed to load permissions:', error);
@@ -155,8 +156,7 @@ export function hasPermissionFromMap(
 
 // Clear the permissions cache (call after updating permissions in DB)
 export function clearPermissionsCache(): void {
-  permissionsCache = null;
-  cacheTimestamp = 0;
+  permissionsCacheByOrg.clear();
 }
 
 // Legacy permission check functions (use default values as fallback)

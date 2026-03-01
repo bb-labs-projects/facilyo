@@ -45,6 +45,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { swissFormat } from '@/lib/i18n';
@@ -128,6 +129,7 @@ function CalendarPageContent() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const permissions = usePermissions();
+  const organizationId = useAuthStore((state) => state.organizationId);
   const [viewMode, setViewMode] = useState<ViewMode>('week');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -313,7 +315,7 @@ function CalendarPageContent() {
       } else {
         const { data: newWorkDay, error: wdError } = await (supabase
           .from('work_days') as any)
-          .insert({ user_id: selectedUserId, date: dateStr, start_time: input.start_time })
+          .insert({ user_id: selectedUserId, date: dateStr, start_time: input.start_time, organization_id: organizationId })
           .select()
           .single();
         if (wdError) throw wdError;
@@ -334,6 +336,7 @@ function CalendarPageContent() {
           status: 'completed',
           pause_duration: 0,
           notes: input.notes,
+          organization_id: organizationId,
         });
 
       if (error) throw error;

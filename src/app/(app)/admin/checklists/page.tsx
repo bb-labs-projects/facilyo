@@ -40,6 +40,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import type {
@@ -66,6 +67,7 @@ export default function AdminChecklistsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const permissions = usePermissions();
+  const organizationId = useAuthStore((state) => state.organizationId);
 
   const [showForm, setShowForm] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<ChecklistTemplateWithProperty | null>(null);
@@ -134,6 +136,7 @@ export default function AdminChecklistsPage() {
         items: data.items,
         is_active: data.is_active,
         image_url: data.image_url,
+        organization_id: organizationId,
       };
       const { data: result, error } = await (supabase as any)
         .from('checklist_templates')

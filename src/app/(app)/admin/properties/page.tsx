@@ -24,6 +24,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -51,6 +52,7 @@ function AdminPropertiesPageContent() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const permissions = usePermissions();
+  const organizationId = useAuthStore((state) => state.organizationId);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showInactiveProperties, setShowInactiveProperties] = useState(false);
@@ -171,7 +173,7 @@ function AdminPropertiesPageContent() {
 
       const { data: result, error } = await (supabase as any)
         .from('properties')
-        .insert(data)
+        .insert({ ...data, organization_id: organizationId })
         .select()
         .single();
 
@@ -182,7 +184,7 @@ function AdminPropertiesPageContent() {
           await supabase.auth.refreshSession();
           const { data: retryResult, error: retryError } = await (supabase as any)
             .from('properties')
-            .insert(data)
+            .insert({ ...data, organization_id: organizationId })
             .select()
             .single();
 
@@ -297,7 +299,7 @@ function AdminPropertiesPageContent() {
       if (assign) {
         const { error } = await (supabase as any)
           .from('property_assignments')
-          .insert({ property_id: propertyId, user_id: userId });
+          .insert({ property_id: propertyId, user_id: userId, organization_id: organizationId });
         if (error) throw error;
       } else {
         const { error } = await (supabase as any)
@@ -330,7 +332,7 @@ function AdminPropertiesPageContent() {
         if (unassignedUsers.length > 0) {
           const { error } = await (supabase as any)
             .from('property_assignments')
-            .insert(unassignedUsers.map(u => ({ property_id: propertyId, user_id: u.id })));
+            .insert(unassignedUsers.map(u => ({ property_id: propertyId, user_id: u.id, organization_id: organizationId })));
           if (error) throw error;
         }
       } else {

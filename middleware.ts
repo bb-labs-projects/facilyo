@@ -59,7 +59,7 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Paths that don't require authentication
-  const publicPaths = ['/login', '/api/push', '/api/auth/login'];
+  const publicPaths = ['/login', '/register', '/api/push', '/api/auth/login', '/api/auth/register'];
   const isPublicPath = publicPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path)
   );
@@ -101,6 +101,27 @@ export async function middleware(request: NextRequest) {
       }
     } catch {
       // On error, redirect away from admin for safety
+      const url = request.nextUrl.clone();
+      url.pathname = '/';
+      return NextResponse.redirect(url);
+    }
+  }
+
+  // Super-admin route protection
+  if (user && request.nextUrl.pathname.startsWith('/super-admin')) {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('is_super_admin')
+        .eq('id', user.id)
+        .single();
+
+      if (!profile || !profile.is_super_admin) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/';
+        return NextResponse.redirect(url);
+      }
+    } catch {
       const url = request.nextUrl.clone();
       url.pathname = '/';
       return NextResponse.redirect(url);

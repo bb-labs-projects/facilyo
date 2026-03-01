@@ -18,6 +18,8 @@ interface AuthState {
   error: string | null;
   mustChangePassword: boolean;
   username: string | null;
+  organizationId: string | null;
+  isSuperAdmin: boolean;
 }
 
 interface LoginResponse {
@@ -30,6 +32,8 @@ interface LoginResponse {
     lastName: string;
     role: string;
   };
+  organizationId: string;
+  isSuperAdmin: boolean;
   mustChangePassword: boolean;
   sessionToken?: string;
   error?: string;
@@ -63,6 +67,8 @@ export const useAuthStore = create<AuthStore>()(
       error: null,
       mustChangePassword: false,
       username: null,
+      organizationId: null,
+      isSuperAdmin: false,
 
       // Actions
       login: async (username: string, password: string) => {
@@ -112,6 +118,8 @@ export const useAuthStore = create<AuthStore>()(
             isLoading: false,
             mustChangePassword: data.mustChangePassword,
             username: data.user.username,
+            organizationId: data.organizationId,
+            isSuperAdmin: data.isSuperAdmin,
           });
 
           // Fetch profile after login
@@ -138,6 +146,8 @@ export const useAuthStore = create<AuthStore>()(
             error: null,
             mustChangePassword: false,
             username: null,
+            organizationId: null,
+            isSuperAdmin: false,
           });
         } catch (error) {
           set({ isLoading: false });
@@ -178,7 +188,11 @@ export const useAuthStore = create<AuthStore>()(
 
           if (error) throw error;
           const profileData = data as Profile;
-          set({ profile: profileData });
+          set({
+            profile: profileData,
+            organizationId: profileData.organization_id,
+            isSuperAdmin: profileData.is_super_admin,
+          });
         } catch (error: unknown) {
           // Ignore AbortError - happens when switching tabs quickly or rapid actions
           const errorMessage = error instanceof Error
@@ -264,6 +278,8 @@ export const useAuthStore = create<AuthStore>()(
         isAuthenticated: state.isAuthenticated,
         mustChangePassword: state.mustChangePassword,
         username: state.username,
+        organizationId: state.organizationId,
+        isSuperAdmin: state.isSuperAdmin,
       }),
     }
   )
@@ -276,6 +292,8 @@ export const selectIsAuthenticated = (state: AuthStore) => state.isAuthenticated
 export const selectIsLoading = (state: AuthStore) => state.isLoading;
 export const selectMustChangePassword = (state: AuthStore) => state.mustChangePassword;
 export const selectUsername = (state: AuthStore) => state.username;
+export const selectOrganizationId = (state: AuthStore) => state.organizationId;
+export const selectIsSuperAdmin = (state: AuthStore) => state.isSuperAdmin;
 export const selectFullName = (state: AuthStore) => {
   const { profile } = state;
   if (!profile) return '';

@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import Link from 'next/link';
 import { useAuthStore } from '@/stores/auth-store';
 import { loginSchema, type LoginFormData } from '@/lib/validations';
 
@@ -153,7 +154,10 @@ export default function LoginPage() {
           </form>
 
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Bei Problemen wenden Sie sich an den Administrator.
+            Noch kein Konto?{' '}
+            <Link href="/register" className="text-primary-600 hover:underline font-medium">
+              Jetzt registrieren
+            </Link>
           </p>
         </CardContent>
       </Card>

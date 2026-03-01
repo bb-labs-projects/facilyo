@@ -15,6 +15,7 @@ export default function NewIssuePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const profile = useAuthStore((state) => state.profile);
+  const organizationId = useAuthStore((state) => state.organizationId);
   const { coords } = useGeolocation();
 
   // Fetch assigned properties
@@ -50,6 +51,7 @@ export default function NewIssuePage() {
           photo_urls: data.photoUrls || [],
           latitude: coords?.lat ?? null,
           longitude: coords?.lng ?? null,
+          organization_id: organizationId,
         })
         .select()
         .single();

@@ -36,6 +36,35 @@ export type ChecklistItemType = 'checkbox' | 'text' | 'number' | 'photo';
 export interface Database {
   public: {
     Tables: {
+      organizations: {
+        Row: {
+          id: string;
+          name: string;
+          slug: string;
+          contact_email: string | null;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          slug: string;
+          contact_email?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          slug?: string;
+          contact_email?: string | null;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       profiles: {
         Row: {
           id: string;
@@ -48,6 +77,8 @@ export interface Database {
           push_subscription: Json | null;
           is_active: boolean;
           vacation_days_per_year: number;
+          organization_id: string;
+          is_super_admin: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -62,6 +93,8 @@ export interface Database {
           push_subscription?: Json | null;
           is_active?: boolean;
           vacation_days_per_year?: number;
+          organization_id: string;
+          is_super_admin?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -76,6 +109,8 @@ export interface Database {
           push_subscription?: Json | null;
           is_active?: boolean;
           vacation_days_per_year?: number;
+          organization_id?: string;
+          is_super_admin?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -92,6 +127,7 @@ export interface Database {
           longitude: number | null;
           geofence_radius: number;
           is_active: boolean;
+          organization_id: string;
           created_at: string;
           updated_at: string;
         };
@@ -106,6 +142,7 @@ export interface Database {
           longitude?: number | null;
           geofence_radius?: number;
           is_active?: boolean;
+          organization_id: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -120,6 +157,7 @@ export interface Database {
           longitude?: number | null;
           geofence_radius?: number;
           is_active?: boolean;
+          organization_id?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -129,18 +167,21 @@ export interface Database {
           id: string;
           user_id: string;
           property_id: string;
+          organization_id: string;
           created_at: string;
         };
         Insert: {
           id?: string;
           user_id: string;
           property_id: string;
+          organization_id: string;
           created_at?: string;
         };
         Update: {
           id?: string;
           user_id?: string;
           property_id?: string;
+          organization_id?: string;
           created_at?: string;
         };
       };
@@ -153,6 +194,7 @@ export interface Database {
           end_time: string | null;
           is_finalized: boolean;
           notes: string | null;
+          organization_id: string;
           created_at: string;
           updated_at: string;
         };
@@ -164,6 +206,7 @@ export interface Database {
           end_time?: string | null;
           is_finalized?: boolean;
           notes?: string | null;
+          organization_id: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -175,6 +218,7 @@ export interface Database {
           end_time?: string | null;
           is_finalized?: boolean;
           notes?: string | null;
+          organization_id?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -196,6 +240,7 @@ export interface Database {
           end_latitude: number | null;
           end_longitude: number | null;
           notes: string | null;
+          organization_id: string;
           created_at: string;
           updated_at: string;
         };
@@ -204,6 +249,7 @@ export interface Database {
           work_day_id: string;
           user_id: string;
           property_id?: string | null;
+          organization_id: string;
           entry_type?: TimeEntryType;
           activity_type?: ActivityType | null;
           start_time: string;
@@ -223,6 +269,7 @@ export interface Database {
           work_day_id?: string;
           user_id?: string;
           property_id?: string | null;
+          organization_id?: string;
           entry_type?: TimeEntryType;
           activity_type?: ActivityType | null;
           start_time?: string;
@@ -246,6 +293,7 @@ export interface Database {
           items: Json;
           image_url: string | null;
           is_active: boolean;
+          organization_id: string;
           created_at: string;
           updated_at: string;
         };
@@ -256,6 +304,7 @@ export interface Database {
           items: Json;
           image_url?: string | null;
           is_active?: boolean;
+          organization_id: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -266,6 +315,7 @@ export interface Database {
           items?: Json;
           image_url?: string | null;
           is_active?: boolean;
+          organization_id?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -276,6 +326,7 @@ export interface Database {
           template_id: string;
           time_entry_id: string;
           completed_items: Json;
+          organization_id: string;
           created_at: string;
           updated_at: string;
         };
@@ -284,6 +335,7 @@ export interface Database {
           template_id: string;
           time_entry_id: string;
           completed_items?: Json;
+          organization_id: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -292,6 +344,7 @@ export interface Database {
           template_id?: string;
           time_entry_id?: string;
           completed_items?: Json;
+          organization_id?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -314,6 +367,7 @@ export interface Database {
           converted_to_task: boolean;
           converted_at: string | null;
           converted_by: string | null;
+          organization_id: string;
           created_at: string;
           updated_at: string;
         };
@@ -322,6 +376,7 @@ export interface Database {
           property_id: string;
           reported_by: string;
           assigned_to?: string | null;
+          organization_id: string;
           category: IssueCategory;
           priority?: IssuePriority;
           status?: IssueStatus;
@@ -342,6 +397,7 @@ export interface Database {
           property_id?: string;
           reported_by?: string;
           assigned_to?: string | null;
+          organization_id?: string;
           category?: IssueCategory;
           priority?: IssuePriority;
           status?: IssueStatus;
@@ -374,6 +430,7 @@ export interface Database {
           completed_by: string | null;
           completion_photo_urls: string[];
           completion_notes: string | null;
+          organization_id: string;
           created_at: string;
           updated_at: string;
         };
@@ -382,6 +439,7 @@ export interface Database {
           property_id: string;
           source_meldung_id?: string | null;
           created_by: string;
+          organization_id: string;
           assigned_to?: string | null;
           title: string;
           description?: string | null;
@@ -400,6 +458,7 @@ export interface Database {
           property_id?: string;
           source_meldung_id?: string | null;
           created_by?: string;
+          organization_id?: string;
           assigned_to?: string | null;
           title?: string;
           description?: string | null;
@@ -425,6 +484,7 @@ export interface Database {
           text_value: string | null;
           completed_by: string | null;
           completed_at: string;
+          organization_id: string;
           created_at: string;
         };
         Insert: {
@@ -437,6 +497,7 @@ export interface Database {
           text_value?: string | null;
           completed_by?: string | null;
           completed_at?: string;
+          organization_id: string;
           created_at?: string;
         };
         Update: {
@@ -449,6 +510,7 @@ export interface Database {
           text_value?: string | null;
           completed_by?: string | null;
           completed_at?: string;
+          organization_id?: string;
           created_at?: string;
         };
       };
@@ -464,6 +526,7 @@ export interface Database {
           locked_until: string | null;
           last_login_at: string | null;
           password_changed_at: string | null;
+          organization_id: string;
           created_at: string;
           updated_at: string;
         };
@@ -478,6 +541,7 @@ export interface Database {
           locked_until?: string | null;
           last_login_at?: string | null;
           password_changed_at?: string | null;
+          organization_id: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -492,6 +556,7 @@ export interface Database {
           locked_until?: string | null;
           last_login_at?: string | null;
           password_changed_at?: string | null;
+          organization_id?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -505,6 +570,7 @@ export interface Database {
           ip_address: string | null;
           user_agent: string | null;
           details: Json | null;
+          organization_id: string | null;
           created_at: string;
         };
         Insert: {
@@ -515,6 +581,7 @@ export interface Database {
           ip_address?: string | null;
           user_agent?: string | null;
           details?: Json | null;
+          organization_id?: string | null;
           created_at?: string;
         };
         Update: {
@@ -525,6 +592,7 @@ export interface Database {
           ip_address?: string | null;
           user_agent?: string | null;
           details?: Json | null;
+          organization_id?: string | null;
           created_at?: string;
         };
       };
@@ -534,6 +602,7 @@ export interface Database {
           role: UserRole;
           permission: PermissionName;
           enabled: boolean;
+          organization_id: string;
           created_at: string;
           updated_at: string;
         };
@@ -542,6 +611,7 @@ export interface Database {
           role: UserRole;
           permission: PermissionName;
           enabled?: boolean;
+          organization_id: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -550,6 +620,7 @@ export interface Database {
           role?: UserRole;
           permission?: PermissionName;
           enabled?: boolean;
+          organization_id?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -568,6 +639,7 @@ export interface Database {
           reviewed_by: string | null;
           reviewed_at: string | null;
           rejection_reason: string | null;
+          organization_id: string;
           created_at: string;
           updated_at: string;
         };
@@ -584,6 +656,7 @@ export interface Database {
           reviewed_by?: string | null;
           reviewed_at?: string | null;
           rejection_reason?: string | null;
+          organization_id: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -600,6 +673,7 @@ export interface Database {
           reviewed_by?: string | null;
           reviewed_at?: string | null;
           rejection_reason?: string | null;
+          organization_id?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -625,6 +699,9 @@ export interface Database {
 }
 
 // Convenience types
+export type Organization = Database['public']['Tables']['organizations']['Row'];
+export type OrganizationInsert = Database['public']['Tables']['organizations']['Insert'];
+export type OrganizationUpdate = Database['public']['Tables']['organizations']['Update'];
 export type Profile = Database['public']['Tables']['profiles']['Row'];
 export type Property = Database['public']['Tables']['properties']['Row'];
 export type PropertyAssignment = Database['public']['Tables']['property_assignments']['Row'];

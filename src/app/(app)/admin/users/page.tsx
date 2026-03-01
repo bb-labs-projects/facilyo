@@ -59,6 +59,7 @@ function AdminUsersPageContent() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const profile = useAuthStore((state) => state.profile);
+  const organizationId = useAuthStore((state) => state.organizationId);
   const permissions = usePermissions();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -165,7 +166,7 @@ function AdminUsersPageContent() {
       if (assign) {
         const { error } = await (supabase as any)
           .from('property_assignments')
-          .insert({ user_id: userId, property_id: propertyId });
+          .insert({ user_id: userId, property_id: propertyId, organization_id: organizationId });
         if (error) throw error;
       } else {
         const { error } = await (supabase as any)
@@ -223,7 +224,7 @@ function AdminUsersPageContent() {
         if (unassignedProperties.length > 0) {
           const { error } = await (supabase as any)
             .from('property_assignments')
-            .insert(unassignedProperties.map(p => ({ user_id: userId, property_id: p.id })));
+            .insert(unassignedProperties.map(p => ({ user_id: userId, property_id: p.id, organization_id: organizationId })));
           if (error) throw error;
         }
       } else {

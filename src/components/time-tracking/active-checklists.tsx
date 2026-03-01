@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { getClient } from '@/lib/supabase/client';
+import { useAuthStore } from '@/stores/auth-store';
 import { cn, hapticFeedback } from '@/lib/utils';
 import type { ChecklistTemplate, ChecklistItem, Property } from '@/types/database';
 
@@ -34,6 +35,7 @@ interface ActiveChecklistsProps {
 
 export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveChecklistsProps) {
   const queryClient = useQueryClient();
+  const organizationId = useAuthStore((state) => state.organizationId);
   const [expandedChecklist, setExpandedChecklist] = useState<string | null>(null);
   // Local state for unsaved changes per checklist
   const [localChanges, setLocalChanges] = useState<Record<string, Record<string, unknown>>>({});
@@ -123,6 +125,7 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
             template_id: templateId,
             time_entry_id: timeEntryId,
             completed_items: completedItems,
+            organization_id: organizationId,
           });
         if (error) throw error;
       }

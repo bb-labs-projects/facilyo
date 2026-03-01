@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { TimeEntry, WorkDay, Property, TimeEntryType, ActivityType } from '@/types/database';
 import { getClient } from '@/lib/supabase/client';
+import { useAuthStore } from '@/stores/auth-store';
 
 interface TimerState {
   // Active work day
@@ -151,12 +152,14 @@ export const useTimerStore = create<TimerStore>()(
         }
 
         // Create new work day
+        const organizationId = useAuthStore.getState().organizationId;
         const { data, error } = await (supabase
           .from('work_days') as any)
           .insert({
             user_id: user.id,
             date: today,
             start_time: now,
+            organization_id: organizationId,
           })
           .select()
           .single();
@@ -242,6 +245,7 @@ export const useTimerStore = create<TimerStore>()(
 
         const now = new Date().toISOString();
 
+        const organizationId = useAuthStore.getState().organizationId;
         const { data: entry, error } = await (supabase
           .from('time_entries') as any)
           .insert({
@@ -252,6 +256,7 @@ export const useTimerStore = create<TimerStore>()(
             start_time: now,
             status: 'active',
             pause_duration: 0,
+            organization_id: organizationId,
           })
           .select()
           .single();
@@ -299,6 +304,7 @@ export const useTimerStore = create<TimerStore>()(
 
         const now = new Date().toISOString();
 
+        const organizationId = useAuthStore.getState().organizationId;
         const { data: entry, error } = await (supabase
           .from('time_entries') as any)
           .insert({
@@ -312,6 +318,7 @@ export const useTimerStore = create<TimerStore>()(
             start_latitude: coords?.lat ?? null,
             start_longitude: coords?.lng ?? null,
             pause_duration: 0,
+            organization_id: organizationId,
           })
           .select()
           .single();
@@ -391,6 +398,7 @@ export const useTimerStore = create<TimerStore>()(
           .eq('id', activeEntry.id);
 
         // Create new entry with new activity type on same property
+        const organizationId = useAuthStore.getState().organizationId;
         const { data: newEntry, error } = await (supabase
           .from('time_entries') as any)
           .insert({
@@ -402,6 +410,7 @@ export const useTimerStore = create<TimerStore>()(
             start_time: now,
             status: 'active',
             pause_duration: 0,
+            organization_id: organizationId,
           })
           .select()
           .single();
@@ -447,6 +456,7 @@ export const useTimerStore = create<TimerStore>()(
 
         const now = new Date().toISOString();
 
+        const organizationId = useAuthStore.getState().organizationId;
         const { data: entry, error } = await (supabase
           .from('time_entries') as any)
           .insert({
@@ -457,6 +467,7 @@ export const useTimerStore = create<TimerStore>()(
             start_time: now,
             status: 'active',
             pause_duration: 0,
+            organization_id: organizationId,
           })
           .select()
           .single();

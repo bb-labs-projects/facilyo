@@ -31,6 +31,7 @@ export default function NewVacationRequestPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const profile = useAuthStore((state) => state.profile);
+  const organizationId = useAuthStore((state) => state.organizationId);
 
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -131,6 +132,7 @@ export default function NewVacationRequestPage() {
         half_day_period: isHalfDayRequest ? halfDayPeriod : null,
         total_days: totalDays,
         notes: notes.trim() || null,
+        organization_id: organizationId!,
       };
 
       const { error } = await (supabase as any)

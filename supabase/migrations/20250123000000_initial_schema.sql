@@ -2,7 +2,7 @@
 -- Run this in Supabase SQL Editor
 
 -- Enable required extensions
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- uuid-ossp not needed: gen_random_uuid() is built-in on Postgres 14+
 CREATE EXTENSION IF NOT EXISTS "postgis";
 
 -- Enums
@@ -29,7 +29,7 @@ CREATE TABLE profiles (
 
 -- Properties table
 CREATE TABLE properties (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   address TEXT NOT NULL,
   city TEXT NOT NULL,
@@ -44,7 +44,7 @@ CREATE TABLE properties (
 
 -- Property assignments (many-to-many: users <-> properties)
 CREATE TABLE property_assignments (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   property_id UUID NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -53,7 +53,7 @@ CREATE TABLE property_assignments (
 
 -- Work days table
 CREATE TABLE work_days (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   date DATE NOT NULL,
   start_time TIMESTAMPTZ NOT NULL,
@@ -66,7 +66,7 @@ CREATE TABLE work_days (
 
 -- Time entries table
 CREATE TABLE time_entries (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   work_day_id UUID NOT NULL REFERENCES work_days(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   property_id UUID NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
@@ -85,7 +85,7 @@ CREATE TABLE time_entries (
 
 -- Checklist templates
 CREATE TABLE checklist_templates (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   property_id UUID NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   items JSONB NOT NULL DEFAULT '[]',
@@ -96,7 +96,7 @@ CREATE TABLE checklist_templates (
 
 -- Checklist instances (linked to time entries)
 CREATE TABLE checklist_instances (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   template_id UUID NOT NULL REFERENCES checklist_templates(id) ON DELETE CASCADE,
   time_entry_id UUID NOT NULL REFERENCES time_entries(id) ON DELETE CASCADE,
   completed_items JSONB DEFAULT '{}',
@@ -106,7 +106,7 @@ CREATE TABLE checklist_instances (
 
 -- Issues table
 CREATE TABLE issues (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   property_id UUID NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
   reported_by UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   assigned_to UUID REFERENCES profiles(id) ON DELETE SET NULL,

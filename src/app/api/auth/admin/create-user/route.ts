@@ -33,10 +33,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get current user's profile to check role
+    // Get current user's profile to check role and organization
     const { data: currentProfile, error: profileError } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, organization_id')
       .eq('id', user.id)
       .single();
 
@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
     }
 
     const userRole = (currentProfile as { role: string }).role;
+    const organizationId = (currentProfile as { organization_id: string }).organization_id;
 
     // Only admins and owners can create users
     if (!['admin', 'owner'].includes(userRole)) {
@@ -152,6 +153,7 @@ export async function POST(request: NextRequest) {
         first_name: firstName,
         last_name: lastName,
         username,
+        organization_id: organizationId,
       },
     });
 
@@ -204,6 +206,7 @@ export async function POST(request: NextRequest) {
         password_hash: passwordHash,
         must_change_password: true,
         temp_password_expires_at: tempPasswordExpires,
+        organization_id: organizationId,
       });
 
     if (credError) {

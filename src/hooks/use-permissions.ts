@@ -30,6 +30,7 @@ export interface Permissions {
   // Basic info
   role: UserRole | null;
   isAuthenticated: boolean;
+  isSuperAdmin: boolean;
 
   // Permission flags
   canManageProperties: boolean;
@@ -55,13 +56,15 @@ export interface Permissions {
 export function usePermissions(): Permissions {
   const profile = useAuthStore((state) => state.profile);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const organizationId = useAuthStore((state) => state.organizationId);
+  const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
 
   const role = profile?.role ?? null;
 
-  // Load permissions from database, falling back to defaults
+  // Load permissions from database, falling back to defaults (scoped by org)
   const { data: dbPermissions } = useQuery({
-    queryKey: ['role-permissions'],
-    queryFn: () => loadPermissions(getClient()),
+    queryKey: ['role-permissions', organizationId],
+    queryFn: () => loadPermissions(getClient(), organizationId || undefined),
     staleTime: 60000, // 1 minute
     enabled: !!role,
   });
@@ -71,6 +74,7 @@ export function usePermissions(): Permissions {
       return {
         role: null,
         isAuthenticated,
+        isSuperAdmin: false,
         canManageProperties: false,
         canManageEmployees: false,
         canManageChecklists: false,
@@ -90,6 +94,31 @@ export function usePermissions(): Permissions {
       };
     }
 
+    // Super admins have all permissions
+    if (isSuperAdmin) {
+      return {
+        role,
+        isAuthenticated,
+        isSuperAdmin: true,
+        canManageProperties: true,
+        canManageEmployees: true,
+        canManageChecklists: true,
+        canConvertMeldungen: true,
+        canManageAufgaben: true,
+        canAssignAufgaben: true,
+        canViewAllUsers: true,
+        canUpdateUserRoles: true,
+        canAccessAdminPanel: true,
+        canManageRolePermissions: true,
+        canManageUserCalendar: true,
+        canDeleteActivity: true,
+        canManageVacations: true,
+        isPrivileged: true,
+        canAssignRole: () => true,
+        getAssignableRoles: () => ['admin', 'owner', 'manager', 'employee'] as UserRole[],
+      };
+    }
+
     // Use DB permissions if loaded, otherwise fall back to hardcoded defaults
     const check = dbPermissions
       ? (permission: Parameters<typeof hasPermissionFromMap>[2]) =>
@@ -99,6 +128,7 @@ export function usePermissions(): Permissions {
     return {
       role,
       isAuthenticated,
+      isSuperAdmin: false,
       canManageProperties: check ? check('manage_properties') : canManageProperties(role),
       canManageEmployees: check ? check('manage_employees') : canManageEmployees(role),
       canManageChecklists: check ? check('manage_checklists') : canManageChecklists(role),
@@ -116,5 +146,5 @@ export function usePermissions(): Permissions {
       canAssignRole: (targetRole: UserRole) => canAssignRole(role, targetRole),
       getAssignableRoles: () => getAssignableRoles(role),
     };
-  }, [role, isAuthenticated, dbPermissions]);
+  }, [role, isAuthenticated, isSuperAdmin, dbPermissions]);
 }
