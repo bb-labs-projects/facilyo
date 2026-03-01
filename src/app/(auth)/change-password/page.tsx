@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { Logo } from '@/components/ui/logo';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Key, Eye, EyeOff, AlertCircle, ShieldCheck } from 'lucide-react';
@@ -86,14 +86,7 @@ export default function ChangePasswordPage() {
     <>
       {/* Logo */}
       <div className="flex justify-center mb-8 w-full">
-        <Image
-          src="/logo.png"
-          alt="Facilyo"
-          width={400}
-          height={120}
-          className="w-full max-w-sm object-contain"
-          priority
-        />
+        <Logo size="lg" />
       </div>
 
       {/* Change Password card */}

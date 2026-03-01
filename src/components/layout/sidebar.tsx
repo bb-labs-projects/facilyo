@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
+import { Logo } from '@/components/ui/logo';
 import { usePathname } from 'next/navigation';
 import {
   Home,
@@ -92,14 +92,7 @@ export function Sidebar() {
     <aside className="hidden lg:flex fixed inset-y-0 left-0 z-50 w-64 flex-col bg-primary-900 text-slate-100">
       {/* Logo/Branding */}
       <div className="flex items-center justify-center border-b border-primary-800 p-4 bg-slate-50">
-        <Image
-          src="/logo.png"
-          alt="Facilyo"
-          width={200}
-          height={60}
-          className="w-full object-contain"
-          priority
-        />
+        <Logo />
       </div>
 
       {/* Navigation */}

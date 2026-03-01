@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { Logo } from '@/components/ui/logo';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { LogIn, Eye, EyeOff, AlertCircle } from 'lucide-react';
@@ -62,14 +62,7 @@ export default function LoginPage() {
     <>
       {/* Logo */}
       <div className="flex justify-center mb-8 w-full">
-        <Image
-          src="/logo.png"
-          alt="Facilyo"
-          width={400}
-          height={120}
-          className="w-full max-w-sm object-contain"
-          priority
-        />
+        <Logo size="lg" />
       </div>
 
       {/* Login card */}

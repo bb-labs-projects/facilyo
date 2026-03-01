@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
+import { Logo } from '@/components/ui/logo';
 import { usePathname } from 'next/navigation';
 import {
   Home,
@@ -108,13 +108,7 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
         <SheetTitle className="sr-only">Navigation</SheetTitle>
         {/* Logo/Branding */}
         <div className="flex items-center justify-center border-b border-primary-800 p-4 bg-slate-50">
-          <Image
-            src="/logo.png"
-            alt="Facilyo"
-            width={200}
-            height={60}
-            className="w-full object-contain"
-          />
+          <Logo />
         </div>
 
         {/* Navigation */}
