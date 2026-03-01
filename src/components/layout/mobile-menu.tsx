@@ -15,6 +15,7 @@ import {
   Shield,
   CalendarDays,
   Palmtree,
+  Crown,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -203,6 +204,30 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
                     </Link>
                   );
                 })}
+              </div>
+            </>
+          )}
+          {/* Super-Admin Navigation */}
+          {permissions.isSuperAdmin && (
+            <>
+              <div className="my-4 border-t border-primary-800" />
+              <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Super-Admin
+              </p>
+              <div className="space-y-1">
+                <Link
+                  href="/super-admin"
+                  onClick={handleNavClick}
+                  className={cn(
+                    'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                    isActive('/super-admin')
+                      ? 'bg-primary-700 text-white'
+                      : 'text-slate-300 hover:bg-primary-800 hover:text-white'
+                  )}
+                >
+                  <Crown className="h-5 w-5" />
+                  <span>Super-Admin</span>
+                </Link>
               </div>
             </>
           )}
