@@ -97,7 +97,15 @@ export default function IssueDetailPage() {
         .eq('id', issueId)
         .single();
 
-      // Delete photos from storage
+      // Delete the issue row first
+      const { error } = await supabase
+        .from('issues')
+        .delete()
+        .eq('id', issueId);
+
+      if (error) throw error;
+
+      // Delete photos from storage (best-effort after issue is deleted)
       const photoUrls: string[] = (issueData as any)?.photo_urls || [];
       if (photoUrls.length > 0) {
         const storagePaths = photoUrls
@@ -108,21 +116,17 @@ export default function IssueDetailPage() {
           .filter((path): path is string => path !== null);
 
         if (storagePaths.length > 0) {
-          await supabase.storage.from('photos').remove(storagePaths);
+          const { error: storageError } = await supabase.storage.from('photos').remove(storagePaths);
+          if (storageError) {
+            console.error('Failed to delete photos from storage:', storageError);
+          }
         }
       }
-
-      const { error } = await supabase
-        .from('issues')
-        .delete()
-        .eq('id', issueId);
-
-      if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success('Meldung wurde gelöscht');
-      queryClient.invalidateQueries({ queryKey: ['issues'] });
-      queryClient.invalidateQueries({ queryKey: ['open-issues-count'] });
+      await queryClient.invalidateQueries({ queryKey: ['issues'] });
+      await queryClient.invalidateQueries({ queryKey: ['open-issues-count'] });
       router.push('/issues');
     },
     onError: (error: Error) => {
