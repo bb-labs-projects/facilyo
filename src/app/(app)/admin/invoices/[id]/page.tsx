@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -239,7 +240,7 @@ function AdminInvoiceDetailPageContent() {
 
   if (isLoading) {
     return (
-      <PageContainer header={<Header title="Rechnung" showBack backHref="/admin/invoices" />}>
+      <PageContainer header={<Header title="Rechnung" />}>
         <div className="text-center py-12 text-muted-foreground">Wird geladen...</div>
       </PageContainer>
     );
@@ -247,7 +248,7 @@ function AdminInvoiceDetailPageContent() {
 
   if (!invoice) {
     return (
-      <PageContainer header={<Header title="Rechnung" showBack backHref="/admin/invoices" />}>
+      <PageContainer header={<Header title="Rechnung" />}>
         <div className="text-center py-12 text-muted-foreground">
           <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
           <p>Rechnung nicht gefunden</p>
@@ -268,12 +269,19 @@ function AdminInvoiceDetailPageContent() {
       header={
         <Header
           title={`Rechnung ${invoice.invoice_number}`}
-          showBack
-          backHref="/admin/invoices"
         />
       }
     >
       <div className="space-y-4 max-w-3xl mx-auto">
+        {/* Back link */}
+        <Link
+          href="/admin/invoices"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Zurück zu Rechnungen
+        </Link>
+
         {/* Status Badge */}
         <div className="flex items-center gap-3">
           <span

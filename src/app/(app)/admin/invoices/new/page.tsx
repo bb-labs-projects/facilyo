@@ -23,6 +23,7 @@ import type {
   InvoiceLineItemType,
   ActivityType,
 } from '@/types/database';
+import Link from 'next/link';
 import {
   Plus,
   Trash2,
@@ -33,6 +34,7 @@ import {
   FileText,
   User,
   Calendar,
+  ArrowLeft,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -634,7 +636,7 @@ function NewInvoicePageContent() {
 
   if (clientsLoading) {
     return (
-      <PageContainer header={<Header title="Neue Rechnung" showBack backHref="/admin/invoices" />}>
+      <PageContainer header={<Header title="Neue Rechnung" />}>
         <div className="text-center py-12 text-muted-foreground">
           Wird geladen...
         </div>
@@ -643,8 +645,16 @@ function NewInvoicePageContent() {
   }
 
   return (
-    <PageContainer header={<Header title="Neue Rechnung" showBack backHref="/admin/invoices" />}>
+    <PageContainer header={<Header title="Neue Rechnung" />}>
       <div className="space-y-6">
+        {/* Back link */}
+        <Link
+          href="/admin/invoices"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Zurück zu Rechnungen
+        </Link>
         {/* Step indicator */}
         <div className="flex items-center justify-center gap-2">
           {[1, 2, 3].map((s) => (
