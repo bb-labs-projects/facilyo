@@ -608,14 +608,14 @@ export default function AdminChecklistsPage() {
                     </button>
                   </div>
                 ) : (
-                  <div className="relative rounded-lg overflow-hidden bg-slate-100 border border-slate-200 inline-block">
-                    <a href={imageUrl} target="_blank" rel="noopener noreferrer" className="block w-[200px] h-[200px]">
-                      <img src={imageUrl} alt="Pflichtenheft" className="w-full h-full object-contain" />
+                  <div className="relative rounded-lg overflow-hidden bg-slate-100 border border-slate-200">
+                    <a href={imageUrl} target="_blank" rel="noopener noreferrer" className="block">
+                      <img src={imageUrl} alt="Pflichtenheft" className="w-full max-h-[300px] object-contain" />
                     </a>
                     <button
                       type="button"
                       onClick={() => setImageUrl('')}
-                      className="absolute top-0.5 right-0.5 p-0.5 bg-error-500 text-white rounded-full shadow-md"
+                      className="absolute top-1 right-1 p-1 bg-error-500 text-white rounded-full shadow-md"
                     >
                       <X className="h-3 w-3" />
                     </button>
