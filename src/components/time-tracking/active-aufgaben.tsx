@@ -197,7 +197,7 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
           setCompletionNotes('');
         }
       }}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" onInteractOutside={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Aufgabe abschliessen</DialogTitle>
             <DialogDescription>

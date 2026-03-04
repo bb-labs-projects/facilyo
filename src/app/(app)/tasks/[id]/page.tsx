@@ -366,6 +366,37 @@ export default function AufgabeDetailPage() {
         </Card>
       )}
 
+      {/* Source meldung photos */}
+      {aufgabe.source_meldung?.photo_urls && aufgabe.source_meldung.photo_urls.length > 0 && (
+        <Card className="mb-4">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Camera className="h-4 w-4" />
+              Meldungsfotos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-2">
+              {aufgabe.source_meldung.photo_urls.map((url: string, index: number) => (
+                <a
+                  key={url}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="aspect-square rounded-lg overflow-hidden bg-muted border"
+                >
+                  <img
+                    src={url}
+                    alt={`Meldungsfoto ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </a>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Completion info */}
       {aufgabe.completed_at && (
         <Card className="mb-4 bg-success-50 border-success-200">
@@ -445,7 +476,7 @@ export default function AufgabeDetailPage() {
           setCompletionNotes('');
         }
       }}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" onInteractOutside={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Aufgabe abschliessen</DialogTitle>
             <DialogDescription>
