@@ -595,12 +595,12 @@ function AdminUsersPageContent() {
                     </div>
 
                     {/* Action buttons */}
-                    <div className="flex flex-col sm:flex-row gap-1 flex-shrink-0">
+                    <div className="flex flex-row gap-1 flex-shrink-0">
                       {user.id !== profile?.id && permissions.role && canEditUser(permissions.role, user.role) && (
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 sm:h-9 sm:w-9"
+                          className="h-8 w-8"
                           onClick={(e) => {
                             e.stopPropagation();
                             if (inactive) {
@@ -620,7 +620,7 @@ function AdminUsersPageContent() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 sm:h-9 sm:w-9"
+                          className="h-8 w-8"
                           onClick={(e) => {
                             e.stopPropagation();
                             unlockAccountMutation.mutate(user.id);
@@ -635,7 +635,7 @@ function AdminUsersPageContent() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 sm:h-9 sm:w-9"
+                          className="h-8 w-8"
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedUser(user);
@@ -650,7 +650,7 @@ function AdminUsersPageContent() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 sm:h-9 sm:w-9"
+                          className="h-8 w-8"
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedUser(user);
@@ -664,7 +664,7 @@ function AdminUsersPageContent() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 sm:h-9 sm:w-9"
+                        className="h-8 w-8"
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedUser(user);
@@ -678,7 +678,7 @@ function AdminUsersPageContent() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 sm:h-9 sm:w-9"
+                        className="h-8 w-8"
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedUser(user);
