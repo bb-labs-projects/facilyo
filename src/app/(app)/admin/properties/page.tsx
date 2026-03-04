@@ -725,7 +725,7 @@ function AdminPropertiesPageContent() {
                   </div>
                   {isSuperAdmin && property.organizations?.name && (
                     <div className="mt-2 pt-2 border-t border-purple-100">
-                      <span className="text-xs font-medium text-purple-700">{property.organizations.name}</span>
+                      <span className="badge bg-purple-100 text-purple-700 text-xs">{property.organizations.name}</span>
                     </div>
                   )}
                 </CardContent>

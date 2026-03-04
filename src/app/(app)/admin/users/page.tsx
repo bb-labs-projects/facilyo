@@ -533,155 +533,157 @@ function AdminUsersPageContent() {
             return (
               <Card key={user.id} interactive className="cursor-pointer">
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    {/* Avatar */}
+                  {/* Top row: Avatar + Info */}
+                  <div className="flex items-center gap-3">
                     {user.avatar_url ? (
                       <img
                         src={user.avatar_url}
                         alt={fullName}
-                        className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+                        className="w-10 h-10 rounded-full object-cover flex-shrink-0"
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
                         <span className="text-sm font-semibold text-primary-700">
                           {initials}
                         </span>
                       </div>
                     )}
-
-                    {/* Info */}
                     <div className="flex-1 min-w-0">
                       <h3 className="font-medium truncate">{fullName}</h3>
                       <p className="text-sm text-muted-foreground truncate">
                         {username ? `@${username}` : user.email}
                       </p>
-                      <div className="flex flex-wrap items-center gap-2 mt-1">
-                        <span className="badge badge-info text-xs">
-                          {roleLabels[user.role]}
-                        </span>
-                        {inactive && (
-                          <span className="badge bg-gray-100 text-gray-700 text-xs">
-                            Inaktiv
-                          </span>
-                        )}
-                        {locked && (
-                          <span className="badge bg-red-100 text-red-700 text-xs">
-                            Gesperrt
-                          </span>
-                        )}
-                        {needsPasswordChange && !locked && !inactive && (
-                          <span className="badge bg-amber-100 text-amber-700 text-xs">
-                            Passwort ändern
-                          </span>
-                        )}
-                        <span className="text-xs text-muted-foreground">
-                          {assignedCount} {assignedCount === 1 ? 'Liegenschaft' : 'Liegenschaften'}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {user.vacation_days_per_year ?? 25} Ferientage
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex gap-1 flex-shrink-0">
-                      {/* Activate/Deactivate button - only if can edit this user */}
-                      {user.id !== profile?.id && permissions.role && canEditUser(permissions.role, user.role) && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (inactive) {
-                              // Activate directly
-                              toggleActiveMutation.mutate({ userId: user.id, isActive: true });
-                            } else {
-                              // Show confirmation dialog for deactivation
-                              setSelectedUser(user);
-                              setShowDeactivateDialog(true);
-                            }
-                          }}
-                          aria-label={inactive ? 'Benutzer aktivieren' : 'Benutzer deaktivieren'}
-                          disabled={toggleActiveMutation.isPending}
-                        >
-                          <Power className={cn('h-4 w-4', inactive ? 'text-green-500' : 'text-gray-400')} />
-                        </Button>
-                      )}
-                      {/* Unlock button - only if can edit this user */}
-                      {locked && permissions.role && canEditUser(permissions.role, user.role) && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            unlockAccountMutation.mutate(user.id);
-                          }}
-                          aria-label="Account entsperren"
-                          disabled={unlockAccountMutation.isPending}
-                        >
-                          <Unlock className="h-4 w-4 text-red-500" />
-                        </Button>
-                      )}
-                      {/* Reset password button - only if can edit this user */}
-                      {user.id !== profile?.id && username && permissions.role && canEditUser(permissions.role, user.role) && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedUser(user);
-                            setShowResetPasswordDialog(true);
-                          }}
-                          aria-label="Passwort zurücksetzen"
-                        >
-                          <KeyRound className="h-4 w-4" />
-                        </Button>
-                      )}
-                      {/* Only show role change if can edit this user and can assign roles */}
-                      {user.id !== profile?.id && permissions.role && canEditUser(permissions.role, user.role) && assignableRoles.length > 0 && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedUser(user);
-                            setShowRoleDialog(true);
-                          }}
-                          aria-label="Rolle ändern"
-                        >
-                          <Shield className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedUser(user);
-                          setVacationDaysValue(user.vacation_days_per_year ?? 25);
-                          setShowVacationDaysDialog(true);
-                        }}
-                        aria-label="Ferientage bearbeiten"
-                      >
-                        <Palmtree className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedUser(user);
-                          setShowAssignmentsSheet(true);
-                        }}
-                        aria-label="Liegenschaften zuweisen"
-                      >
-                        <Building2 className="h-4 w-4" />
-                      </Button>
                     </div>
                   </div>
+
+                  {/* Badges row */}
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    <span className="badge badge-info text-xs">
+                      {roleLabels[user.role]}
+                    </span>
+                    {inactive && (
+                      <span className="badge bg-gray-100 text-gray-700 text-xs">
+                        Inaktiv
+                      </span>
+                    )}
+                    {locked && (
+                      <span className="badge bg-red-100 text-red-700 text-xs">
+                        Gesperrt
+                      </span>
+                    )}
+                    {needsPasswordChange && !locked && !inactive && (
+                      <span className="badge bg-amber-100 text-amber-700 text-xs">
+                        Passwort ändern
+                      </span>
+                    )}
+                    <span className="text-xs text-muted-foreground">
+                      {assignedCount} {assignedCount === 1 ? 'Liegenschaft' : 'Liegenschaften'}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {user.vacation_days_per_year ?? 25} Ferientage
+                    </span>
+                  </div>
+
+                  {/* Action buttons row */}
+                  <div className="flex flex-wrap gap-1 mt-2 -ml-2">
+                    {user.id !== profile?.id && permissions.role && canEditUser(permissions.role, user.role) && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (inactive) {
+                            toggleActiveMutation.mutate({ userId: user.id, isActive: true });
+                          } else {
+                            setSelectedUser(user);
+                            setShowDeactivateDialog(true);
+                          }
+                        }}
+                        aria-label={inactive ? 'Benutzer aktivieren' : 'Benutzer deaktivieren'}
+                        disabled={toggleActiveMutation.isPending}
+                      >
+                        <Power className={cn('h-4 w-4', inactive ? 'text-green-500' : 'text-gray-400')} />
+                      </Button>
+                    )}
+                    {locked && permissions.role && canEditUser(permissions.role, user.role) && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          unlockAccountMutation.mutate(user.id);
+                        }}
+                        aria-label="Account entsperren"
+                        disabled={unlockAccountMutation.isPending}
+                      >
+                        <Unlock className="h-4 w-4 text-red-500" />
+                      </Button>
+                    )}
+                    {user.id !== profile?.id && username && permissions.role && canEditUser(permissions.role, user.role) && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedUser(user);
+                          setShowResetPasswordDialog(true);
+                        }}
+                        aria-label="Passwort zurücksetzen"
+                      >
+                        <KeyRound className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {user.id !== profile?.id && permissions.role && canEditUser(permissions.role, user.role) && assignableRoles.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedUser(user);
+                          setShowRoleDialog(true);
+                        }}
+                        aria-label="Rolle ändern"
+                      >
+                        <Shield className="h-4 w-4" />
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedUser(user);
+                        setVacationDaysValue(user.vacation_days_per_year ?? 25);
+                        setShowVacationDaysDialog(true);
+                      }}
+                      aria-label="Ferientage bearbeiten"
+                    >
+                      <Palmtree className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedUser(user);
+                        setShowAssignmentsSheet(true);
+                      }}
+                      aria-label="Liegenschaften zuweisen"
+                    >
+                      <Building2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {/* Org badge */}
                   {isSuperAdmin && user.organizations?.name && (
                     <div className="mt-2 pt-2 border-t border-purple-100">
-                      <span className="text-xs font-medium text-purple-700">{user.organizations.name}</span>
+                      <span className="badge bg-purple-100 text-purple-700 text-xs">{user.organizations.name}</span>
                     </div>
                   )}
                 </CardContent>
