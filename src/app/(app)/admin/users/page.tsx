@@ -586,12 +586,12 @@ function AdminUsersPageContent() {
                         <span className="text-xs text-muted-foreground">
                           {user.vacation_days_per_year ?? 25} Ferientage
                         </span>
-                        {isSuperAdmin && user.organizations?.name && (
-                          <span className="sm:hidden badge bg-purple-100 text-purple-700 text-xs">
-                            {user.organizations.name}
-                          </span>
-                        )}
                       </div>
+                      {isSuperAdmin && user.organizations?.name && (
+                        <span className="sm:hidden badge bg-purple-100 text-purple-700 text-xs inline-flex mt-1">
+                          {user.organizations.name}
+                        </span>
+                      )}
                     </div>
 
                     {/* Action buttons */}
