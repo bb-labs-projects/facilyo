@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Briefcase, Plus, MapPin, Edit, Search, Power, Building2, Mail, Phone, User } from 'lucide-react';
+import { Briefcase, Plus, MapPin, Edit, Search, Power, Building2, Mail, Phone, User, Banknote, Repeat } from 'lucide-react';
 import { toast } from 'sonner';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
@@ -28,7 +28,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { ErrorBoundary } from '@/components/error-boundary';
-import type { Client, ClientInsert, ClientUpdate, Property } from '@/types/database';
+import type { Client, ClientInsert, ClientUpdate, Property, ServiceRate, ClientRateOverride, ClientSubscription, SubscriptionInterval } from '@/types/database';
 
 export default function AdminClientsPage() {
   return (
@@ -53,6 +53,23 @@ function AdminClientsPageContent() {
   const [deactivatingClient, setDeactivatingClient] = useState<Client | null>(null);
   const [showPropertiesSheet, setShowPropertiesSheet] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+
+  // Rate overrides state
+  const [showRatesSheet, setShowRatesSheet] = useState(false);
+  const [ratesClient, setRatesClient] = useState<Client | null>(null);
+  const [rateOverrides, setRateOverrides] = useState<Record<string, string>>({});
+
+  // Subscriptions state
+  const [showSubscriptionsSheet, setShowSubscriptionsSheet] = useState(false);
+  const [subscriptionsClient, setSubscriptionsClient] = useState<Client | null>(null);
+  const [showSubForm, setShowSubForm] = useState(false);
+  const [editingSub, setEditingSub] = useState<ClientSubscription | null>(null);
+  const [subName, setSubName] = useState('');
+  const [subDescription, setSubDescription] = useState('');
+  const [subAmount, setSubAmount] = useState('');
+  const [subInterval, setSubInterval] = useState<SubscriptionInterval>('monthly');
+  const [subNextBillingDate, setSubNextBillingDate] = useState('');
+  const [subIsActive, setSubIsActive] = useState(true);
 
   // Form state
   const [name, setName] = useState('');
@@ -115,6 +132,68 @@ function AdminClientsPageContent() {
       return counts;
     },
   });
+
+  // Fetch org service rates (for showing defaults in rate override sheet)
+  const { data: orgRates = [] } = useQuery({
+    queryKey: ['org-service-rates'],
+    queryFn: async () => {
+      const supabase = getClient();
+      const { data, error } = await (supabase as any)
+        .from('service_rates')
+        .select('*')
+        .eq('is_active', true);
+      if (error) throw error;
+      return data as ServiceRate[];
+    },
+  });
+
+  // Fetch rate overrides for selected client
+  const { data: clientRateOverrides = [] } = useQuery({
+    queryKey: ['client-rate-overrides', ratesClient?.id],
+    queryFn: async () => {
+      if (!ratesClient) return [];
+      const supabase = getClient();
+      const { data, error } = await (supabase as any)
+        .from('client_rate_overrides')
+        .select('*')
+        .eq('client_id', ratesClient.id);
+      if (error) throw error;
+      return data as ClientRateOverride[];
+    },
+    enabled: !!ratesClient,
+  });
+
+  // Fetch subscriptions for selected client
+  const { data: clientSubs = [] } = useQuery({
+    queryKey: ['client-subscriptions', subscriptionsClient?.id],
+    queryFn: async () => {
+      if (!subscriptionsClient) return [];
+      const supabase = getClient();
+      const { data, error } = await (supabase as any)
+        .from('client_subscriptions')
+        .select('*')
+        .eq('client_id', subscriptionsClient.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data as ClientSubscription[];
+    },
+    enabled: !!subscriptionsClient,
+  });
+
+  const ACTIVITY_TYPES = [
+    { key: 'hauswartung', label: 'Hauswartung' },
+    { key: 'rasen_maehen', label: 'Rasen mähen' },
+    { key: 'hecken_schneiden', label: 'Hecken schneiden' },
+    { key: 'regie', label: 'Regie' },
+    { key: 'reinigung', label: 'Reinigung' },
+  ];
+
+  const INTERVAL_LABELS: Record<SubscriptionInterval, string> = {
+    monthly: 'Monatlich',
+    quarterly: 'Quartalsweise',
+    half_yearly: 'Halbjährlich',
+    annually: 'Jährlich',
+  };
 
   // Session refresh helpers
   const sessionRefreshLock = useRef(false);
@@ -254,6 +333,131 @@ function AdminClientsPageContent() {
       toast.error(`Fehler: ${error.message}`);
     },
   });
+
+  // Save rate overrides mutation
+  const saveRateOverridesMutation = useMutation({
+    mutationFn: async (overrides: Record<string, string>) => {
+      if (!ratesClient) return;
+      const supabase = getClient();
+      await ensureValidSession();
+
+      for (const [activityType, rateStr] of Object.entries(overrides)) {
+        const rate = parseFloat(rateStr);
+        if (rateStr.trim() === '' || isNaN(rate)) {
+          // Delete override if empty
+          await (supabase as any)
+            .from('client_rate_overrides')
+            .delete()
+            .eq('client_id', ratesClient.id)
+            .eq('activity_type', activityType);
+        } else {
+          const { error } = await (supabase as any)
+            .from('client_rate_overrides')
+            .upsert({
+              organization_id: organizationId,
+              client_id: ratesClient.id,
+              activity_type: activityType,
+              hourly_rate: rate,
+            }, { onConflict: 'organization_id,client_id,activity_type' });
+          if (error) throw error;
+        }
+      }
+    },
+    onSuccess: () => {
+      toast.success('Stundenansätze gespeichert');
+      queryClient.invalidateQueries({ queryKey: ['client-rate-overrides', ratesClient?.id] });
+    },
+    onError: (error: Error) => {
+      toast.error(`Fehler: ${error.message}`);
+    },
+  });
+
+  // Subscription CRUD mutations
+  const saveSubMutation = useMutation({
+    mutationFn: async (data: { name: string; description: string | null; amount: number; interval: SubscriptionInterval; next_billing_date: string | null; is_active: boolean }) => {
+      if (!subscriptionsClient) return;
+      const supabase = getClient();
+      await ensureValidSession();
+
+      if (editingSub) {
+        const { error } = await (supabase as any)
+          .from('client_subscriptions')
+          .update(data)
+          .eq('id', editingSub.id);
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase as any)
+          .from('client_subscriptions')
+          .insert({
+            ...data,
+            organization_id: organizationId,
+            client_id: subscriptionsClient.id,
+          });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success(editingSub ? 'Abonnement aktualisiert' : 'Abonnement erstellt');
+      queryClient.invalidateQueries({ queryKey: ['client-subscriptions', subscriptionsClient?.id] });
+      resetSubForm();
+    },
+    onError: (error: Error) => {
+      toast.error(`Fehler: ${error.message}`);
+    },
+  });
+
+  const deleteSubMutation = useMutation({
+    mutationFn: async (subId: string) => {
+      const supabase = getClient();
+      await ensureValidSession();
+      const { error } = await (supabase as any)
+        .from('client_subscriptions')
+        .delete()
+        .eq('id', subId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Abonnement gelöscht');
+      queryClient.invalidateQueries({ queryKey: ['client-subscriptions', subscriptionsClient?.id] });
+    },
+    onError: (error: Error) => {
+      toast.error(`Fehler: ${error.message}`);
+    },
+  });
+
+  const resetSubForm = () => {
+    setSubName('');
+    setSubDescription('');
+    setSubAmount('');
+    setSubInterval('monthly');
+    setSubNextBillingDate('');
+    setSubIsActive(true);
+    setEditingSub(null);
+    setShowSubForm(false);
+  };
+
+  const openEditSubForm = (sub: ClientSubscription) => {
+    setSubName(sub.name);
+    setSubDescription(sub.description || '');
+    setSubAmount(String(sub.amount));
+    setSubInterval(sub.interval);
+    setSubNextBillingDate(sub.next_billing_date || '');
+    setSubIsActive(sub.is_active);
+    setEditingSub(sub);
+    setShowSubForm(true);
+  };
+
+  const openRatesSheet = (client: Client) => {
+    setRatesClient(client);
+    setRateOverrides({});
+    setShowRatesSheet(true);
+  };
+
+  const openSubscriptionsSheet = (client: Client) => {
+    setSubscriptionsClient(client);
+    resetSubForm();
+    setShowSubscriptionsSheet(true);
+  };
 
   // Redirect if no permission
   useEffect(() => {
@@ -461,6 +665,26 @@ function AdminClientsPageContent() {
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
+                      {permissions.canManageInvoices && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openRatesSheet(client)}
+                            title="Stundenansätze"
+                          >
+                            <Banknote className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openSubscriptionsSheet(client)}
+                            title="Abonnements"
+                          >
+                            <Repeat className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -639,6 +863,251 @@ function AdminClientsPageContent() {
                   </p>
                 </div>
               ))
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Client rate overrides sheet */}
+      <Sheet open={showRatesSheet} onOpenChange={(open) => {
+        setShowRatesSheet(open);
+        if (!open) setRatesClient(null);
+      }}>
+        <SheetContent side="bottom" className="h-[70vh]">
+          <SheetHeader>
+            <SheetTitle>
+              Stundenansätze — {ratesClient?.name}
+            </SheetTitle>
+          </SheetHeader>
+
+          <div className="mt-4 space-y-3 overflow-y-auto max-h-[calc(70vh-140px)]">
+            <p className="text-sm text-muted-foreground">
+              Kundenspezifische Ansätze überschreiben die Organisationsstandards.
+            </p>
+            {ACTIVITY_TYPES.map((at) => {
+              const orgRate = orgRates.find((r) => r.activity_type === at.key);
+              const clientOverride = clientRateOverrides.find((r) => r.activity_type === at.key);
+              const currentValue = rateOverrides[at.key] ?? (clientOverride ? String(clientOverride.hourly_rate) : '');
+
+              return (
+                <div key={at.key} className="p-3 rounded-lg border border-muted space-y-1">
+                  <label className="text-sm font-medium">{at.label}</label>
+                  {orgRate && (
+                    <p className="text-xs text-muted-foreground">
+                      Standard: CHF {orgRate.hourly_rate.toFixed(2)} / Std
+                    </p>
+                  )}
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder={orgRate ? `${orgRate.hourly_rate.toFixed(2)} (Standard)` : 'Kein Standard'}
+                    value={currentValue}
+                    onChange={(e) => setRateOverrides((prev) => ({ ...prev, [at.key]: e.target.value }))}
+                  />
+                </div>
+              );
+            })}
+
+            <Button
+              className="w-full"
+              onClick={() => saveRateOverridesMutation.mutate(rateOverrides)}
+              disabled={saveRateOverridesMutation.isPending}
+            >
+              {saveRateOverridesMutation.isPending ? 'Wird gespeichert...' : 'Speichern'}
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Client subscriptions sheet */}
+      <Sheet open={showSubscriptionsSheet} onOpenChange={(open) => {
+        setShowSubscriptionsSheet(open);
+        if (!open) {
+          setSubscriptionsClient(null);
+          resetSubForm();
+        }
+      }}>
+        <SheetContent side="bottom" className="h-[85vh]">
+          <SheetHeader>
+            <SheetTitle>
+              Abonnements — {subscriptionsClient?.name}
+            </SheetTitle>
+          </SheetHeader>
+
+          <div className="mt-4 overflow-y-auto max-h-[calc(85vh-120px)]">
+            {!showSubForm ? (
+              <div className="space-y-3">
+                <Button
+                  onClick={() => setShowSubForm(true)}
+                  className="w-full"
+                  variant="outline"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Neues Abonnement
+                </Button>
+
+                {clientSubs.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    Keine Abonnements vorhanden
+                  </p>
+                ) : (
+                  clientSubs.map((sub) => (
+                    <Card key={sub.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-medium">{sub.name}</h4>
+                              {!sub.is_active && (
+                                <span className="badge bg-gray-100 text-gray-700 text-xs">Inaktiv</span>
+                              )}
+                            </div>
+                            <p className="text-sm font-semibold text-primary-600 mt-0.5">
+                              CHF {sub.amount.toFixed(2)} / {INTERVAL_LABELS[sub.interval]}
+                            </p>
+                            {sub.description && (
+                              <p className="text-sm text-muted-foreground mt-0.5">{sub.description}</p>
+                            )}
+                            {sub.next_billing_date && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Nächste Abrechnung: {new Date(sub.next_billing_date).toLocaleDateString('de-CH')}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex gap-1 flex-shrink-0">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openEditSubForm(sub)}
+                              title="Bearbeiten"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => deleteSubMutation.mutate(sub.id)}
+                              disabled={deleteSubMutation.isPending}
+                              title="Löschen"
+                              className="text-error-500 hover:text-error-600"
+                            >
+                              <Power className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  saveSubMutation.mutate({
+                    name: subName.trim(),
+                    description: subDescription.trim() || null,
+                    amount: parseFloat(subAmount),
+                    interval: subInterval,
+                    next_billing_date: subNextBillingDate || null,
+                    is_active: subIsActive,
+                  });
+                }}
+                className="space-y-4"
+              >
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">
+                    Name <span className="text-error-500">*</span>
+                  </label>
+                  <Input
+                    value={subName}
+                    onChange={(e) => setSubName(e.target.value)}
+                    placeholder="z.B. Hauswartung Monatspauschale"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Beschreibung</label>
+                  <Input
+                    value={subDescription}
+                    onChange={(e) => setSubDescription(e.target.value)}
+                    placeholder="Optionale Beschreibung"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">
+                      Betrag (CHF) <span className="text-error-500">*</span>
+                    </label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={subAmount}
+                      onChange={(e) => setSubAmount(e.target.value)}
+                      placeholder="0.00"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Intervall</label>
+                    <select
+                      value={subInterval}
+                      onChange={(e) => setSubInterval(e.target.value as SubscriptionInterval)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      <option value="monthly">Monatlich</option>
+                      <option value="quarterly">Quartalsweise</option>
+                      <option value="half_yearly">Halbjährlich</option>
+                      <option value="annually">Jährlich</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Nächstes Abrechnungsdatum</label>
+                  <Input
+                    type="date"
+                    value={subNextBillingDate}
+                    onChange={(e) => setSubNextBillingDate(e.target.value)}
+                  />
+                </div>
+
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={subIsActive}
+                    onChange={(e) => setSubIsActive(e.target.checked)}
+                    className="rounded border-gray-300"
+                  />
+                  <span>Aktiv</span>
+                </label>
+
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={resetSubForm}
+                  >
+                    Abbrechen
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="flex-1"
+                    disabled={saveSubMutation.isPending || !subName.trim() || !subAmount}
+                  >
+                    {saveSubMutation.isPending
+                      ? 'Wird gespeichert...'
+                      : editingSub
+                      ? 'Speichern'
+                      : 'Erstellen'}
+                  </Button>
+                </div>
+              </form>
             )}
           </div>
         </SheetContent>

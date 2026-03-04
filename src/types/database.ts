@@ -21,13 +21,17 @@ export type PermissionName =
   | 'manage_role_permissions'
   | 'manage_user_calendar'
   | 'delete_activity'
-  | 'manage_vacations';
+  | 'manage_vacations'
+  | 'manage_invoices';
 export type PropertyType = 'residential' | 'commercial' | 'industrial' | 'mixed' | 'office' | 'private_maintenance';
 export type TimeEntryStatus = 'active' | 'paused' | 'completed';
 export type TimeEntryType = 'property' | 'travel' | 'break' | 'vacation';
 export type VacationStatus = 'pending' | 'approved' | 'rejected';
 export type HalfDayPeriod = 'morning' | 'afternoon';
 export type ActivityType = 'hauswartung' | 'rasen_maehen' | 'hecken_schneiden' | 'regie' | 'reinigung';
+export type InvoiceStatus = 'draft' | 'pending_approval' | 'approved' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+export type InvoiceLineItemType = 'subscription' | 'hours' | 'manual';
+export type SubscriptionInterval = 'monthly' | 'quarterly' | 'half_yearly' | 'annually';
 export type IssuePriority = 'low' | 'medium' | 'high' | 'urgent';
 export type IssueStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
 export type IssueCategory = 'damage' | 'cleaning' | 'safety' | 'maintenance' | 'other';
@@ -728,6 +732,329 @@ export interface Database {
           updated_at?: string;
         };
       };
+      organization_billing_settings: {
+        Row: {
+          id: string;
+          organization_id: string;
+          company_name: string | null;
+          company_address: string | null;
+          company_postal_code: string | null;
+          company_city: string | null;
+          company_phone: string | null;
+          company_email: string | null;
+          company_website: string | null;
+          logo_url: string | null;
+          iban: string | null;
+          qr_iban: string | null;
+          mwst_enabled: boolean;
+          mwst_rate: number;
+          mwst_number: string | null;
+          payment_terms_days: number;
+          invoice_number_prefix: string;
+          next_invoice_number: number;
+          approval_required: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          company_name?: string | null;
+          company_address?: string | null;
+          company_postal_code?: string | null;
+          company_city?: string | null;
+          company_phone?: string | null;
+          company_email?: string | null;
+          company_website?: string | null;
+          logo_url?: string | null;
+          iban?: string | null;
+          qr_iban?: string | null;
+          mwst_enabled?: boolean;
+          mwst_rate?: number;
+          mwst_number?: string | null;
+          payment_terms_days?: number;
+          invoice_number_prefix?: string;
+          next_invoice_number?: number;
+          approval_required?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          company_name?: string | null;
+          company_address?: string | null;
+          company_postal_code?: string | null;
+          company_city?: string | null;
+          company_phone?: string | null;
+          company_email?: string | null;
+          company_website?: string | null;
+          logo_url?: string | null;
+          iban?: string | null;
+          qr_iban?: string | null;
+          mwst_enabled?: boolean;
+          mwst_rate?: number;
+          mwst_number?: string | null;
+          payment_terms_days?: number;
+          invoice_number_prefix?: string;
+          next_invoice_number?: number;
+          approval_required?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      service_rates: {
+        Row: {
+          id: string;
+          organization_id: string;
+          activity_type: string;
+          description: string | null;
+          hourly_rate: number;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          activity_type: string;
+          description?: string | null;
+          hourly_rate: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          activity_type?: string;
+          description?: string | null;
+          hourly_rate?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      client_rate_overrides: {
+        Row: {
+          id: string;
+          organization_id: string;
+          client_id: string;
+          activity_type: string;
+          hourly_rate: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          client_id: string;
+          activity_type: string;
+          hourly_rate: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          client_id?: string;
+          activity_type?: string;
+          hourly_rate?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      client_subscriptions: {
+        Row: {
+          id: string;
+          organization_id: string;
+          client_id: string;
+          name: string;
+          description: string | null;
+          amount: number;
+          interval: SubscriptionInterval;
+          is_active: boolean;
+          next_billing_date: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          client_id: string;
+          name: string;
+          description?: string | null;
+          amount: number;
+          interval?: SubscriptionInterval;
+          is_active?: boolean;
+          next_billing_date?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          client_id?: string;
+          name?: string;
+          description?: string | null;
+          amount?: number;
+          interval?: SubscriptionInterval;
+          is_active?: boolean;
+          next_billing_date?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      invoices: {
+        Row: {
+          id: string;
+          organization_id: string;
+          client_id: string;
+          invoice_number: string;
+          status: InvoiceStatus;
+          issue_date: string;
+          due_date: string;
+          subtotal: number;
+          mwst_rate: number;
+          mwst_amount: number;
+          total: number;
+          pdf_url: string | null;
+          notes: string | null;
+          internal_notes: string | null;
+          approved_by: string | null;
+          approved_at: string | null;
+          sent_at: string | null;
+          sent_to_email: string | null;
+          paid_at: string | null;
+          created_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          client_id: string;
+          invoice_number: string;
+          status?: InvoiceStatus;
+          issue_date?: string;
+          due_date: string;
+          subtotal?: number;
+          mwst_rate?: number;
+          mwst_amount?: number;
+          total?: number;
+          pdf_url?: string | null;
+          notes?: string | null;
+          internal_notes?: string | null;
+          approved_by?: string | null;
+          approved_at?: string | null;
+          sent_at?: string | null;
+          sent_to_email?: string | null;
+          paid_at?: string | null;
+          created_by: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          client_id?: string;
+          invoice_number?: string;
+          status?: InvoiceStatus;
+          issue_date?: string;
+          due_date?: string;
+          subtotal?: number;
+          mwst_rate?: number;
+          mwst_amount?: number;
+          total?: number;
+          pdf_url?: string | null;
+          notes?: string | null;
+          internal_notes?: string | null;
+          approved_by?: string | null;
+          approved_at?: string | null;
+          sent_at?: string | null;
+          sent_to_email?: string | null;
+          paid_at?: string | null;
+          created_by?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      invoice_line_items: {
+        Row: {
+          id: string;
+          organization_id: string;
+          invoice_id: string;
+          line_type: InvoiceLineItemType;
+          sort_order: number;
+          description: string;
+          quantity: number;
+          unit: string;
+          unit_price: number;
+          total: number;
+          subscription_id: string | null;
+          period_start: string | null;
+          period_end: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          invoice_id: string;
+          line_type: InvoiceLineItemType;
+          sort_order?: number;
+          description: string;
+          quantity?: number;
+          unit?: string;
+          unit_price?: number;
+          total?: number;
+          subscription_id?: string | null;
+          period_start?: string | null;
+          period_end?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          invoice_id?: string;
+          line_type?: InvoiceLineItemType;
+          sort_order?: number;
+          description?: string;
+          quantity?: number;
+          unit?: string;
+          unit_price?: number;
+          total?: number;
+          subscription_id?: string | null;
+          period_start?: string | null;
+          period_end?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      invoice_time_entries: {
+        Row: {
+          id: string;
+          organization_id: string;
+          invoice_line_item_id: string;
+          time_entry_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          invoice_line_item_id: string;
+          time_entry_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          invoice_line_item_id?: string;
+          time_entry_id?: string;
+          created_at?: string;
+        };
+      };
     };
     Views: {
       [_ in never]: never;
@@ -744,6 +1071,9 @@ export interface Database {
       issue_status: IssueStatus;
       issue_category: IssueCategory;
       vacation_status: VacationStatus;
+      invoice_status: InvoiceStatus;
+      invoice_line_item_type: InvoiceLineItemType;
+      subscription_interval: SubscriptionInterval;
     };
   };
 }
@@ -767,6 +1097,13 @@ export type AuthAuditLog = Database['public']['Tables']['auth_audit_log']['Row']
 export type Client = Database['public']['Tables']['clients']['Row'];
 export type RolePermission = Database['public']['Tables']['role_permissions']['Row'];
 export type VacationRequest = Database['public']['Tables']['vacation_requests']['Row'];
+export type OrganizationBillingSettings = Database['public']['Tables']['organization_billing_settings']['Row'];
+export type ServiceRate = Database['public']['Tables']['service_rates']['Row'];
+export type ClientRateOverride = Database['public']['Tables']['client_rate_overrides']['Row'];
+export type ClientSubscription = Database['public']['Tables']['client_subscriptions']['Row'];
+export type Invoice = Database['public']['Tables']['invoices']['Row'];
+export type InvoiceLineItem = Database['public']['Tables']['invoice_line_items']['Row'];
+export type InvoiceTimeEntry = Database['public']['Tables']['invoice_time_entries']['Row'];
 
 // Insert types
 export type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];
@@ -779,6 +1116,13 @@ export type AufgabeInsert = Database['public']['Tables']['aufgaben']['Insert'];
 export type ChecklistItemCompletionInsert = Database['public']['Tables']['checklist_item_completions']['Insert'];
 export type ClientInsert = Database['public']['Tables']['clients']['Insert'];
 export type VacationRequestInsert = Database['public']['Tables']['vacation_requests']['Insert'];
+export type OrganizationBillingSettingsInsert = Database['public']['Tables']['organization_billing_settings']['Insert'];
+export type ServiceRateInsert = Database['public']['Tables']['service_rates']['Insert'];
+export type ClientRateOverrideInsert = Database['public']['Tables']['client_rate_overrides']['Insert'];
+export type ClientSubscriptionInsert = Database['public']['Tables']['client_subscriptions']['Insert'];
+export type InvoiceInsert = Database['public']['Tables']['invoices']['Insert'];
+export type InvoiceLineItemInsert = Database['public']['Tables']['invoice_line_items']['Insert'];
+export type InvoiceTimeEntryInsert = Database['public']['Tables']['invoice_time_entries']['Insert'];
 
 // Update types
 export type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
@@ -790,6 +1134,13 @@ export type IssueUpdate = Database['public']['Tables']['issues']['Update'];
 export type AufgabeUpdate = Database['public']['Tables']['aufgaben']['Update'];
 export type ClientUpdate = Database['public']['Tables']['clients']['Update'];
 export type VacationRequestUpdate = Database['public']['Tables']['vacation_requests']['Update'];
+export type OrganizationBillingSettingsUpdate = Database['public']['Tables']['organization_billing_settings']['Update'];
+export type ServiceRateUpdate = Database['public']['Tables']['service_rates']['Update'];
+export type ClientRateOverrideUpdate = Database['public']['Tables']['client_rate_overrides']['Update'];
+export type ClientSubscriptionUpdate = Database['public']['Tables']['client_subscriptions']['Update'];
+export type InvoiceUpdate = Database['public']['Tables']['invoices']['Update'];
+export type InvoiceLineItemUpdate = Database['public']['Tables']['invoice_line_items']['Update'];
+export type InvoiceTimeEntryUpdate = Database['public']['Tables']['invoice_time_entries']['Update'];
 
 // Checklist item structure
 export interface ChecklistItem {
@@ -829,4 +1180,15 @@ export interface PropertyWithClient extends Property {
 export interface VacationRequestWithUser extends VacationRequest {
   user: Profile;
   reviewer: Profile | null;
+}
+
+export interface InvoiceWithClient extends Invoice {
+  clients: Client;
+}
+
+export interface InvoiceWithDetails extends Invoice {
+  clients: Client;
+  invoice_line_items: InvoiceLineItem[];
+  creator: Profile;
+  approver: Profile | null;
 }

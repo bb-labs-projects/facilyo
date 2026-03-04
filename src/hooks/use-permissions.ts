@@ -17,6 +17,7 @@ import {
   canManageUserCalendar,
   canDeleteActivity,
   canManageVacations,
+  canManageInvoices,
   isPrivilegedRole,
   canAssignRole,
   getAssignableRoles,
@@ -46,6 +47,7 @@ export interface Permissions {
   canManageUserCalendar: boolean;
   canDeleteActivity: boolean;
   canManageVacations: boolean;
+  canManageInvoices: boolean;
   isPrivileged: boolean;
 
   // Dynamic permission checks
@@ -88,6 +90,7 @@ export function usePermissions(): Permissions {
         canManageUserCalendar: false,
         canDeleteActivity: false,
         canManageVacations: false,
+        canManageInvoices: false,
         isPrivileged: false,
         canAssignRole: () => false,
         getAssignableRoles: () => [],
@@ -113,6 +116,7 @@ export function usePermissions(): Permissions {
         canManageUserCalendar: true,
         canDeleteActivity: true,
         canManageVacations: true,
+        canManageInvoices: true,
         isPrivileged: true,
         canAssignRole: () => true,
         getAssignableRoles: () => ['admin', 'owner', 'manager', 'employee'] as UserRole[],
@@ -142,6 +146,7 @@ export function usePermissions(): Permissions {
       canManageUserCalendar: check ? check('manage_user_calendar') : canManageUserCalendar(role),
       canDeleteActivity: check ? check('delete_activity') : canDeleteActivity(role),
       canManageVacations: check ? check('manage_vacations') : canManageVacations(role),
+      canManageInvoices: check ? check('manage_invoices') : canManageInvoices(role),
       isPrivileged: isPrivilegedRole(role),
       canAssignRole: (targetRole: UserRole) => canAssignRole(role, targetRole),
       getAssignableRoles: () => getAssignableRoles(role),

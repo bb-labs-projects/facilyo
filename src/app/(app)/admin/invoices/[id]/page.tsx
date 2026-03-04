@@ -1,0 +1,535 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { Header, PageContainer } from '@/components/layout/header';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { usePermissions } from '@/hooks/use-permissions';
+import { useAuthStore } from '@/stores/auth-store';
+import { getClient } from '@/lib/supabase/client';
+import { ErrorBoundary } from '@/components/error-boundary';
+import { cn } from '@/lib/utils';
+import type { Invoice, InvoiceLineItem, Client, InvoiceStatus } from '@/types/database';
+import {
+  FileText,
+  Send,
+  Check,
+  X,
+  Edit,
+  Trash2,
+  Download,
+  ArrowLeft,
+  Clock,
+  CheckCircle,
+  AlertTriangle,
+} from 'lucide-react';
+
+const STATUS_LABELS: Record<string, string> = {
+  draft: 'Entwurf',
+  pending_approval: 'Genehmigung ausstehend',
+  approved: 'Genehmigt',
+  sent: 'Gesendet',
+  paid: 'Bezahlt',
+  overdue: 'Ueberfaellig',
+  cancelled: 'Storniert',
+};
+
+function getStatusBadgeClasses(status: string): string {
+  switch (status) {
+    case 'draft':
+      return 'bg-gray-100 text-gray-700';
+    case 'pending_approval':
+      return 'bg-yellow-100 text-yellow-700';
+    case 'approved':
+      return 'bg-blue-100 text-blue-700';
+    case 'sent':
+      return 'bg-blue-100 text-blue-700';
+    case 'paid':
+      return 'bg-green-100 text-green-700';
+    case 'overdue':
+      return 'bg-red-100 text-red-700';
+    case 'cancelled':
+      return 'bg-gray-100 text-gray-700 line-through';
+    default:
+      return 'bg-gray-100 text-gray-700';
+  }
+}
+
+function getDisplayStatus(invoice: Invoice): string {
+  if (invoice.status === 'sent' && new Date(invoice.due_date) < new Date()) {
+    return 'overdue';
+  }
+  return invoice.status;
+}
+
+function formatCHF(amount: number): string {
+  return new Intl.NumberFormat('de-CH', {
+    style: 'currency',
+    currency: 'CHF',
+  }).format(amount);
+}
+
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString('de-CH');
+}
+
+type InvoiceWithDetails = Invoice & {
+  clients: Client;
+  invoice_line_items: InvoiceLineItem[];
+};
+
+export default function AdminInvoiceDetailPage() {
+  return (
+    <ErrorBoundary>
+      <AdminInvoiceDetailPageContent />
+    </ErrorBoundary>
+  );
+}
+
+function AdminInvoiceDetailPageContent() {
+  const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const permissions = usePermissions();
+  const organizationId = useAuthStore((state) => state.organizationId);
+
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+
+  // Redirect if no permission
+  useEffect(() => {
+    if (!permissions.canManageInvoices) {
+      router.push('/admin');
+    }
+  }, [permissions.canManageInvoices, router]);
+
+  // Fetch invoice with client and line items
+  const { data: invoice, isLoading } = useQuery({
+    queryKey: ['invoice', id],
+    queryFn: async () => {
+      const supabase = getClient();
+      const { data, error } = await (supabase as any)
+        .from('invoices')
+        .select('*, clients(*), invoice_line_items(*)')
+        .eq('id', id)
+        .single();
+      if (error) throw error;
+      return data as InvoiceWithDetails;
+    },
+    enabled: !!id,
+  });
+
+  // Fetch billing settings to know if approval is required
+  const { data: billingSettings } = useQuery({
+    queryKey: ['billing-settings'],
+    queryFn: async () => {
+      const supabase = getClient();
+      const { data, error } = await (supabase as any)
+        .from('organization_billing_settings')
+        .select('*')
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Status transition mutation
+  const updateStatusMutation = useMutation({
+    mutationFn: async (newStatus: string) => {
+      const res = await fetch(`/api/invoices/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Statusaenderung fehlgeschlagen');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success('Status aktualisiert');
+      queryClient.invalidateQueries({ queryKey: ['invoice', id] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/invoices/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Loeschen fehlgeschlagen');
+    },
+    onSuccess: () => {
+      toast.success('Rechnung geloescht');
+      router.push('/admin/invoices');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+
+  if (!permissions.canManageInvoices) {
+    return null;
+  }
+
+  if (isLoading) {
+    return (
+      <PageContainer header={<Header title="Rechnung" showBack backHref="/admin/invoices" />}>
+        <div className="text-center py-12 text-muted-foreground">Wird geladen...</div>
+      </PageContainer>
+    );
+  }
+
+  if (!invoice) {
+    return (
+      <PageContainer header={<Header title="Rechnung" showBack backHref="/admin/invoices" />}>
+        <div className="text-center py-12 text-muted-foreground">
+          <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <p>Rechnung nicht gefunden</p>
+        </div>
+      </PageContainer>
+    );
+  }
+
+  const displayStatus = getDisplayStatus(invoice);
+  const lineItems = (invoice.invoice_line_items || []).sort(
+    (a, b) => a.sort_order - b.sort_order
+  );
+  const approvalRequired = billingSettings?.approval_required ?? false;
+  const isPaidInvoice = invoice.status === 'paid';
+
+  return (
+    <PageContainer
+      header={
+        <Header
+          title={`Rechnung ${invoice.invoice_number}`}
+          showBack
+          backHref="/admin/invoices"
+        />
+      }
+    >
+      <div className="space-y-4 max-w-3xl mx-auto">
+        {/* Status Badge */}
+        <div className="flex items-center gap-3">
+          <span
+            className={cn(
+              'px-3 py-1 rounded-full text-sm font-medium',
+              getStatusBadgeClasses(displayStatus)
+            )}
+          >
+            {STATUS_LABELS[displayStatus] ?? displayStatus}
+          </span>
+        </div>
+
+        {/* Invoice Info Card */}
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <div>
+              <p className="text-xs text-muted-foreground">Kunde</p>
+              <p className="font-medium">{invoice.clients?.name}</p>
+              {invoice.clients?.address && (
+                <p className="text-sm text-muted-foreground">
+                  {invoice.clients.address}
+                  {invoice.clients.postal_code || invoice.clients.city
+                    ? `, ${invoice.clients.postal_code ?? ''} ${invoice.clients.city ?? ''}`
+                    : ''}
+                </p>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs text-muted-foreground">Rechnungsnummer</p>
+                <p className="text-sm font-medium">{invoice.invoice_number}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Rechnungsdatum</p>
+                <p className="text-sm">{formatDate(invoice.issue_date)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Faelligkeitsdatum</p>
+                <p className="text-sm">{formatDate(invoice.due_date)}</p>
+              </div>
+              {invoice.sent_at && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Gesendet am</p>
+                  <p className="text-sm">{formatDate(invoice.sent_at)}</p>
+                </div>
+              )}
+              {invoice.paid_at && (
+                <div>
+                  <p className="text-xs text-muted-foreground">Bezahlt am</p>
+                  <p className="text-sm">{formatDate(invoice.paid_at)}</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Line Items */}
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="font-medium mb-3">Positionen</h3>
+            {/* Header */}
+            <div className="grid grid-cols-12 gap-2 text-xs text-muted-foreground font-medium pb-2 border-b">
+              <div className="col-span-5">Beschreibung</div>
+              <div className="col-span-1 text-right">Menge</div>
+              <div className="col-span-2 text-right">Einheit</div>
+              <div className="col-span-2 text-right">Einzelpreis</div>
+              <div className="col-span-2 text-right">Gesamt</div>
+            </div>
+            {/* Rows */}
+            {lineItems.length === 0 ? (
+              <div className="py-4 text-center text-sm text-muted-foreground">
+                Keine Positionen
+              </div>
+            ) : (
+              lineItems.map((item) => (
+                <div key={item.id} className="grid grid-cols-12 gap-2 py-2 border-b last:border-b-0 text-sm">
+                  <div className="col-span-5">
+                    <p>{item.description}</p>
+                    {item.period_start && item.period_end && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {formatDate(item.period_start)} - {formatDate(item.period_end)}
+                      </p>
+                    )}
+                  </div>
+                  <div className="col-span-1 text-right">
+                    {item.quantity % 1 === 0 ? item.quantity : item.quantity.toFixed(2)}
+                  </div>
+                  <div className="col-span-2 text-right">{item.unit}</div>
+                  <div className="col-span-2 text-right">{formatCHF(item.unit_price)}</div>
+                  <div className="col-span-2 text-right font-medium">{formatCHF(item.total)}</div>
+                </div>
+              ))
+            )}
+
+            {/* Totals */}
+            <div className="mt-3 pt-3 border-t space-y-1">
+              <div className="flex justify-between text-sm">
+                <span>Zwischensumme</span>
+                <span>{formatCHF(invoice.subtotal)}</span>
+              </div>
+              {invoice.mwst_rate > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span>{invoice.mwst_rate}% MWST</span>
+                  <span>{formatCHF(invoice.mwst_amount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between font-bold text-base pt-1">
+                <span>Total</span>
+                <span>{formatCHF(invoice.total)}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Notes */}
+        {invoice.notes && (
+          <Card>
+            <CardContent className="p-4">
+              <h3 className="font-medium mb-2">Bemerkungen</h3>
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{invoice.notes}</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Action Buttons */}
+        <Card>
+          <CardContent className="p-4 space-y-2">
+            {/* PDF Download - placeholder */}
+            <Button
+              variant="outline"
+              className="w-full"
+              disabled
+              title="Kommt bald"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              PDF herunterladen
+            </Button>
+
+            {/* Draft actions */}
+            {invoice.status === 'draft' && (
+              <>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => router.push(`/admin/invoices/${id}/edit`)}
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Bearbeiten
+                </Button>
+                {approvalRequired ? (
+                  <Button
+                    className="w-full"
+                    onClick={() => updateStatusMutation.mutate('pending_approval')}
+                    disabled={updateStatusMutation.isPending}
+                  >
+                    <Clock className="h-4 w-4 mr-2" />
+                    Zur Genehmigung einreichen
+                  </Button>
+                ) : (
+                  <Button
+                    className="w-full"
+                    onClick={() => updateStatusMutation.mutate('sent')}
+                    disabled={updateStatusMutation.isPending}
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    Senden
+                  </Button>
+                )}
+                <Button
+                  variant="destructive"
+                  className="w-full"
+                  onClick={() => setShowDeleteDialog(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Loeschen
+                </Button>
+              </>
+            )}
+
+            {/* Pending Approval actions */}
+            {invoice.status === 'pending_approval' && (
+              <>
+                <Button
+                  className="w-full"
+                  onClick={() => updateStatusMutation.mutate('approved')}
+                  disabled={updateStatusMutation.isPending}
+                >
+                  <Check className="h-4 w-4 mr-2" />
+                  Genehmigen
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => updateStatusMutation.mutate('draft')}
+                  disabled={updateStatusMutation.isPending}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Ablehnen
+                </Button>
+              </>
+            )}
+
+            {/* Approved actions */}
+            {invoice.status === 'approved' && (
+              <Button
+                className="w-full"
+                onClick={() => updateStatusMutation.mutate('sent')}
+                disabled={updateStatusMutation.isPending}
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Senden
+              </Button>
+            )}
+
+            {/* Sent actions */}
+            {invoice.status === 'sent' && (
+              <>
+                <Button
+                  className="w-full"
+                  onClick={() => updateStatusMutation.mutate('paid')}
+                  disabled={updateStatusMutation.isPending}
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Als bezahlt markieren
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="w-full"
+                  onClick={() => setShowCancelDialog(true)}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Stornieren
+                </Button>
+              </>
+            )}
+
+            {/* Paid actions */}
+            {invoice.status === 'paid' && (
+              <Button
+                variant="destructive"
+                className="w-full"
+                onClick={() => setShowCancelDialog(true)}
+              >
+                <X className="h-4 w-4 mr-2" />
+                Stornieren
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rechnung loeschen</DialogTitle>
+            <DialogDescription>
+              Moechten Sie die Rechnung {invoice.invoice_number} wirklich loeschen? Diese Aktion kann nicht
+              rueckgaengig gemacht werden.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              Abbrechen
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                deleteMutation.mutate();
+                setShowDeleteDialog(false);
+              }}
+              disabled={deleteMutation.isPending}
+            >
+              Loeschen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Confirmation Dialog */}
+      <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rechnung stornieren</DialogTitle>
+            <DialogDescription>
+              {isPaidInvoice
+                ? 'Moechten Sie diese bezahlte Rechnung wirklich stornieren? Zeiteintraege werden wieder freigegeben.'
+                : `Moechten Sie die Rechnung ${invoice.invoice_number} wirklich stornieren?`}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCancelDialog(false)}>
+              Abbrechen
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                updateStatusMutation.mutate('cancelled');
+                setShowCancelDialog(false);
+              }}
+              disabled={updateStatusMutation.isPending}
+            >
+              Stornieren
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </PageContainer>
+  );
+}

@@ -24,6 +24,7 @@ const defaultPermissions: Record<UserRole, Record<PermissionName, boolean>> = {
     manage_user_calendar: true,
     delete_activity: true,
     manage_vacations: true,
+    manage_invoices: true,
   },
   owner: {
     manage_properties: true,
@@ -39,6 +40,7 @@ const defaultPermissions: Record<UserRole, Record<PermissionName, boolean>> = {
     manage_user_calendar: true,
     delete_activity: false,
     manage_vacations: true,
+    manage_invoices: true,
   },
   manager: {
     manage_properties: true,
@@ -54,6 +56,7 @@ const defaultPermissions: Record<UserRole, Record<PermissionName, boolean>> = {
     manage_user_calendar: false,
     delete_activity: false,
     manage_vacations: false,
+    manage_invoices: true,
   },
   employee: {
     manage_properties: false,
@@ -69,6 +72,7 @@ const defaultPermissions: Record<UserRole, Record<PermissionName, boolean>> = {
     manage_user_calendar: false,
     delete_activity: false,
     manage_vacations: false,
+    manage_invoices: false,
   },
 };
 
@@ -126,6 +130,7 @@ function buildDefaultPermissionsMap(): Map<string, boolean> {
     'manage_user_calendar',
     'delete_activity',
     'manage_vacations',
+    'manage_invoices',
   ];
 
   roles.forEach((role) => {
@@ -214,6 +219,10 @@ export function canManageVacations(role: UserRole): boolean {
   return defaultPermissions[role]?.manage_vacations ?? false;
 }
 
+export function canManageInvoices(role: UserRole): boolean {
+  return defaultPermissions[role]?.manage_invoices ?? false;
+}
+
 export function isPrivilegedRole(role: UserRole): boolean {
   return ['admin', 'owner', 'manager'].includes(role);
 }
@@ -296,6 +305,7 @@ export const permissionLabels: Record<PermissionName, string> = {
   manage_user_calendar: 'Benutzerkalender verwalten',
   delete_activity: 'Aktivitäten löschen',
   manage_vacations: 'Ferien verwalten',
+  manage_invoices: 'Rechnungen verwalten',
 };
 
 // Get all permission names
@@ -313,6 +323,7 @@ export const allPermissions: PermissionName[] = [
   'manage_user_calendar',
   'delete_activity',
   'manage_vacations',
+  'manage_invoices',
 ];
 
 // Get display label for role

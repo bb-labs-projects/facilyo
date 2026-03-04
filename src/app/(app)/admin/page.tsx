@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Users, Building2, ClipboardList, ChevronRight, Settings, Activity, Shield, Clock, CalendarDays } from 'lucide-react';
+import { Users, Building2, ClipboardList, ChevronRight, Settings, Activity, Shield, Clock, CalendarDays, Receipt, DollarSign, FileText } from 'lucide-react';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
 import { usePermissions } from '@/hooks/use-permissions';
@@ -14,6 +14,7 @@ interface AdminMenuItem {
   requireOwner?: boolean;
   requireRolePermissions?: boolean;
   requireUserCalendar?: boolean;
+  requireInvoices?: boolean;
 }
 
 const adminMenuItems: AdminMenuItem[] = [
@@ -62,6 +63,27 @@ const adminMenuItems: AdminMenuItem[] = [
     icon: Shield,
     requireRolePermissions: true,
   },
+  {
+    href: '/admin/invoices',
+    label: 'Rechnungen',
+    description: 'Rechnungen erstellen, verwalten und versenden',
+    icon: FileText,
+    requireInvoices: true,
+  },
+  {
+    href: '/admin/billing-settings',
+    label: 'Rechnungseinstellungen',
+    description: 'Firmendaten, Bankverbindung, MWST und Rechnungsoptionen',
+    icon: Receipt,
+    requireInvoices: true,
+  },
+  {
+    href: '/admin/service-rates',
+    label: 'Stundenansätze',
+    description: 'Stundensätze pro Aktivitätstyp festlegen',
+    icon: DollarSign,
+    requireInvoices: true,
+  },
 ];
 
 export default function AdminPage() {
@@ -83,6 +105,9 @@ export default function AdminPage() {
     }
     if (item.requireUserCalendar) {
       return permissions.canManageUserCalendar;
+    }
+    if (item.requireInvoices) {
+      return permissions.canManageInvoices;
     }
     return true;
   });
