@@ -67,7 +67,6 @@ export default function OrganizationsPage() {
       header={
         <Header
           title="Organisationen"
-          showBack
           rightElement={
             <Button size="sm" onClick={() => setShowCreate(!showCreate)} leftIcon={<Plus className="h-4 w-4" />}>
               Neu

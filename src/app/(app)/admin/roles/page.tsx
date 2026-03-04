@@ -118,7 +118,7 @@ export default function AdminRolesPage() {
 
   return (
     <PageContainer
-      header={<Header title="Rollen & Berechtigungen" showBack />}
+      header={<Header title="Rollen & Berechtigungen" />}
     >
       {/* Role Tabs */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2">

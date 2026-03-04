@@ -135,7 +135,6 @@ export default function MigrationPage() {
       header={
         <Header
           title="Benutzermigration"
-          showBack
           rightElement={
             <Button size="sm" onClick={handleExportCSV} className="gap-1">
               <Download className="h-4 w-4" />

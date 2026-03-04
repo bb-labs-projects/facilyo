@@ -658,7 +658,6 @@ function TimeOverviewPageContent() {
       header={
         <Header
           title="Zeitübersicht"
-          showBack
           rightElement={
             <div className="flex items-center gap-2">
               <Button

@@ -397,7 +397,6 @@ export default function AdminChecklistsPage() {
       header={
         <Header
           title="Checklisten"
-          showBack
           rightElement={
             <div className="flex items-center gap-1">
               <Button

@@ -17,7 +17,7 @@ export default function SuperAdminDashboard() {
   });
 
   return (
-    <PageContainer header={<Header title="Super-Admin" showBack />}>
+    <PageContainer header={<Header title="Super-Admin" />}>
       <div className="grid gap-4 sm:grid-cols-3">
         <Link href="/super-admin/organizations">
           <Card className="hover:shadow-md transition-shadow cursor-pointer">

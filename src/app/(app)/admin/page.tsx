@@ -89,7 +89,7 @@ export default function AdminPage() {
 
   return (
     <PageContainer
-      header={<Header title="Verwaltung" showBack />}
+      header={<Header title="Verwaltung" />}
     >
       <div className="space-y-3">
         {filteredMenuItems.map((item) => {

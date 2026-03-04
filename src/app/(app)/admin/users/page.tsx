@@ -472,7 +472,6 @@ function AdminUsersPageContent() {
       header={
         <Header
           title="Benutzerverwaltung"
-          showBack
           rightElement={
             <Button
               size="sm"

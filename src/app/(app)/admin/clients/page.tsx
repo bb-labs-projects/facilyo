@@ -334,7 +334,6 @@ function AdminClientsPageContent() {
       header={
         <Header
           title="Kunden"
-          showBack
           rightElement={
             <Button size="icon" onClick={() => setShowForm(true)}>
               <Plus className="h-5 w-5" />

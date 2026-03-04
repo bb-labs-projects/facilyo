@@ -396,7 +396,6 @@ export default function AdminActivityPage() {
       header={
         <Header
           title="Aktivitäten"
-          showBack
           rightElement={
             <Button
               variant="ghost"

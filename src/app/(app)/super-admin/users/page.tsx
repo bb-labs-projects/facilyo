@@ -23,7 +23,7 @@ export default function GlobalUsersPage() {
   });
 
   return (
-    <PageContainer header={<Header title="Alle Benutzer" showBack />}>
+    <PageContainer header={<Header title="Alle Benutzer" />}>
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input

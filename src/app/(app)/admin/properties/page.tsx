@@ -606,7 +606,6 @@ function AdminPropertiesPageContent() {
       header={
         <Header
           title="Liegenschaften"
-          showBack
           rightElement={
             <Button size="icon" onClick={() => setShowForm(true)}>
               <Plus className="h-5 w-5" />
