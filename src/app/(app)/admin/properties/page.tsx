@@ -677,11 +677,6 @@ function AdminPropertiesPageContent() {
                           </span>
                         )}
                       </div>
-                      {isSuperAdmin && property.organizations?.name && (
-                        <span className="sm:hidden rounded-full px-2.5 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 mt-1">
-                          {property.organizations.name}
-                        </span>
-                      )}
                     </div>
                     <div className="flex gap-1 flex-shrink-0">
                       <Button
@@ -734,6 +729,11 @@ function AdminPropertiesPageContent() {
                       </Button>
                     </div>
                   </div>
+                  {isSuperAdmin && property.organizations?.name && (
+                    <span className="sm:hidden block w-full rounded-full px-2.5 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 mt-2">
+                      {property.organizations.name}
+                    </span>
+                  )}
                 </CardContent>
               </Card>
             );

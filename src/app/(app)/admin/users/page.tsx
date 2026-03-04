@@ -587,11 +587,6 @@ function AdminUsersPageContent() {
                           {user.vacation_days_per_year ?? 25} Ferientage
                         </span>
                       </div>
-                      {isSuperAdmin && user.organizations?.name && (
-                        <span className="sm:hidden rounded-full px-2.5 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 mt-1">
-                          {user.organizations.name}
-                        </span>
-                      )}
                     </div>
 
                     {/* Action buttons */}
@@ -690,6 +685,11 @@ function AdminUsersPageContent() {
                       </Button>
                     </div>
                   </div>
+                  {isSuperAdmin && user.organizations?.name && (
+                    <span className="sm:hidden block w-full rounded-full px-2.5 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 mt-2">
+                      {user.organizations.name}
+                    </span>
+                  )}
                 </CardContent>
               </Card>
             );

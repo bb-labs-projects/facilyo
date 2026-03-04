@@ -492,11 +492,6 @@ export default function AdminChecklistsPage() {
                             <p className="text-sm text-muted-foreground">
                               {itemCount} {itemCount === 1 ? 'Punkt' : 'Punkte'}
                             </p>
-                            {isSuperAdmin && template.organizations?.name && (
-                              <span className="sm:hidden rounded-full px-2.5 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 mt-0.5">
-                                {template.organizations.name}
-                              </span>
-                            )}
                           </div>
                           <div className="flex gap-1 flex-shrink-0">
                             <Button
@@ -528,6 +523,11 @@ export default function AdminChecklistsPage() {
                             </Button>
                           </div>
                         </div>
+                        {isSuperAdmin && template.organizations?.name && (
+                          <span className="sm:hidden block w-full rounded-full px-2.5 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 mt-2">
+                            {template.organizations.name}
+                          </span>
+                        )}
                       </CardContent>
                     </Card>
                   );

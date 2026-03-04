@@ -639,11 +639,6 @@ function AdminClientsPageContent() {
                           {client.phone}
                         </p>
                       )}
-                      {isSuperAdmin && client.organizations?.name && (
-                        <span className="sm:hidden rounded-full px-2.5 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 mt-1">
-                          {client.organizations.name}
-                        </span>
-                      )}
                     </button>
                     <div className="flex gap-1 flex-shrink-0">
                       <Button
@@ -692,6 +687,11 @@ function AdminClientsPageContent() {
                       )}
                     </div>
                   </div>
+                  {isSuperAdmin && client.organizations?.name && (
+                    <span className="sm:hidden block w-full rounded-full px-2.5 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 mt-2">
+                      {client.organizations.name}
+                    </span>
+                  )}
                 </CardContent>
               </Card>
             );
