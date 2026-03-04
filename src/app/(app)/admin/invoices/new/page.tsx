@@ -446,12 +446,12 @@ function NewInvoicePageContent() {
     setHoursGroupsBuilt(true);
   };
 
-  // Permission check redirect
+  // Permission check redirect — only when role is known (not during loading)
   useEffect(() => {
-    if (!permissions.canManageInvoices) {
+    if (permissions.role && !permissions.canManageInvoices) {
       router.push('/admin');
     }
-  }, [permissions.canManageInvoices, router]);
+  }, [permissions.role, permissions.canManageInvoices, router]);
 
   if (!permissions.canManageInvoices) {
     return null;

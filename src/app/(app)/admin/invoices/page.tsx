@@ -90,12 +90,12 @@ function AdminInvoicesPageContent() {
   const [clientFilter, setClientFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Redirect if no permission
+  // Redirect if no permission — only when role is known (not during loading)
   useEffect(() => {
-    if (!permissions.canManageInvoices) {
+    if (permissions.role && !permissions.canManageInvoices) {
       router.push('/admin');
     }
-  }, [permissions.canManageInvoices, router]);
+  }, [permissions.role, permissions.canManageInvoices, router]);
 
   // Fetch invoices with client info
   const { data: invoices = [], isLoading } = useQuery({

@@ -109,12 +109,12 @@ function AdminInvoiceDetailPageContent() {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
-  // Redirect if no permission
+  // Redirect if no permission — only when role is known (not during loading)
   useEffect(() => {
-    if (!permissions.canManageInvoices) {
+    if (permissions.role && !permissions.canManageInvoices) {
       router.push('/admin');
     }
-  }, [permissions.canManageInvoices, router]);
+  }, [permissions.role, permissions.canManageInvoices, router]);
 
   // Fetch invoice with client and line items
   const { data: invoice, isLoading } = useQuery({
