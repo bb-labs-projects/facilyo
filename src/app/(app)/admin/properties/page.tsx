@@ -678,7 +678,7 @@ function AdminPropertiesPageContent() {
                         )}
                       </div>
                       {isSuperAdmin && property.organizations?.name && (
-                        <span className="sm:hidden badge bg-purple-100 text-purple-700 text-xs inline-flex mt-1">
+                        <span className="sm:hidden badge bg-purple-100 text-purple-700 text-xs block w-fit mt-1">
                           {property.organizations.name}
                         </span>
                       )}
