@@ -533,15 +533,15 @@ function AdminUsersPageContent() {
               <Card key={user.id} interactive className="cursor-pointer">
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
-                    {/* Avatar */}
+                    {/* Avatar - hidden on mobile */}
                     {user.avatar_url ? (
                       <img
                         src={user.avatar_url}
                         alt={fullName}
-                        className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                        className="hidden sm:block w-10 h-10 rounded-full object-cover flex-shrink-0"
                       />
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
+                      <div className="hidden sm:flex w-10 h-10 rounded-full bg-primary-100 items-center justify-center flex-shrink-0">
                         <span className="text-sm font-semibold text-primary-700">
                           {initials}
                         </span>
