@@ -181,6 +181,7 @@ export async function POST(request: NextRequest) {
         first_name: firstName,
         last_name: lastName,
         role,
+        organization_id: organizationId,
       }, { onConflict: 'id' });
 
     if (profileCreateError) {
