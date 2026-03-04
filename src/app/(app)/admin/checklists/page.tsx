@@ -493,7 +493,7 @@ export default function AdminChecklistsPage() {
                               {itemCount} {itemCount === 1 ? 'Punkt' : 'Punkte'}
                             </p>
                             {isSuperAdmin && template.organizations?.name && (
-                              <span className="sm:hidden badge bg-purple-100 text-purple-700 text-xs block w-fit mt-0.5">
+                              <span className="sm:hidden rounded-full px-2.5 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 mt-0.5">
                                 {template.organizations.name}
                               </span>
                             )}

@@ -588,7 +588,7 @@ function AdminUsersPageContent() {
                         </span>
                       </div>
                       {isSuperAdmin && user.organizations?.name && (
-                        <span className="sm:hidden badge bg-purple-100 text-purple-700 text-xs block w-fit mt-1">
+                        <span className="sm:hidden rounded-full px-2.5 py-0.5 text-xs font-medium bg-purple-100 text-purple-700 mt-1">
                           {user.organizations.name}
                         </span>
                       )}
