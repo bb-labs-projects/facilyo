@@ -554,12 +554,15 @@ function AdminUsersPageContent() {
                         {username ? `@${username}` : user.email}
                       </p>
                     </div>
-                    {isSuperAdmin && user.organizations?.name && (
+                  </div>
+
+                  {isSuperAdmin && user.organizations?.name && (
+                    <div className="mt-1.5">
                       <span className="badge bg-purple-100 text-purple-700 text-xs">
                         {user.organizations.name}
                       </span>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   {/* Badges row */}
                   <div className="flex flex-wrap items-center gap-2 mt-2">
