@@ -556,42 +556,6 @@ function AdminUsersPageContent() {
                     </div>
                   </div>
 
-                  {isSuperAdmin && user.organizations?.name && (
-                    <div className="mt-1.5">
-                      <span className="badge bg-purple-100 text-purple-700 text-xs">
-                        {user.organizations.name}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Badges row */}
-                  <div className="flex flex-wrap items-center gap-2 mt-2">
-                    <span className="badge badge-info text-xs">
-                      {roleLabels[user.role]}
-                    </span>
-                    {inactive && (
-                      <span className="badge bg-gray-100 text-gray-700 text-xs">
-                        Inaktiv
-                      </span>
-                    )}
-                    {locked && (
-                      <span className="badge bg-red-100 text-red-700 text-xs">
-                        Gesperrt
-                      </span>
-                    )}
-                    {needsPasswordChange && !locked && !inactive && (
-                      <span className="badge bg-amber-100 text-amber-700 text-xs">
-                        Passwort ändern
-                      </span>
-                    )}
-                    <span className="text-xs text-muted-foreground">
-                      {assignedCount} {assignedCount === 1 ? 'Liegenschaft' : 'Liegenschaften'}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {user.vacation_days_per_year ?? 25} Ferientage
-                    </span>
-                  </div>
-
                   {/* Action buttons row */}
                   <div className="flex flex-wrap gap-1 mt-2 -ml-2.5">
                     {user.id !== profile?.id && permissions.role && canEditUser(permissions.role, user.role) && (
@@ -688,6 +652,41 @@ function AdminUsersPageContent() {
                     </Button>
                   </div>
 
+                  {/* Badges row */}
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    <span className="badge badge-info text-xs">
+                      {roleLabels[user.role]}
+                    </span>
+                    {inactive && (
+                      <span className="badge bg-gray-100 text-gray-700 text-xs">
+                        Inaktiv
+                      </span>
+                    )}
+                    {locked && (
+                      <span className="badge bg-red-100 text-red-700 text-xs">
+                        Gesperrt
+                      </span>
+                    )}
+                    {needsPasswordChange && !locked && !inactive && (
+                      <span className="badge bg-amber-100 text-amber-700 text-xs">
+                        Passwort ändern
+                      </span>
+                    )}
+                    <span className="text-xs text-muted-foreground">
+                      {assignedCount} {assignedCount === 1 ? 'Liegenschaft' : 'Liegenschaften'}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {user.vacation_days_per_year ?? 25} Ferientage
+                    </span>
+                  </div>
+
+                  {isSuperAdmin && user.organizations?.name && (
+                    <div className="mt-1.5">
+                      <span className="badge bg-purple-100 text-purple-700 text-xs">
+                        {user.organizations.name}
+                      </span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );
