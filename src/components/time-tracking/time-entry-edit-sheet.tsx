@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Trash2, Clock } from 'lucide-react';
+import { Trash2, Clock, AlertTriangle } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -12,14 +12,6 @@ import {
   SheetDescription,
   SheetFooter,
 } from '@/components/ui/sheet';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input, Textarea } from '@/components/ui/input';
 import { useAuthStore } from '@/stores/auth-store';
@@ -333,7 +325,7 @@ export function TimeEntryEditSheet({
               Speichern
             </Button>
             )}
-            {!isActive && !isVacation && (
+            {!isActive && !isVacation && !showDeleteDialog && (
               <Button
                 variant="destructive"
                 onClick={() => setShowDeleteDialog(true)}
@@ -342,6 +334,38 @@ export function TimeEntryEditSheet({
               >
                 Löschen
               </Button>
+            )}
+            {!isActive && !isVacation && showDeleteDialog && (
+              <div className="w-full rounded-lg border border-red-200 bg-red-50 p-4 space-y-3">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-red-900">Eintrag löschen?</p>
+                    <p className="text-sm text-red-700 mt-1">
+                      Diese Aktion kann nicht rückgängig gemacht werden.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => setShowDeleteDialog(false)}
+                  >
+                    Abbrechen
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="flex-1"
+                    onClick={handleDelete}
+                    isLoading={deleteMutation.isPending}
+                  >
+                    Löschen
+                  </Button>
+                </div>
+              </div>
             )}
             {isActive && (
               <p className="text-xs text-center text-muted-foreground">
@@ -356,34 +380,6 @@ export function TimeEntryEditSheet({
           </SheetFooter>
         </SheetContent>
       </Sheet>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Eintrag löschen?</DialogTitle>
-            <DialogDescription>
-              Möchten Sie diesen Zeiteintrag wirklich löschen? Diese Aktion kann nicht
-              rückgängig gemacht werden.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowDeleteDialog(false)}
-            >
-              Abbrechen
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              isLoading={deleteMutation.isPending}
-            >
-              Löschen
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
