@@ -40,6 +40,7 @@ const priorityOptions: { value: IssuePriority | 'all'; label: string }[] = [
 export default function IssuesPage() {
   const router = useRouter();
   const profile = useAuthStore((state) => state.profile);
+  const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
   const permissions = usePermissions();
   const [statusFilter, setStatusFilter] = useState<IssueStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<IssuePriority | 'all'>('all');
@@ -57,7 +58,8 @@ export default function IssuesPage() {
           *,
           property:properties (*),
           reporter:profiles!issues_reported_by_fkey (*),
-          assignee:profiles!issues_assigned_to_fkey (*)
+          assignee:profiles!issues_assigned_to_fkey (*),
+          organizations:organization_id(name)
         `)
         .eq('converted_to_task', false)
         .order('created_at', { ascending: false });
@@ -222,6 +224,7 @@ export default function IssuesPage() {
                 issue={issue}
                 onClick={() => handleIssueClick(issue)}
                 showProperty
+                organizationName={isSuperAdmin ? (issue as any).organizations?.name : undefined}
               />
             ))}
           </div>

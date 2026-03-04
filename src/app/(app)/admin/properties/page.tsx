@@ -661,7 +661,7 @@ function AdminPropertiesPageContent() {
                         <MapPin className="h-3 w-3" />
                         {property.address}, {property.postal_code} {property.city}
                       </p>
-                      <div className="flex items-center gap-2 mt-2">
+                      <div className="flex flex-wrap items-center gap-2 mt-2">
                         <span className="badge badge-info text-xs">
                           {propertyTypeLabels[property.type]}
                         </span>

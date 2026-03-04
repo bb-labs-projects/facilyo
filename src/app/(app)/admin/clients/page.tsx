@@ -393,7 +393,7 @@ function AdminClientsPageContent() {
                         setShowPropertiesSheet(true);
                       }}
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <h3 className="font-medium">{client.name}</h3>
                         {propCount > 0 && (
                           <span className="badge badge-info text-xs flex items-center gap-1">

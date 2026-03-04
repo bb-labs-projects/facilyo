@@ -52,6 +52,7 @@ import type {
 
 interface ChecklistTemplateWithProperty extends ChecklistTemplate {
   property: Property;
+  organizations?: { name: string };
 }
 
 const isPdfUrl = (url: string) => /\.pdf(\?|$)/i.test(url);
@@ -68,6 +69,7 @@ export default function AdminChecklistsPage() {
   const queryClient = useQueryClient();
   const permissions = usePermissions();
   const organizationId = useAuthStore((state) => state.organizationId);
+  const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
 
   const [showForm, setShowForm] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<ChecklistTemplateWithProperty | null>(null);
@@ -101,7 +103,8 @@ export default function AdminChecklistsPage() {
         .from('checklist_templates')
         .select(`
           *,
-          property:properties (*)
+          property:properties (*),
+          organizations:organization_id(name)
         `)
         .eq('is_active', true)
         .order('name');
@@ -474,11 +477,16 @@ export default function AdminChecklistsPage() {
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                               <h3 className="font-medium">{template.name}</h3>
                               {!template.is_active && (
                                 <span className="badge bg-muted text-muted-foreground text-xs">
                                   Inaktiv
+                                </span>
+                              )}
+                              {isSuperAdmin && template.organizations?.name && (
+                                <span className="badge bg-purple-100 text-purple-700 text-xs">
+                                  {template.organizations.name}
                                 </span>
                               )}
                             </div>

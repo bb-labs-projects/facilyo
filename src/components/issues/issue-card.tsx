@@ -11,6 +11,7 @@ interface IssueCardProps {
   issue: Issue | IssueWithRelations;
   onClick?: () => void;
   showProperty?: boolean;
+  organizationName?: string;
   className?: string;
 }
 
@@ -18,6 +19,7 @@ export function IssueCard({
   issue,
   onClick,
   showProperty = false,
+  organizationName,
   className,
 }: IssueCardProps) {
   const priorityConfig = {
@@ -115,6 +117,11 @@ export function IssueCard({
               <span className="badge bg-muted text-muted-foreground">
                 {category.label}
               </span>
+              {organizationName && (
+                <span className="badge bg-purple-100 text-purple-700">
+                  {organizationName}
+                </span>
+              )}
             </div>
 
             {/* Footer */}

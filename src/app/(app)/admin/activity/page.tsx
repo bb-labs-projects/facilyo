@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/dialog';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useCompletedTasksNotificationCount } from '@/hooks/use-completed-tasks-notification-count';
+import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import type {
@@ -76,6 +77,7 @@ interface AufgabeWithRelations {
   completer: Profile | null;
   assignee: Profile | null;
   source_meldung: SourceMeldung | null;
+  organizations?: { name: string };
 }
 
 interface ChecklistInstanceWithRelations {
@@ -85,6 +87,7 @@ interface ChecklistInstanceWithRelations {
   completed_items: Record<string, unknown>;
   updated_at: string;
   created_at: string;
+  organizations?: { name: string };
   template: {
     name: string;
     items: ChecklistItem[];
@@ -131,6 +134,7 @@ export default function AdminActivityPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const permissions = usePermissions();
+  const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
   const { markAsSeen } = useCompletedTasksNotificationCount();
 
   // Mark completed task notifications as seen when visiting this page
@@ -181,7 +185,8 @@ export default function AdminActivityPage() {
               property:properties (*),
               completer:profiles!aufgaben_completed_by_fkey (*),
               assignee:profiles!aufgaben_assigned_to_fkey (*),
-              source_meldung:issues (*)
+              source_meldung:issues (*),
+              organizations:organization_id(name)
             `)
             .order('created_at', { ascending: false });
 
@@ -211,7 +216,8 @@ export default function AdminActivityPage() {
                 user_id,
                 user:profiles (*),
                 property:properties (*)
-              )
+              ),
+              organizations:organization_id(name)
             `)
             .order('updated_at', { ascending: false });
 
@@ -536,8 +542,13 @@ export default function AdminActivityPage() {
                         )}
                       </div>
 
-                      <div className="pl-13 flex items-center gap-2">
+                      <div className="pl-13 flex flex-wrap items-center gap-2">
                         <span className={cn('badge text-xs', status.badgeClass)}>{status.label}</span>
+                        {isSuperAdmin && aufgabe.organizations?.name && (
+                          <span className="badge bg-purple-100 text-purple-700 text-xs">
+                            {aufgabe.organizations.name}
+                          </span>
+                        )}
                         {hasPhotos && (
                           <span className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Camera className="h-3 w-3" />
@@ -602,9 +613,16 @@ export default function AdminActivityPage() {
                             <span>{formatDateTime(instance.updated_at)}</span>
                           </div>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {progress.completed}/{progress.total} Punkte erledigt
-                        </p>
+                        <div className="flex flex-wrap items-center gap-2 mt-1">
+                          <p className="text-xs text-muted-foreground">
+                            {progress.completed}/{progress.total} Punkte erledigt
+                          </p>
+                          {isSuperAdmin && instance.organizations?.name && (
+                            <span className="badge bg-purple-100 text-purple-700 text-xs">
+                              {instance.organizations.name}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-1 flex-shrink-0">
                         {permissions.canDeleteActivity && (
