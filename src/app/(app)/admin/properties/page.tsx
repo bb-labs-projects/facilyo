@@ -670,6 +670,11 @@ function AdminPropertiesPageContent() {
                             Inaktiv
                           </span>
                         )}
+                        {isSuperAdmin && property.organizations?.name && (
+                          <span className="badge bg-purple-100 text-purple-700 text-xs">
+                            {property.organizations.name}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <div className="flex gap-1 flex-shrink-0">
@@ -723,11 +728,6 @@ function AdminPropertiesPageContent() {
                       </Button>
                     </div>
                   </div>
-                  {isSuperAdmin && property.organizations?.name && (
-                    <div className="mt-2 pt-2 border-t border-purple-100">
-                      <span className="badge bg-purple-100 text-purple-700 text-xs">{property.organizations.name}</span>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             );

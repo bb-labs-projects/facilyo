@@ -554,6 +554,11 @@ function AdminUsersPageContent() {
                         {username ? `@${username}` : user.email}
                       </p>
                     </div>
+                    {isSuperAdmin && user.organizations?.name && (
+                      <span className="badge bg-purple-100 text-purple-700 text-xs">
+                        {user.organizations.name}
+                      </span>
+                    )}
                   </div>
 
                   {/* Badges row */}
@@ -585,12 +590,12 @@ function AdminUsersPageContent() {
                   </div>
 
                   {/* Action buttons row */}
-                  <div className="flex flex-wrap gap-1 mt-2 -ml-2">
+                  <div className="flex flex-wrap gap-1 mt-2 -ml-2.5">
                     {user.id !== profile?.id && permissions.role && canEditUser(permissions.role, user.role) && (
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
+                        className="h-9 w-9"
                         onClick={(e) => {
                           e.stopPropagation();
                           if (inactive) {
@@ -610,7 +615,7 @@ function AdminUsersPageContent() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
+                        className="h-9 w-9"
                         onClick={(e) => {
                           e.stopPropagation();
                           unlockAccountMutation.mutate(user.id);
@@ -625,7 +630,7 @@ function AdminUsersPageContent() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
+                        className="h-9 w-9"
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedUser(user);
@@ -640,7 +645,7 @@ function AdminUsersPageContent() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8"
+                        className="h-9 w-9"
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedUser(user);
@@ -654,7 +659,7 @@ function AdminUsersPageContent() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8"
+                      className="h-9 w-9"
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedUser(user);
@@ -668,7 +673,7 @@ function AdminUsersPageContent() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8"
+                      className="h-9 w-9"
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedUser(user);
@@ -680,12 +685,6 @@ function AdminUsersPageContent() {
                     </Button>
                   </div>
 
-                  {/* Org badge */}
-                  {isSuperAdmin && user.organizations?.name && (
-                    <div className="mt-2 pt-2 border-t border-purple-100">
-                      <span className="badge bg-purple-100 text-purple-700 text-xs">{user.organizations.name}</span>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             );
