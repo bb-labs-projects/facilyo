@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { getResendClient } from '@/lib/resend';
+import { generateAndUploadInvoicePdf } from '@/lib/invoice-pdf';
+import type { InvoicePdfData, BillingSettingsData } from '@/lib/invoice-pdf';
 
 /**
  * POST /api/invoices/[id]/send
@@ -108,45 +110,36 @@ export async function POST(
 
     const serviceClient = createServiceRoleClient();
 
-    // 6. Generate PDF if it doesn't exist yet
-    if (!invoice.pdf_url) {
-      // Trigger PDF generation via internal call
-      const pdfRes = await fetch(new URL(`/api/invoices/${id}/pdf`, request.url), {
-        headers: { cookie: request.headers.get('cookie') || '' },
-      });
-      if (!pdfRes.ok) {
-        return NextResponse.json(
-          { error: 'PDF konnte nicht generiert werden' },
-          { status: 500 }
-        );
-      }
-      // Re-fetch invoice to get updated pdf_url
-      const { data: refreshedInvoice } = await (supabase as any)
-        .from('invoices')
-        .select('pdf_url')
-        .eq('id', id)
-        .single();
-      if (!refreshedInvoice?.pdf_url) {
-        return NextResponse.json(
-          { error: 'PDF konnte nicht gespeichert werden' },
-          { status: 500 }
-        );
-      }
-      invoice.pdf_url = refreshedInvoice.pdf_url;
-    }
-
-    const { data: pdfData, error: downloadError } = await serviceClient.storage
+    // 6. Generate PDF (always regenerate to ensure it's up-to-date)
+    // Fetch full invoice with line items for PDF generation
+    const { data: fullInvoice } = await (supabase as any)
       .from('invoices')
-      .download(invoice.pdf_url);
+      .select('*, clients(*), invoice_line_items(*)')
+      .eq('id', id)
+      .single();
 
-    if (downloadError || !pdfData) {
+    if (!fullInvoice) {
       return NextResponse.json(
-        { error: 'PDF konnte nicht heruntergeladen werden' },
-        { status: 500 }
+        { error: 'Rechnung nicht gefunden' },
+        { status: 404 }
       );
     }
 
-    const pdfBuffer = Buffer.from(await pdfData.arrayBuffer());
+    let pdfBuffer: Buffer;
+    try {
+      pdfBuffer = await generateAndUploadInvoicePdf(
+        id,
+        organizationId,
+        fullInvoice as unknown as InvoicePdfData,
+        billingSettings as unknown as BillingSettingsData,
+      );
+    } catch (pdfError) {
+      console.error('PDF generation failed:', pdfError);
+      return NextResponse.json(
+        { error: 'PDF konnte nicht generiert werden' },
+        { status: 500 }
+      );
+    }
 
     // 7. Determine recipient email
     const body = await request.json().catch(() => ({}));

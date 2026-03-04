@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
+import { generateAndUploadInvoicePdf } from '@/lib/invoice-pdf';
+import type { InvoicePdfData, BillingSettingsData } from '@/lib/invoice-pdf';
 
 interface CreateInvoiceLineItem {
   line_type: 'subscription' | 'hours' | 'manual';
@@ -215,14 +217,43 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 11. Return the created invoice
+    // 11. Fetch the full invoice for response and PDF generation
     const { data: fullInvoice } = await (serviceClient as any)
       .from('invoices')
       .select('*, clients(*), invoice_line_items(*)')
       .eq('id', invoice.id)
       .single();
 
-    return NextResponse.json(fullInvoice, { status: 201 });
+    // 12. Generate PDF in the background (don't block response on failure)
+    if (fullInvoice) {
+      const { data: rawBilling } = await (serviceClient as any)
+        .from('organization_billing_settings')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .single();
+
+      if (rawBilling) {
+        try {
+          await generateAndUploadInvoicePdf(
+            invoice.id,
+            organizationId,
+            fullInvoice as unknown as InvoicePdfData,
+            rawBilling as unknown as BillingSettingsData,
+          );
+        } catch (pdfError) {
+          console.error('PDF generation on draft save failed (non-blocking):', pdfError);
+        }
+      }
+    }
+
+    // Re-fetch to include updated pdf_url
+    const { data: finalInvoice } = await (serviceClient as any)
+      .from('invoices')
+      .select('*, clients(*), invoice_line_items(*)')
+      .eq('id', invoice.id)
+      .single();
+
+    return NextResponse.json(finalInvoice || fullInvoice, { status: 201 });
   } catch (error) {
     console.error('Create invoice error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
