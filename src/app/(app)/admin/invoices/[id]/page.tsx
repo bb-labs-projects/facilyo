@@ -106,6 +106,7 @@ function AdminInvoiceDetailPageContent() {
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   // Redirect if no permission
   useEffect(() => {
@@ -181,6 +182,56 @@ function AdminInvoiceDetailPageContent() {
       toast.error(error.message);
     },
   });
+
+  // Send invoice via email mutation
+  const sendInvoiceMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/invoices/${id}/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Versand fehlgeschlagen');
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast.success(`Rechnung an ${data.sent_to} gesendet`);
+      queryClient.invalidateQueries({ queryKey: ['invoice', id] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+
+  // PDF generation and download
+  const handleDownloadPdf = async () => {
+    setIsGeneratingPdf(true);
+    try {
+      const res = await fetch(`/api/invoices/${id}/pdf`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({ error: 'PDF-Generierung fehlgeschlagen' }));
+        throw new Error(data.error || 'PDF-Generierung fehlgeschlagen');
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${invoice?.invoice_number || 'rechnung'}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('PDF heruntergeladen');
+      // Refresh invoice to get updated pdf_url
+      queryClient.invalidateQueries({ queryKey: ['invoice', id] });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'PDF-Generierung fehlgeschlagen');
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
 
   if (!permissions.canManageInvoices) {
     return null;
@@ -350,15 +401,15 @@ function AdminInvoiceDetailPageContent() {
         {/* Action Buttons */}
         <Card>
           <CardContent className="p-4 space-y-2">
-            {/* PDF Download - placeholder */}
+            {/* PDF Download */}
             <Button
               variant="outline"
               className="w-full"
-              disabled
-              title="Kommt bald"
+              onClick={handleDownloadPdf}
+              disabled={isGeneratingPdf}
             >
               <Download className="h-4 w-4 mr-2" />
-              PDF herunterladen
+              {isGeneratingPdf ? 'PDF wird generiert...' : 'PDF herunterladen'}
             </Button>
 
             {/* Draft actions */}
@@ -384,11 +435,11 @@ function AdminInvoiceDetailPageContent() {
                 ) : (
                   <Button
                     className="w-full"
-                    onClick={() => updateStatusMutation.mutate('sent')}
-                    disabled={updateStatusMutation.isPending}
+                    onClick={() => sendInvoiceMutation.mutate()}
+                    disabled={sendInvoiceMutation.isPending}
                   >
                     <Send className="h-4 w-4 mr-2" />
-                    Senden
+                    {sendInvoiceMutation.isPending ? 'Wird gesendet...' : 'Per E-Mail senden'}
                   </Button>
                 )}
                 <Button
@@ -429,11 +480,11 @@ function AdminInvoiceDetailPageContent() {
             {invoice.status === 'approved' && (
               <Button
                 className="w-full"
-                onClick={() => updateStatusMutation.mutate('sent')}
-                disabled={updateStatusMutation.isPending}
+                onClick={() => sendInvoiceMutation.mutate()}
+                disabled={sendInvoiceMutation.isPending}
               >
                 <Send className="h-4 w-4 mr-2" />
-                Senden
+                {sendInvoiceMutation.isPending ? 'Wird gesendet...' : 'Per E-Mail senden'}
               </Button>
             )}
 

@@ -106,15 +106,34 @@ export async function POST(
       );
     }
 
-    // 6. Ensure PDF exists
-    if (!invoice.pdf_url) {
-      return NextResponse.json(
-        { error: 'Bitte zuerst PDF generieren' },
-        { status: 400 }
-      );
-    }
-
     const serviceClient = createServiceRoleClient();
+
+    // 6. Generate PDF if it doesn't exist yet
+    if (!invoice.pdf_url) {
+      // Trigger PDF generation via internal call
+      const pdfRes = await fetch(new URL(`/api/invoices/${id}/pdf`, request.url), {
+        headers: { cookie: request.headers.get('cookie') || '' },
+      });
+      if (!pdfRes.ok) {
+        return NextResponse.json(
+          { error: 'PDF konnte nicht generiert werden' },
+          { status: 500 }
+        );
+      }
+      // Re-fetch invoice to get updated pdf_url
+      const { data: refreshedInvoice } = await (supabase as any)
+        .from('invoices')
+        .select('pdf_url')
+        .eq('id', id)
+        .single();
+      if (!refreshedInvoice?.pdf_url) {
+        return NextResponse.json(
+          { error: 'PDF konnte nicht gespeichert werden' },
+          { status: 500 }
+        );
+      }
+      invoice.pdf_url = refreshedInvoice.pdf_url;
+    }
 
     const { data: pdfData, error: downloadError } = await serviceClient.storage
       .from('invoices')
