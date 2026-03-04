@@ -484,15 +484,15 @@ export default function AdminChecklistsPage() {
                                   Inaktiv
                                 </span>
                               )}
-                              {isSuperAdmin && template.organizations?.name && (
-                                <span className="badge bg-purple-100 text-purple-700 text-xs">
-                                  {template.organizations.name}
-                                </span>
-                              )}
                             </div>
                             <p className="text-sm text-muted-foreground">
                               {itemCount} {itemCount === 1 ? 'Punkt' : 'Punkte'}
                             </p>
+                            {isSuperAdmin && template.organizations?.name && (
+                              <p className="text-xs text-purple-700 mt-0.5">
+                                {template.organizations.name}
+                              </p>
+                            )}
                           </div>
                           <div className="flex gap-1 flex-shrink-0">
                             <Button

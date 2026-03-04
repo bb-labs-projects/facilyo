@@ -574,11 +574,6 @@ function AdminUsersPageContent() {
                             Passwort ändern
                           </span>
                         )}
-                        {isSuperAdmin && user.organizations?.name && (
-                          <span className="badge bg-purple-100 text-purple-700 text-xs">
-                            {user.organizations.name}
-                          </span>
-                        )}
                         <span className="text-xs text-muted-foreground">
                           {assignedCount} {assignedCount === 1 ? 'Liegenschaft' : 'Liegenschaften'}
                         </span>
@@ -684,6 +679,11 @@ function AdminUsersPageContent() {
                       </Button>
                     </div>
                   </div>
+                  {isSuperAdmin && user.organizations?.name && (
+                    <div className="mt-2 pt-2 border-t border-purple-100">
+                      <span className="text-xs font-medium text-purple-700">{user.organizations.name}</span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );
