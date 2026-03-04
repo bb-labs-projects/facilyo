@@ -544,7 +544,6 @@ export default function AdminChecklistsPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Checklistenname"
-                required
               />
             </div>
 
@@ -555,7 +554,6 @@ export default function AdminChecklistsPage() {
               <select
                 value={propertyId}
                 onChange={(e) => setPropertyId(e.target.value)}
-                required
                 className="flex h-11 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
               >
                 <option value="">Liegenschaft wählen...</option>
