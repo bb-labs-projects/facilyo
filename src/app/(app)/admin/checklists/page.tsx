@@ -655,7 +655,77 @@ export default function AdminChecklistsPage() {
                 </Button>
               </div>
 
-              {items.length === 0 ? (
+              {/* Inline item form (replaces Dialog to avoid mobile touch issues) */}
+              {showItemForm && (
+                <div className="rounded-lg border border-dashed border-primary-300 bg-primary-50/50 p-4 space-y-3">
+                  <p className="text-sm font-medium text-primary-700">
+                    {editingItemIndex !== null ? 'Punkt bearbeiten' : 'Neuer Punkt'}
+                  </p>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">
+                      Bezeichnung <span className="text-error-500">*</span>
+                    </label>
+                    <Input
+                      value={itemLabel}
+                      onChange={(e) => setItemLabel(e.target.value)}
+                      placeholder="z.B. Fenster gereinigt"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Typ</label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {(Object.keys(itemTypeConfig) as ChecklistItemType[]).map((type) => {
+                        const config = itemTypeConfig[type];
+                        const Icon = config.icon;
+                        return (
+                          <button
+                            key={type}
+                            type="button"
+                            onClick={() => setItemType(type)}
+                            className={cn(
+                              'p-3 rounded-lg border text-left flex items-center gap-2 transition-colors',
+                              itemType === type
+                                ? 'border-primary-500 bg-primary-50'
+                                : 'border-muted hover:border-primary-300'
+                            )}
+                          >
+                            <Icon className="h-4 w-4" />
+                            <span className="text-sm">{config.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setItemRequired(!itemRequired)}
+                      className={cn(
+                        'w-10 h-6 rounded-full transition-colors relative',
+                        itemRequired ? 'bg-primary-600' : 'bg-muted'
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'absolute top-1 w-4 h-4 rounded-full bg-white transition-transform',
+                          itemRequired ? 'left-5' : 'left-1'
+                        )}
+                      />
+                    </button>
+                    <label className="text-sm font-medium">Pflichtfeld</label>
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <Button type="button" variant="outline" size="sm" onClick={resetItemForm}>
+                      Abbrechen
+                    </Button>
+                    <Button type="button" size="sm" onClick={handleAddItem} disabled={!itemLabel.trim()}>
+                      {editingItemIndex !== null ? 'Speichern' : 'Hinzufügen'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {items.length === 0 && !showItemForm ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
                   Noch keine Punkte hinzugefügt
                 </p>
@@ -749,84 +819,6 @@ export default function AdminChecklistsPage() {
           </form>
         </SheetContent>
       </Sheet>
-
-      {/* Item form dialog */}
-      <Dialog open={showItemForm} onOpenChange={(open) => !open && resetItemForm()}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editingItemIndex !== null ? 'Punkt bearbeiten' : 'Neuer Punkt'}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">
-                Bezeichnung <span className="text-error-500">*</span>
-              </label>
-              <Input
-                value={itemLabel}
-                onChange={(e) => setItemLabel(e.target.value)}
-                placeholder="z.B. Fenster gereinigt"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Typ</label>
-              <div className="grid grid-cols-2 gap-2">
-                {(Object.keys(itemTypeConfig) as ChecklistItemType[]).map((type) => {
-                  const config = itemTypeConfig[type];
-                  const Icon = config.icon;
-                  return (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() => setItemType(type)}
-                      className={cn(
-                        'p-3 rounded-lg border text-left flex items-center gap-2 transition-colors',
-                        itemType === type
-                          ? 'border-primary-500 bg-primary-50'
-                          : 'border-muted hover:border-primary-300'
-                      )}
-                    >
-                      <Icon className="h-4 w-4" />
-                      <span className="text-sm">{config.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setItemRequired(!itemRequired)}
-                className={cn(
-                  'w-10 h-6 rounded-full transition-colors relative',
-                  itemRequired ? 'bg-primary-600' : 'bg-muted'
-                )}
-              >
-                <span
-                  className={cn(
-                    'absolute top-1 w-4 h-4 rounded-full bg-white transition-transform',
-                    itemRequired ? 'left-5' : 'left-1'
-                  )}
-                />
-              </button>
-              <label className="text-sm font-medium">Pflichtfeld</label>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={resetItemForm}>
-              Abbrechen
-            </Button>
-            <Button onClick={handleAddItem} disabled={!itemLabel.trim()}>
-              {editingItemIndex !== null ? 'Speichern' : 'Hinzufügen'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Deactivate confirmation dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
