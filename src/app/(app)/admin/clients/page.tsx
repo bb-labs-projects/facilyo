@@ -610,7 +610,7 @@ function AdminClientsPageContent() {
                           </span>
                         )}
                         {isSuperAdmin && client.organizations?.name && (
-                          <span className="badge bg-purple-100 text-purple-700 text-xs">
+                          <span className="hidden sm:inline-flex badge bg-purple-100 text-purple-700 text-xs">
                             {client.organizations.name}
                           </span>
                         )}
@@ -638,6 +638,11 @@ function AdminClientsPageContent() {
                           <Phone className="h-3 w-3" />
                           {client.phone}
                         </p>
+                      )}
+                      {isSuperAdmin && client.organizations?.name && (
+                        <span className="sm:hidden badge bg-purple-100 text-purple-700 text-xs inline-flex mt-1">
+                          {client.organizations.name}
+                        </span>
                       )}
                     </button>
                     <div className="flex gap-1 flex-shrink-0">

@@ -655,7 +655,14 @@ function AdminPropertiesPageContent() {
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium">{property.name}</h3>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-medium">{property.name}</h3>
+                        {isSuperAdmin && property.organizations?.name && (
+                          <span className="hidden sm:inline-flex badge bg-purple-100 text-purple-700 text-xs">
+                            {property.organizations.name}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
                         <MapPin className="h-3 w-3" />
                         {property.address}, {property.postal_code} {property.city}
@@ -667,6 +674,11 @@ function AdminPropertiesPageContent() {
                         {inactive && (
                           <span className="badge bg-gray-100 text-gray-700 text-xs">
                             Inaktiv
+                          </span>
+                        )}
+                        {isSuperAdmin && property.organizations?.name && (
+                          <span className="sm:hidden badge bg-purple-100 text-purple-700 text-xs">
+                            {property.organizations.name}
                           </span>
                         )}
                       </div>
@@ -722,13 +734,6 @@ function AdminPropertiesPageContent() {
                       </Button>
                     </div>
                   </div>
-                  {isSuperAdmin && property.organizations?.name && (
-                    <div className="mt-2">
-                      <span className="badge bg-purple-100 text-purple-700 text-xs">
-                        {property.organizations.name}
-                      </span>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             );
