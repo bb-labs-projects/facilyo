@@ -22,6 +22,8 @@ import { getClient } from '@/lib/supabase/client';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { cn } from '@/lib/utils';
 import type { Invoice, InvoiceLineItem, Client, InvoiceStatus } from '@/types/database';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   FileText,
   Send,
@@ -29,11 +31,10 @@ import {
   X,
   Edit,
   Trash2,
-  Download,
+  Eye,
   ArrowLeft,
   Clock,
   CheckCircle,
-  AlertTriangle,
 } from 'lucide-react';
 
 const STATUS_LABELS: Record<string, string> = {
@@ -107,6 +108,10 @@ function AdminInvoiceDetailPageContent() {
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showSendDialog, setShowSendDialog] = useState(false);
+  const [sendToEmail, setSendToEmail] = useState('');
+  const [sendCcEmail, setSendCcEmail] = useState('');
+  const [sendCcEnabled, setSendCcEnabled] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   // Redirect if no permission — only when role is known (not during loading)
@@ -186,10 +191,11 @@ function AdminInvoiceDetailPageContent() {
 
   // Send invoice via email mutation
   const sendInvoiceMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async ({ email, cc_email }: { email: string; cc_email?: string }) => {
       const res = await fetch(`/api/invoices/${id}/send`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, cc_email }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -199,6 +205,7 @@ function AdminInvoiceDetailPageContent() {
     },
     onSuccess: (data) => {
       toast.success(`Rechnung an ${data.sent_to} gesendet`);
+      setShowSendDialog(false);
       queryClient.invalidateQueries({ queryKey: ['invoice', id] });
     },
     onError: (error: Error) => {
@@ -206,8 +213,8 @@ function AdminInvoiceDetailPageContent() {
     },
   });
 
-  // PDF generation and download
-  const handleDownloadPdf = async () => {
+  // PDF preview in new tab
+  const handlePreviewPdf = async () => {
     setIsGeneratingPdf(true);
     try {
       const res = await fetch(`/api/invoices/${id}/pdf`);
@@ -217,21 +224,21 @@ function AdminInvoiceDetailPageContent() {
       }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${invoice?.invoice_number || 'rechnung'}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toast.success('PDF heruntergeladen');
-      // Refresh invoice to get updated pdf_url
+      window.open(url, '_blank');
       queryClient.invalidateQueries({ queryKey: ['invoice', id] });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'PDF-Generierung fehlgeschlagen');
     } finally {
       setIsGeneratingPdf(false);
     }
+  };
+
+  // Open send dialog with prefilled emails
+  const handleOpenSendDialog = () => {
+    setSendToEmail(invoice?.clients?.email || '');
+    setSendCcEmail(billingSettings?.company_email || '');
+    setSendCcEnabled(!!billingSettings?.company_email);
+    setShowSendDialog(true);
   };
 
   if (!permissions.canManageInvoices) {
@@ -409,15 +416,15 @@ function AdminInvoiceDetailPageContent() {
         {/* Action Buttons */}
         <Card>
           <CardContent className="p-4 space-y-2">
-            {/* PDF Download */}
+            {/* PDF Preview */}
             <Button
               variant="outline"
               className="w-full"
-              onClick={handleDownloadPdf}
+              onClick={handlePreviewPdf}
               disabled={isGeneratingPdf}
             >
-              <Download className="h-4 w-4 mr-2" />
-              {isGeneratingPdf ? 'PDF wird generiert...' : 'PDF herunterladen'}
+              <Eye className="h-4 w-4 mr-2" />
+              {isGeneratingPdf ? 'PDF wird generiert...' : 'PDF Vorschau'}
             </Button>
 
             {/* Draft actions */}
@@ -443,11 +450,10 @@ function AdminInvoiceDetailPageContent() {
                 ) : (
                   <Button
                     className="w-full"
-                    onClick={() => sendInvoiceMutation.mutate()}
-                    disabled={sendInvoiceMutation.isPending}
+                    onClick={handleOpenSendDialog}
                   >
                     <Send className="h-4 w-4 mr-2" />
-                    {sendInvoiceMutation.isPending ? 'Wird gesendet...' : 'Per E-Mail senden'}
+                    Per E-Mail senden
                   </Button>
                 )}
                 <Button
@@ -488,11 +494,10 @@ function AdminInvoiceDetailPageContent() {
             {invoice.status === 'approved' && (
               <Button
                 className="w-full"
-                onClick={() => sendInvoiceMutation.mutate()}
-                disabled={sendInvoiceMutation.isPending}
+                onClick={handleOpenSendDialog}
               >
                 <Send className="h-4 w-4 mr-2" />
-                {sendInvoiceMutation.isPending ? 'Wird gesendet...' : 'Per E-Mail senden'}
+                Per E-Mail senden
               </Button>
             )}
 
@@ -585,6 +590,68 @@ function AdminInvoiceDetailPageContent() {
               disabled={updateStatusMutation.isPending}
             >
               Stornieren
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send Email Confirmation Dialog */}
+      <Dialog open={showSendDialog} onOpenChange={setShowSendDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rechnung versenden</DialogTitle>
+            <DialogDescription>
+              Rechnung {invoice.invoice_number} per E-Mail versenden
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="send-to">An</Label>
+              <Input
+                id="send-to"
+                type="email"
+                value={sendToEmail}
+                onChange={(e) => setSendToEmail(e.target.value)}
+                placeholder="E-Mail-Adresse des Empfängers"
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <input
+                  id="send-cc-enabled"
+                  type="checkbox"
+                  checked={sendCcEnabled}
+                  onChange={(e) => setSendCcEnabled(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <Label htmlFor="send-cc-enabled">Kopie an (CC)</Label>
+              </div>
+              {sendCcEnabled && (
+                <Input
+                  id="send-cc"
+                  type="email"
+                  value={sendCcEmail}
+                  onChange={(e) => setSendCcEmail(e.target.value)}
+                  placeholder="CC E-Mail-Adresse"
+                />
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSendDialog(false)}>
+              Abbrechen
+            </Button>
+            <Button
+              onClick={() => {
+                sendInvoiceMutation.mutate({
+                  email: sendToEmail,
+                  cc_email: sendCcEnabled ? sendCcEmail : undefined,
+                });
+              }}
+              disabled={sendInvoiceMutation.isPending || !sendToEmail}
+            >
+              <Send className="h-4 w-4 mr-2" />
+              {sendInvoiceMutation.isPending ? 'Wird gesendet...' : 'Senden'}
             </Button>
           </DialogFooter>
         </DialogContent>

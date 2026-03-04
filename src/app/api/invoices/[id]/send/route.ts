@@ -141,9 +141,10 @@ export async function POST(
       );
     }
 
-    // 7. Determine recipient email
+    // 7. Determine recipient email and optional CC
     const body = await request.json().catch(() => ({}));
     const recipientEmail = body.email || invoice.clients?.email;
+    const ccEmail = body.cc_email || null;
 
     if (!recipientEmail) {
       return NextResponse.json(
@@ -169,6 +170,7 @@ export async function POST(
     const { error: sendError } = await resend.emails.send({
       from: `${companyName} <${fromEmail}>`,
       to: recipientEmail,
+      cc: ccEmail ? [ccEmail] : undefined,
       subject: `Rechnung ${invoice.invoice_number}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

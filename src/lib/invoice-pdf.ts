@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf';
+import QRCode from 'qrcode';
 import { createServiceRoleClient } from '@/lib/supabase/server';
 
 export interface InvoicePdfData {
@@ -42,6 +43,7 @@ export interface BillingSettingsData {
   mwst_number: string | null;
   iban: string | null;
   qr_iban: string | null;
+  logo_url: string | null;
   payment_terms_days: number;
 }
 
@@ -61,13 +63,23 @@ function formatCHF(amount: number): string {
   });
 }
 
-export function generateInvoicePDF(invoice: InvoicePdfData, billing: BillingSettingsData): jsPDF {
+export function generateInvoicePDF(invoice: InvoicePdfData, billing: BillingSettingsData, options?: { logo_base64?: string; qr_data_url?: string }): jsPDF {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const pageWidth = 210;
   const marginLeft = 20;
   const marginRight = 20;
   const contentWidth = pageWidth - marginLeft - marginRight;
   let y = 20;
+
+  // --- Logo (top left) ---
+  if (options?.logo_base64) {
+    try {
+      doc.addImage(options.logo_base64, 'AUTO', marginLeft, y, 30, 15, undefined, 'FAST');
+      y += 18;
+    } catch {
+      // Skip logo if image format not supported
+    }
+  }
 
   // --- Company header (top left) ---
   doc.setFont('helvetica', 'bold');
@@ -310,7 +322,7 @@ export function generateInvoicePDF(invoice: InvoicePdfData, billing: BillingSett
     y += 5;
   }
 
-  // --- Swiss QR-Rechnung payment slip section (text-based placeholder) ---
+  // --- Swiss QR-Rechnung payment slip section ---
   y += 5;
   if (y > 250) {
     doc.addPage();
@@ -327,77 +339,90 @@ export function generateInvoicePDF(invoice: InvoicePdfData, billing: BillingSett
   doc.text('Zahlteil / Partie de paiement', marginLeft, y);
   y += 7;
 
+  const qrSectionStartY = y;
+  const textColumnX = marginLeft + 52; // Text starts after QR code area
+
+  // QR code image (left side, ~46x46mm per Swiss spec)
+  if (options?.qr_data_url) {
+    try {
+      doc.addImage(options.qr_data_url, 'PNG', marginLeft, y, 46, 46);
+    } catch {
+      // Skip QR if rendering fails
+    }
+  }
+
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
 
-  // Creditor info
+  // Creditor info (right of QR code)
+  let ty = qrSectionStartY;
   doc.setFont('helvetica', 'bold');
-  doc.text('Konto / Zahlbar an', marginLeft, y);
+  doc.text('Konto / Zahlbar an', textColumnX, ty);
   doc.setFont('helvetica', 'normal');
-  y += 4;
+  ty += 4;
   if (billing.qr_iban || billing.iban) {
-    doc.text(billing.qr_iban || billing.iban || '', marginLeft, y);
-    y += 4;
+    doc.text(billing.qr_iban || billing.iban || '', textColumnX, ty);
+    ty += 4;
   }
   if (billing.company_name) {
-    doc.text(billing.company_name, marginLeft, y);
-    y += 4;
+    doc.text(billing.company_name, textColumnX, ty);
+    ty += 4;
   }
   if (billing.company_address) {
-    doc.text(billing.company_address, marginLeft, y);
-    y += 4;
+    doc.text(billing.company_address, textColumnX, ty);
+    ty += 4;
   }
   if (billing.company_postal_code || billing.company_city) {
     doc.text(
       [billing.company_postal_code, billing.company_city].filter(Boolean).join(' '),
-      marginLeft,
-      y
+      textColumnX,
+      ty
     );
-    y += 4;
+    ty += 4;
   }
 
-  y += 3;
+  ty += 3;
 
   // Debtor info
   if (invoice.clients) {
     doc.setFont('helvetica', 'bold');
-    doc.text('Zahlbar durch', marginLeft, y);
+    doc.text('Zahlbar durch', textColumnX, ty);
     doc.setFont('helvetica', 'normal');
-    y += 4;
-    doc.text(invoice.clients.name, marginLeft, y);
-    y += 4;
+    ty += 4;
+    doc.text(invoice.clients.name, textColumnX, ty);
+    ty += 4;
     if (invoice.clients.address) {
-      doc.text(invoice.clients.address, marginLeft, y);
-      y += 4;
+      doc.text(invoice.clients.address, textColumnX, ty);
+      ty += 4;
     }
     if (invoice.clients.postal_code || invoice.clients.city) {
       doc.text(
         [invoice.clients.postal_code, invoice.clients.city].filter(Boolean).join(' '),
-        marginLeft,
-        y
+        textColumnX,
+        ty
       );
-      y += 4;
+      ty += 4;
     }
   }
 
-  y += 3;
+  ty += 3;
 
   // Amount
   doc.setFont('helvetica', 'bold');
-  doc.text('Währung', marginLeft, y);
-  doc.text('Betrag', marginLeft + 25, y);
-  y += 4;
+  doc.text('Währung', textColumnX, ty);
+  doc.text('Betrag', textColumnX + 25, ty);
+  ty += 4;
   doc.setFont('helvetica', 'normal');
-  doc.text('CHF', marginLeft, y);
-  doc.text(formatCHF(invoice.total), marginLeft + 25, y);
+  doc.text('CHF', textColumnX, ty);
+  doc.text(formatCHF(invoice.total), textColumnX + 25, ty);
 
   // Reference
-  y += 6;
+  ty += 6;
   doc.setFont('helvetica', 'bold');
-  doc.text('Referenz', marginLeft, y);
+  doc.text('Referenz', textColumnX, ty);
   doc.setFont('helvetica', 'normal');
-  y += 4;
-  doc.text(invoice.invoice_number, marginLeft, y);
+  ty += 4;
+  doc.text(invoice.invoice_number, textColumnX, ty);
 
   return doc;
 }
@@ -406,13 +431,94 @@ export function generateInvoicePDF(invoice: InvoicePdfData, billing: BillingSett
  * Generate PDF for an invoice and upload to Supabase Storage.
  * Updates the invoice's pdf_url. Returns the PDF buffer.
  */
+/**
+ * Build the Swiss QR-Rechnung payload string per SIX spec.
+ */
+function buildSwissQrPayload(invoice: InvoicePdfData, billing: BillingSettingsData): string {
+  const iban = (billing.qr_iban || billing.iban || '').replace(/\s/g, '');
+  const creditorName = billing.company_name || '';
+  const creditorAddress = billing.company_address || '';
+  const creditorCity = [billing.company_postal_code, billing.company_city].filter(Boolean).join(' ');
+
+  const debtorName = invoice.clients?.name || '';
+  const debtorAddress = invoice.clients?.address || '';
+  const debtorCity = [invoice.clients?.postal_code, invoice.clients?.city].filter(Boolean).join(' ');
+
+  const amount = invoice.total.toFixed(2);
+  const reference = invoice.invoice_number;
+
+  // SPC QR payload per Swiss Payment Standards
+  const lines = [
+    'SPC',           // QR Type
+    '0200',          // Version
+    '1',             // Coding Type (UTF-8)
+    iban,            // IBAN / QR-IBAN
+    'K',             // Address Type (K = Combined)
+    creditorName,
+    creditorAddress,
+    creditorCity,
+    '',              // Country (empty for K type)
+    '',              // Country (empty for K type)
+    'CH',            // Country
+    '',              // Ultimate creditor fields (7 empty)
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    amount,
+    'CHF',
+    'K',             // Debtor address type
+    debtorName,
+    debtorAddress,
+    debtorCity,
+    '',
+    '',
+    'CH',
+    'NON',           // Reference type (NON = no structured reference)
+    '',              // Reference
+    reference,       // Unstructured message
+    'EPD',           // Trailer
+  ];
+  return lines.join('\n');
+}
+
 export async function generateAndUploadInvoicePdf(
   invoiceId: string,
   organizationId: string,
   invoice: InvoicePdfData,
   billing: BillingSettingsData,
 ): Promise<Buffer> {
-  const doc = generateInvoicePDF(invoice, billing);
+  // Fetch logo if available
+  let logo_base64: string | undefined;
+  if (billing.logo_url) {
+    try {
+      const logoRes = await fetch(billing.logo_url);
+      if (logoRes.ok) {
+        const logoBuffer = await logoRes.arrayBuffer();
+        const contentType = logoRes.headers.get('content-type') || 'image/png';
+        logo_base64 = `data:${contentType};base64,${Buffer.from(logoBuffer).toString('base64')}`;
+      }
+    } catch {
+      // Skip logo on fetch failure
+    }
+  }
+
+  // Generate Swiss QR code
+  let qr_data_url: string | undefined;
+  try {
+    const qrPayload = buildSwissQrPayload(invoice, billing);
+    qr_data_url = await QRCode.toDataURL(qrPayload, {
+      errorCorrectionLevel: 'M',
+      margin: 0,
+      width: 400,
+    });
+  } catch {
+    // Skip QR on generation failure
+  }
+
+  const doc = generateInvoicePDF(invoice, billing, { logo_base64, qr_data_url });
   const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
 
   const serviceClient = createServiceRoleClient();
