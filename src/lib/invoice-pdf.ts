@@ -85,7 +85,7 @@ export function generateInvoicePDF(invoice: InvoicePdfData, billing: BillingSett
       const logoW = imgProps.width * ratio;
       const logoH = imgProps.height * ratio;
       doc.addImage(options.logo_base64, 'AUTO', marginLeft, y, logoW, logoH, undefined, 'FAST');
-      y += logoH + 3;
+      y += logoH + 8;
     } catch {
       // Skip logo if image format not supported
     }
@@ -176,9 +176,9 @@ export function generateInvoicePDF(invoice: InvoicePdfData, billing: BillingSett
   const colX = {
     pos: marginLeft,
     desc: marginLeft + 12,
-    qty: marginLeft + contentWidth - 80,
-    unit: marginLeft + contentWidth - 62,
-    price: marginLeft + contentWidth - 38,
+    qty: marginLeft + contentWidth - 85,
+    unit: marginLeft + contentWidth - 68,
+    price: marginLeft + contentWidth - 40,
     total: marginLeft + contentWidth - 12,
   };
 
@@ -188,8 +188,8 @@ export function generateInvoicePDF(invoice: InvoicePdfData, billing: BillingSett
   doc.text('Pos', colX.pos, y);
   doc.text('Beschreibung', colX.desc, y);
   doc.text('Menge', colX.qty, y, { align: 'right' });
-  doc.text('Einheit', colX.unit, y);
-  doc.text('Einzelpreis', colX.price, y, { align: 'right' });
+  doc.text('Einh.', colX.unit, y);
+  doc.text('Preis', colX.price, y, { align: 'right' });
   doc.text('Gesamt', colX.total, y, { align: 'right' });
   y += 2;
 
