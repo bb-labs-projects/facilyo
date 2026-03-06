@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/sheet';
 import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
+import { formatSwissNumber } from '@/lib/utils';
 import type { Client, ClientSubscription, SubscriptionInterval } from '@/types/database';
 
 interface BulkPreviewItem {
@@ -402,10 +403,10 @@ export function InvoiceSubscriptions() {
                       {sub.clients?.name}
                     </p>
                     <p className="text-sm font-semibold text-primary-600 mt-0.5">
-                      CHF {sub.yearly_amount.toFixed(2)} / Jahr
+                      CHF {formatSwissNumber(sub.yearly_amount)} / Jahr
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      CHF {getPeriodAmount(sub.yearly_amount, sub.interval).toFixed(2)} / {INTERVAL_LABELS[sub.interval]}
+                      CHF {formatSwissNumber(getPeriodAmount(sub.yearly_amount, sub.interval))} / {INTERVAL_LABELS[sub.interval]}
                     </p>
                     {sub.description && (
                       <p className="text-sm text-muted-foreground mt-0.5">{sub.description}</p>
@@ -540,7 +541,7 @@ export function InvoiceSubscriptions() {
 
             {subYearlyAmount && parseFloat(subYearlyAmount) > 0 && (
               <p className="text-sm text-muted-foreground">
-                Rechnungsbetrag pro Periode: CHF {getPeriodAmount(parseFloat(subYearlyAmount), subInterval).toFixed(2)}
+                Rechnungsbetrag pro Periode: CHF {formatSwissNumber(getPeriodAmount(parseFloat(subYearlyAmount), subInterval))}
               </p>
             )}
 
@@ -669,7 +670,7 @@ export function InvoiceSubscriptions() {
                                     )}
                                   </div>
                                   <span className="text-sm font-semibold whitespace-nowrap">
-                                    CHF {item.period_amount.toFixed(2)}
+                                    CHF {formatSwissNumber(item.period_amount)}
                                   </span>
                                 </div>
                               </CardContent>
@@ -727,7 +728,7 @@ export function InvoiceSubscriptions() {
                               <p className="text-xs text-muted-foreground">{inv.client_name}</p>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-sm font-semibold">CHF {inv.total.toFixed(2)}</span>
+                              <span className="text-sm font-semibold">CHF {formatSwissNumber(inv.total)}</span>
                               <a
                                 href={`/admin/invoices/${inv.invoice_id}`}
                                 className="text-primary-600 hover:text-primary-700"

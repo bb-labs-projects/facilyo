@@ -57,10 +57,14 @@ function formatDate(dateStr: string): string {
 }
 
 function formatCHF(amount: number): string {
-  return amount.toLocaleString('de-CH', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  return formatSwissNumber(amount);
+}
+
+function formatSwissNumber(n: number, decimals = 2): string {
+  const fixed = Math.abs(n).toFixed(decimals);
+  const [intPart, decPart] = fixed.split('.');
+  const withSep = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, "'");
+  return (n < 0 ? '-' : '') + withSep + (decPart ? '.' + decPart : '');
 }
 
 export function generateInvoicePDF(invoice: InvoicePdfData, billing: BillingSettingsData, options?: { logo_base64?: string; qr_data_url?: string }): jsPDF {

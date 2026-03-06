@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
-import { cn } from '@/lib/utils';
+import { cn, formatCHF } from '@/lib/utils';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { InvoiceSettings } from './components/invoice-settings';
 import { InvoiceSubscriptions } from './components/invoice-subscriptions';
@@ -63,13 +63,6 @@ function getStatusBadgeClasses(status: string): string {
     default:
       return 'bg-gray-100 text-gray-700';
   }
-}
-
-function formatCHF(amount: number): string {
-  return new Intl.NumberFormat('de-CH', {
-    style: 'currency',
-    currency: 'CHF',
-  }).format(amount);
 }
 
 function formatDate(dateStr: string): string {

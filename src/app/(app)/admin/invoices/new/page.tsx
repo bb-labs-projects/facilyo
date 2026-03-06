@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
-import { cn } from '@/lib/utils';
+import { cn, formatSwissNumber } from '@/lib/utils';
 import { ErrorBoundary } from '@/components/error-boundary';
 import type {
   Client,
@@ -895,7 +895,7 @@ function NewInvoicePageContent() {
                           <div className="flex-1 min-w-0">
                             <p className="font-medium">{sub.description}</p>
                             <p className="text-sm text-muted-foreground">
-                              CHF {sub.period_amount.toFixed(2)} / {INTERVAL_LABELS[sub.interval]} (Jahresbetrag: CHF {sub.yearly_amount.toFixed(2)})
+                              CHF {formatSwissNumber(sub.period_amount)} / {INTERVAL_LABELS[sub.interval]} (Jahresbetrag: CHF {formatSwissNumber(sub.yearly_amount)})
                             </p>
                           </div>
                         </label>
@@ -1087,7 +1087,7 @@ function NewInvoicePageContent() {
                                   Total
                                 </label>
                                 <p className="text-sm font-semibold text-primary-600">
-                                  CHF {roundTwo(group.totalHours * group.rate).toFixed(2)}
+                                  CHF {formatSwissNumber(roundTwo(group.totalHours * group.rate))}
                                 </p>
                               </div>
                             </div>
@@ -1175,7 +1175,7 @@ function NewInvoicePageContent() {
                           </div>
 
                           <p className="text-sm font-semibold text-primary-600">
-                            Total: CHF {roundTwo(item.quantity * item.unit_price).toFixed(2)}
+                            Total: CHF {formatSwissNumber(roundTwo(item.quantity * item.unit_price))}
                           </p>
                         </div>
 
@@ -1276,7 +1276,7 @@ function NewInvoicePageContent() {
                           <p className="text-sm font-medium">{item.description}</p>
                           <p className="text-xs text-muted-foreground">
                             {item.quantity} {item.unit} x CHF{' '}
-                            {item.unit_price.toFixed(2)}
+                            {formatSwissNumber(item.unit_price)}
                           </p>
                           {('period_start' in item) && (item as any).period_start && (
                             <p className="text-xs text-muted-foreground">
@@ -1288,7 +1288,7 @@ function NewInvoicePageContent() {
                           )}
                         </div>
                         <p className="text-sm font-semibold whitespace-nowrap">
-                          CHF {item.total.toFixed(2)}
+                          CHF {formatSwissNumber(item.total)}
                         </p>
                       </div>
                     ))}
@@ -1299,7 +1299,7 @@ function NewInvoicePageContent() {
                 <div className="border-t border-slate-200 pt-3 space-y-1">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Zwischensumme</span>
-                    <span className="font-medium">CHF {subtotal.toFixed(2)}</span>
+                    <span className="font-medium">CHF {formatSwissNumber(subtotal)}</span>
                   </div>
 
                   {mwstEnabled && (
@@ -1308,14 +1308,14 @@ function NewInvoicePageContent() {
                         MWST ({mwstRate}%)
                       </span>
                       <span className="font-medium">
-                        CHF {mwstAmount.toFixed(2)}
+                        CHF {formatSwissNumber(mwstAmount)}
                       </span>
                     </div>
                   )}
 
                   <div className="flex justify-between text-base font-bold pt-1 border-t border-slate-200">
                     <span>Total</span>
-                    <span>CHF {total.toFixed(2)}</span>
+                    <span>CHF {formatSwissNumber(total)}</span>
                   </div>
                 </div>
               </CardContent>

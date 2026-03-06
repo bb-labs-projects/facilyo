@@ -188,7 +188,7 @@ export async function POST(
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2>Rechnung ${escapeHtml(invoice.invoice_number)}</h2>
           <p>Guten Tag${contactPerson ? ' ' + escapeHtml(contactPerson) : ''},</p>
-          <p>Anbei erhalten Sie die Rechnung <strong>${escapeHtml(invoice.invoice_number)}</strong> über <strong>CHF ${invoice.total.toFixed(2)}</strong>.</p>
+          <p>Anbei erhalten Sie die Rechnung <strong>${escapeHtml(invoice.invoice_number)}</strong> über <strong>CHF ${formatSwissNumber(invoice.total)}</strong>.</p>
           <p>Fällig am: <strong>${formatDate(invoice.due_date)}</strong></p>
           ${invoice.notes ? `<p>${escapeHtml(invoice.notes)}</p>` : ''}
           <p>Die Rechnung ist als PDF-Anhang beigefügt.</p>
@@ -261,6 +261,14 @@ export async function POST(
       { status: 500 }
     );
   }
+}
+
+/** Format number with Swiss apostrophe thousands separator */
+function formatSwissNumber(n: number, decimals = 2): string {
+  const fixed = Math.abs(n).toFixed(decimals);
+  const [intPart, decPart] = fixed.split('.');
+  const withSep = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, "'");
+  return (n < 0 ? '-' : '') + withSep + (decPart ? '.' + decPart : '');
 }
 
 /** Escape HTML special characters to prevent XSS in email content */

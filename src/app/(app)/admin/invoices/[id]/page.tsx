@@ -20,7 +20,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
 import { ErrorBoundary } from '@/components/error-boundary';
-import { cn } from '@/lib/utils';
+import { cn, formatCHF } from '@/lib/utils';
 import type { Invoice, InvoiceLineItem, Client, InvoiceStatus } from '@/types/database';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -73,13 +73,6 @@ function getDisplayStatus(invoice: Invoice): string {
     return 'overdue';
   }
   return invoice.status;
-}
-
-function formatCHF(amount: number): string {
-  return new Intl.NumberFormat('de-CH', {
-    style: 'currency',
-    currency: 'CHF',
-  }).format(amount);
 }
 
 function formatDate(dateStr: string): string {

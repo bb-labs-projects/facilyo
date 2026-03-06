@@ -13,18 +13,12 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { formatCHF } from '@/lib/utils';
 import type { Invoice, InvoiceLineItem, Client } from '@/types/database';
 import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react';
 
 function roundTwo(n: number): number {
   return Math.round(n * 100) / 100;
-}
-
-function formatCHF(amount: number): string {
-  return new Intl.NumberFormat('de-CH', {
-    style: 'currency',
-    currency: 'CHF',
-  }).format(amount);
 }
 
 type InvoiceWithDetails = Invoice & {

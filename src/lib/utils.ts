@@ -142,6 +142,23 @@ export function capitalize(text: string): string {
 }
 
 /**
+ * Format a number with Swiss apostrophe thousands separator: ##'###.##
+ */
+export function formatSwissNumber(n: number, decimals = 2): string {
+  const fixed = Math.abs(n).toFixed(decimals);
+  const [intPart, decPart] = fixed.split('.');
+  const withSep = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, "'");
+  return (n < 0 ? '-' : '') + withSep + (decPart ? '.' + decPart : '');
+}
+
+/**
+ * Format a CHF amount: "CHF ##'###.##"
+ */
+export function formatCHF(amount: number): string {
+  return `CHF ${formatSwissNumber(amount)}`;
+}
+
+/**
  * Check if running in PWA mode
  */
 export function isPWA(): boolean {

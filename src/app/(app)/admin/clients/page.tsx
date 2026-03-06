@@ -26,7 +26,7 @@ import {
 import { usePermissions } from '@/hooks/use-permissions';
 import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
-import { cn } from '@/lib/utils';
+import { cn, formatSwissNumber } from '@/lib/utils';
 import { ErrorBoundary } from '@/components/error-boundary';
 import type { Client, ClientInsert, ClientUpdate, Property, ServiceRate, ClientRateOverride, ClientSubscription, SubscriptionInterval } from '@/types/database';
 
@@ -968,7 +968,7 @@ function AdminClientsPageContent() {
                               )}
                             </div>
                             <p className="text-sm font-semibold text-primary-600 mt-0.5">
-                              CHF {sub.yearly_amount.toFixed(2)} / Jahr
+                              CHF {formatSwissNumber(sub.yearly_amount)} / Jahr
                             </p>
                             {sub.description && (
                               <p className="text-sm text-muted-foreground mt-0.5">{sub.description}</p>
