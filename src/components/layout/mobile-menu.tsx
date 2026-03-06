@@ -17,8 +17,6 @@ import {
   CalendarDays,
   Palmtree,
   Crown,
-  Receipt,
-  DollarSign,
   FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -65,8 +63,6 @@ const adminNavItems: NavItem[] = [
   { href: '/admin/calendar', label: 'Benutzerkalender', icon: CalendarDays, requireAdmin: true, requireUserCalendar: true },
   { href: '/admin/roles', label: 'Rollen', icon: Shield, requireAdmin: true, requireRolePermissions: true },
   { href: '/admin/invoices', label: 'Rechnungen', icon: FileText, requireAdmin: true, requireInvoices: true },
-  { href: '/admin/billing-settings', label: 'Rechnungseinstellungen', icon: Receipt, requireAdmin: true, requireInvoices: true },
-  { href: '/admin/service-rates', label: 'Stundenansätze', icon: DollarSign, requireAdmin: true, requireInvoices: true },
 ];
 
 interface MobileMenuProps {
