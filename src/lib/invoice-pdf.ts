@@ -75,11 +75,17 @@ export function generateInvoicePDF(invoice: InvoicePdfData, billing: BillingSett
   const contentWidth = pageWidth - marginLeft - marginRight;
   let y = 20;
 
-  // --- Logo (top left) ---
+  // --- Logo (top left, preserve aspect ratio) ---
   if (options?.logo_base64) {
     try {
-      doc.addImage(options.logo_base64, 'AUTO', marginLeft, y, 30, 15, undefined, 'FAST');
-      y += 18;
+      const imgProps = doc.getImageProperties(options.logo_base64);
+      const maxW = 35;
+      const maxH = 20;
+      const ratio = Math.min(maxW / imgProps.width, maxH / imgProps.height);
+      const logoW = imgProps.width * ratio;
+      const logoH = imgProps.height * ratio;
+      doc.addImage(options.logo_base64, 'AUTO', marginLeft, y, logoW, logoH, undefined, 'FAST');
+      y += logoH + 3;
     } catch {
       // Skip logo if image format not supported
     }
@@ -170,9 +176,9 @@ export function generateInvoicePDF(invoice: InvoicePdfData, billing: BillingSett
   const colX = {
     pos: marginLeft,
     desc: marginLeft + 12,
-    qty: marginLeft + contentWidth - 70,
-    unit: marginLeft + contentWidth - 55,
-    price: marginLeft + contentWidth - 35,
+    qty: marginLeft + contentWidth - 80,
+    unit: marginLeft + contentWidth - 62,
+    price: marginLeft + contentWidth - 38,
     total: marginLeft + contentWidth - 12,
   };
 
@@ -247,17 +253,17 @@ export function generateInvoicePDF(invoice: InvoicePdfData, billing: BillingSett
   y += 6;
 
   // --- Totals ---
-  const totalsX = marginLeft + contentWidth - 60;
+  const totalsLabelX = marginLeft + contentWidth - 38;
   const totalsValX = marginLeft + contentWidth - 12;
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
-  doc.text('Zwischensumme:', totalsX, y);
+  doc.text('Zwischensumme:', totalsLabelX, y, { align: 'right' });
   doc.text(`CHF ${formatCHF(invoice.subtotal)}`, totalsValX, y, { align: 'right' });
   y += 6;
 
   if (invoice.mwst_rate > 0) {
-    doc.text(`MWST (${invoice.mwst_rate}%):`, totalsX, y);
+    doc.text(`MWST (${invoice.mwst_rate}%):`, totalsLabelX, y, { align: 'right' });
     doc.text(`CHF ${formatCHF(invoice.mwst_amount)}`, totalsValX, y, { align: 'right' });
     y += 6;
   }
@@ -265,11 +271,11 @@ export function generateInvoicePDF(invoice: InvoicePdfData, billing: BillingSett
   // Total bold line
   doc.setDrawColor(0);
   doc.setLineWidth(0.5);
-  doc.line(totalsX - 5, y - 2, totalsValX + 5, y - 2);
+  doc.line(totalsLabelX - 30, y - 2, totalsValX + 5, y - 2);
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
-  doc.text('Total:', totalsX, y + 3);
+  doc.text('Total:', totalsLabelX, y + 3, { align: 'right' });
   doc.text(`CHF ${formatCHF(invoice.total)}`, totalsValX, y + 3, { align: 'right' });
   y += 14;
 

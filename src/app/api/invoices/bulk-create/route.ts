@@ -19,26 +19,12 @@ function getPeriodAmount(yearlyAmount: number, interval: SubscriptionInterval): 
 
 function calculatePeriodDates(nextBillingDate: string, interval: SubscriptionInterval): { period_start: string; period_end: string } {
   const start = new Date(nextBillingDate);
-  // period_start = first of that month
-  const periodStart = new Date(start.getFullYear(), start.getMonth(), 1);
+  // period_start = first of the next month after next_billing_date
+  const periodStart = new Date(start.getFullYear(), start.getMonth() + 1, 1);
 
-  let periodEnd: Date;
-  switch (interval) {
-    case 'monthly':
-      // end of the same month
-      periodEnd = new Date(start.getFullYear(), start.getMonth() + 1, 0);
-      break;
-    case 'quarterly':
-      // end of month + 2 months
-      periodEnd = new Date(start.getFullYear(), start.getMonth() + 3, 0);
-      break;
-    case 'half_yearly':
-      periodEnd = new Date(start.getFullYear(), start.getMonth() + 6, 0);
-      break;
-    case 'annually':
-      periodEnd = new Date(start.getFullYear(), start.getMonth() + 12, 0);
-      break;
-  }
+  const monthsMap = { monthly: 1, quarterly: 3, half_yearly: 6, annually: 12 } as const;
+  // period_end = last day of the period
+  const periodEnd = new Date(periodStart.getFullYear(), periodStart.getMonth() + monthsMap[interval], 0);
 
   return {
     period_start: periodStart.toISOString().split('T')[0],
@@ -48,13 +34,10 @@ function calculatePeriodDates(nextBillingDate: string, interval: SubscriptionInt
 
 function advanceNextBillingDate(nextBillingDate: string, interval: SubscriptionInterval): string {
   const date = new Date(nextBillingDate);
-  switch (interval) {
-    case 'monthly': date.setMonth(date.getMonth() + 1); break;
-    case 'quarterly': date.setMonth(date.getMonth() + 3); break;
-    case 'half_yearly': date.setMonth(date.getMonth() + 6); break;
-    case 'annually': date.setFullYear(date.getFullYear() + 1); break;
-  }
-  return date.toISOString().split('T')[0];
+  const monthsMap = { monthly: 1, quarterly: 3, half_yearly: 6, annually: 12 } as const;
+  // Advance to the last day of the month that is N months ahead
+  const advanced = new Date(date.getFullYear(), date.getMonth() + 1 + monthsMap[interval], 0);
+  return advanced.toISOString().split('T')[0];
 }
 
 export async function POST(request: NextRequest) {

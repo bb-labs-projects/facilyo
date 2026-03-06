@@ -277,9 +277,9 @@ export function InvoiceSubscriptions() {
       for (const sub of (subs || [])) {
         const periodAmount = getPeriodAmount(sub.yearly_amount, sub.interval);
         const start = new Date(sub.next_billing_date);
-        const periodStart = new Date(start.getFullYear(), start.getMonth(), 1);
+        const periodStart = new Date(start.getFullYear(), start.getMonth() + 1, 1);
         const monthsMap = { monthly: 1, quarterly: 3, half_yearly: 6, annually: 12 } as const;
-        const periodEnd = new Date(start.getFullYear(), start.getMonth() + monthsMap[sub.interval as SubscriptionInterval], 0);
+        const periodEnd = new Date(periodStart.getFullYear(), periodStart.getMonth() + monthsMap[sub.interval as SubscriptionInterval], 0);
         const pStart = periodStart.toISOString().split('T')[0];
         const pEnd = periodEnd.toISOString().split('T')[0];
 

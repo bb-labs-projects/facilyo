@@ -18,7 +18,13 @@
       "Bash(npx playwright:*)",
       "Bash(dir:*)",
       "Bash(node scripts/generate-icons.js:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "WebFetch(domain:facilyo.ch)",
+      "Bash(ls -la \"/c/Users/erich/Desktop/Claude Projects/facilyo/src/app/\\(app\\)/admin/invoices/\")",
+      "Bash(ls -la \"/c/Users/erich/Desktop/Claude Projects/facilyo/src/app/\\(app\\)/admin/invoices/[id]/\")",
+      "Bash(ls -la \"/c/Users/erich/Desktop/Claude Projects/facilyo/src/app/\\(app\\)/admin/invoices/new/\")",
+      "Bash(npx tsc --noEmit)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

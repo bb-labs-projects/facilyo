@@ -490,7 +490,7 @@ function NewInvoicePageContent() {
     .filter((g) => g.totalHours > 0)
     .map((g) => ({
       line_type: 'hours' as InvoiceLineItemType,
-      description: `${ACTIVITY_LABELS[g.activity_type] || g.activity_type} — ${g.totalHours.toFixed(2)} Std`,
+      description: ACTIVITY_LABELS[g.activity_type] || g.activity_type,
       quantity: roundTwo(g.totalHours),
       unit: 'Std',
       unit_price: g.rate,
