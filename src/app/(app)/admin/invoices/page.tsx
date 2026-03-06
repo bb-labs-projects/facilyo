@@ -14,6 +14,7 @@ import { getClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { InvoiceSettings } from './components/invoice-settings';
+import { InvoiceSubscriptions } from './components/invoice-subscriptions';
 import type { InvoiceWithClient, Client } from '@/types/database';
 
 const STATUS_LABELS: Record<string, string> = {
@@ -87,7 +88,7 @@ function AdminInvoicesPageContent() {
   const permissions = usePermissions();
   const organizationId = useAuthStore((state) => state.organizationId);
 
-  const [activeTab, setActiveTab] = useState<'invoices' | 'settings'>('invoices');
+  const [activeTab, setActiveTab] = useState<'invoices' | 'subscriptions' | 'settings'>('invoices');
   const [statusFilter, setStatusFilter] = useState('all');
   const [clientFilter, setClientFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -214,6 +215,18 @@ function AdminInvoicesPageContent() {
         </button>
         <button
           type="button"
+          onClick={() => setActiveTab('subscriptions')}
+          className={cn(
+            'px-4 py-1.5 rounded-full text-sm font-medium transition-colors',
+            activeTab === 'subscriptions'
+              ? 'bg-primary-600 text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          )}
+        >
+          Abonnements
+        </button>
+        <button
+          type="button"
           onClick={() => setActiveTab('settings')}
           className={cn(
             'px-4 py-1.5 rounded-full text-sm font-medium transition-colors',
@@ -228,6 +241,8 @@ function AdminInvoicesPageContent() {
 
       {activeTab === 'settings' ? (
         <InvoiceSettings />
+      ) : activeTab === 'subscriptions' ? (
+        <InvoiceSubscriptions />
       ) : (
         <>
           {/* Summary Cards */}
