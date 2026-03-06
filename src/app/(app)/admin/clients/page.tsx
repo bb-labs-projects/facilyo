@@ -885,34 +885,33 @@ function AdminClientsPageContent() {
             </SheetTitle>
           </SheetHeader>
 
-          <div className="mt-4 space-y-3 overflow-y-auto max-h-[calc(70vh-140px)]">
-            <p className="text-sm text-muted-foreground">
-              Kundenspezifische Ansätze überschreiben die Organisationsstandards.
+          <div className="mt-4 space-y-4 overflow-y-auto max-h-[calc(70vh-140px)]">
+            <p className="text-xs text-muted-foreground">
+              Leer lassen = Organisationsstandard wird verwendet.
             </p>
-            {ACTIVITY_TYPES.map((at) => {
-              const orgRate = orgRates.find((r) => r.activity_type === at.key);
-              const clientOverride = clientRateOverrides.find((r) => r.activity_type === at.key);
-              const currentValue = rateOverrides[at.key] ?? (clientOverride ? String(clientOverride.hourly_rate) : '');
+            <div className="space-y-2">
+              {ACTIVITY_TYPES.map((at) => {
+                const orgRate = orgRates.find((r) => r.activity_type === at.key);
+                const clientOverride = clientRateOverrides.find((r) => r.activity_type === at.key);
+                const currentValue = rateOverrides[at.key] ?? (clientOverride ? String(clientOverride.hourly_rate) : '');
 
-              return (
-                <div key={at.key} className="p-3 rounded-lg border border-muted space-y-1">
-                  <label className="text-sm font-medium">{at.label}</label>
-                  {orgRate && (
-                    <p className="text-xs text-muted-foreground">
-                      Standard: CHF {orgRate.hourly_rate.toFixed(2)} / Std
-                    </p>
-                  )}
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder={orgRate ? `${orgRate.hourly_rate.toFixed(2)} (Standard)` : 'Kein Standard'}
-                    value={currentValue}
-                    onChange={(e) => setRateOverrides((prev) => ({ ...prev, [at.key]: e.target.value }))}
-                  />
-                </div>
-              );
-            })}
+                return (
+                  <div key={at.key} className="flex items-center gap-3">
+                    <label className="text-sm font-medium w-36 flex-shrink-0">{at.label}</label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder={orgRate ? `${orgRate.hourly_rate.toFixed(2)}` : '—'}
+                      value={currentValue}
+                      onChange={(e) => setRateOverrides((prev) => ({ ...prev, [at.key]: e.target.value }))}
+                      className="flex-1"
+                    />
+                    <span className="text-xs text-muted-foreground w-8 flex-shrink-0">/Std</span>
+                  </div>
+                );
+              })}
+            </div>
 
             <Button
               className="w-full"
