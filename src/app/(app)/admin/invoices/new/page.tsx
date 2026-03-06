@@ -463,7 +463,13 @@ function NewInvoicePageContent() {
   }, [permissions.role, permissions.canManageInvoices, router]);
 
   if (!permissions.canManageInvoices) {
-    return null;
+    return (
+      <PageContainer header={<Header title="Neue Rechnung" />}>
+        <div className="text-center py-12 text-muted-foreground">
+          Wird geladen...
+        </div>
+      </PageContainer>
+    );
   }
 
   // -----------------------------------------------------------------------
@@ -654,7 +660,7 @@ function NewInvoicePageContent() {
   }
 
   return (
-    <PageContainer header={<Header title="Neue Rechnung" showBack backHref="/admin/invoices" />}>
+    <PageContainer header={<Header title="Neue Rechnung" />}>
       <div className="space-y-6">
         {/* Step indicator */}
         <div className="flex items-center justify-center gap-2">
