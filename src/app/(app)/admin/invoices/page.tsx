@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import Link from 'next/link';
 import { Plus, Search, FileText, Send, Loader2 } from 'lucide-react';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
@@ -238,9 +239,12 @@ function AdminInvoicesPageContent() {
           title="Rechnungen"
           rightElement={
             activeTab === 'invoices' ? (
-              <Button size="icon" onClick={() => router.push('/admin/invoices/new')}>
+              <Link
+                href="/admin/invoices/new"
+                className="inline-flex items-center justify-center rounded-lg h-10 w-10 bg-primary-900 text-white hover:bg-primary-800 active:bg-primary-950 active:scale-[0.98] transition-all"
+              >
                 <Plus className="h-5 w-5" />
-              </Button>
+              </Link>
             ) : undefined
           }
         />
