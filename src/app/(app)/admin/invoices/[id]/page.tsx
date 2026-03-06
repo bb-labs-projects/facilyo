@@ -168,6 +168,7 @@ function AdminInvoiceDetailPageContent() {
     onSuccess: () => {
       toast.success('Status aktualisiert');
       queryClient.invalidateQueries({ queryKey: ['invoice', id] });
+      queryClient.invalidateQueries({ queryKey: ['admin-invoices'] });
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -181,7 +182,8 @@ function AdminInvoiceDetailPageContent() {
       if (!res.ok) throw new Error('Löschen fehlgeschlagen');
     },
     onSuccess: () => {
-      toast.success('Rechnung geloescht');
+      toast.success('Rechnung gelöscht');
+      queryClient.invalidateQueries({ queryKey: ['admin-invoices'] });
       router.push('/admin/invoices');
     },
     onError: (error: Error) => {
@@ -207,6 +209,7 @@ function AdminInvoiceDetailPageContent() {
       toast.success(`Rechnung an ${data.sent_to} gesendet`);
       setShowSendDialog(false);
       queryClient.invalidateQueries({ queryKey: ['invoice', id] });
+      queryClient.invalidateQueries({ queryKey: ['admin-invoices'] });
     },
     onError: (error: Error) => {
       toast.error(error.message);
@@ -537,6 +540,18 @@ function AdminInvoiceDetailPageContent() {
               >
                 <X className="h-4 w-4 mr-2" />
                 Stornieren
+              </Button>
+            )}
+
+            {/* Cancelled actions */}
+            {invoice.status === 'cancelled' && (
+              <Button
+                variant="destructive"
+                className="w-full"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Löschen
               </Button>
             )}
           </CardContent>

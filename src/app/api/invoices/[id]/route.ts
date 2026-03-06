@@ -337,9 +337,9 @@ export async function DELETE(
       );
     }
 
-    if (existingInvoice.status !== 'draft') {
+    if (existingInvoice.status !== 'draft' && existingInvoice.status !== 'cancelled') {
       return NextResponse.json(
-        { error: 'Nur Entwurfs-Rechnungen können gelöscht werden' },
+        { error: 'Nur Entwürfe und stornierte Rechnungen können gelöscht werden' },
         { status: 400 }
       );
     }
