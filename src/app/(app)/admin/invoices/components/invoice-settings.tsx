@@ -512,6 +512,7 @@ export function InvoiceSettings() {
 
       {/* Save billing settings button */}
       <Button
+        type="button"
         className="w-full"
         onClick={handleSaveBilling}
         disabled={saveMutation.isPending}
