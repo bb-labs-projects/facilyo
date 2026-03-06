@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
+import { generateAndUploadInvoicePdf } from '@/lib/invoice-pdf';
+import type { InvoicePdfData, BillingSettingsData } from '@/lib/invoice-pdf';
 
 /**
  * Helper to authenticate the user, verify org membership, and check role permissions.
@@ -257,12 +259,34 @@ export async function PATCH(
       }
     }
 
-    // Return updated invoice
+    // Re-fetch updated invoice
     const { data: updatedInvoice } = await (serviceClient as any)
       .from('invoices')
       .select('*, clients(*), invoice_line_items(*)')
       .eq('id', id)
       .single();
+
+    // Regenerate PDF with updated data (non-blocking)
+    if (updatedInvoice) {
+      try {
+        const { data: rawBilling } = await (serviceClient as any)
+          .from('organization_billing_settings')
+          .select('*')
+          .eq('organization_id', organizationId)
+          .single();
+
+        if (rawBilling) {
+          await generateAndUploadInvoicePdf(
+            id,
+            organizationId,
+            updatedInvoice as unknown as InvoicePdfData,
+            rawBilling as unknown as BillingSettingsData,
+          );
+        }
+      } catch (pdfError) {
+        console.error('PDF regeneration after edit failed (non-blocking):', pdfError);
+      }
+    }
 
     return NextResponse.json(updatedInvoice);
   } catch (error) {
@@ -320,8 +344,16 @@ export async function DELETE(
       );
     }
 
-    // Delete invoice (cascade handles line items and invoice_time_entries)
+    // Delete stored PDF from storage (non-blocking)
     const serviceClient = createServiceRoleClient();
+    const storagePath = `${organizationId}/${id}.pdf`;
+    try {
+      await serviceClient.storage.from('invoices').remove([storagePath]);
+    } catch (storageError) {
+      console.error('PDF storage cleanup failed (non-blocking):', storageError);
+    }
+
+    // Delete invoice (cascade handles line items and invoice_time_entries)
     const { error: deleteError } = await (serviceClient as any)
       .from('invoices')
       .delete()

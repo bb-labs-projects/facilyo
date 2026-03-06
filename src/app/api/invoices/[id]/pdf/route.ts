@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { generateAndUploadInvoicePdf } from '@/lib/invoice-pdf';
 import type { InvoicePdfData, BillingSettingsData } from '@/lib/invoice-pdf';
 
 /**
  * GET /api/invoices/[id]/pdf
- * Generate a PDF for the given invoice, upload to storage, and return it.
+ * Serve the stored PDF for the given invoice. Falls back to generating if not stored.
  */
 export async function GET(
   request: NextRequest,
@@ -48,21 +48,19 @@ export async function GET(
       );
     }
 
-    // Fetch invoice with client and line items
-    const { data: rawInvoice, error: invoiceError } = await (supabase as any)
+    // Fetch invoice (minimal — only need pdf_url, org check, and invoice_number)
+    const { data: invoice, error: invoiceError } = await (supabase as any)
       .from('invoices')
-      .select('*, clients(*), invoice_line_items(*)')
+      .select('id, organization_id, invoice_number, pdf_url')
       .eq('id', id)
       .single();
 
-    if (invoiceError || !rawInvoice) {
+    if (invoiceError || !invoice) {
       return NextResponse.json(
         { error: 'Rechnung nicht gefunden' },
         { status: 404 }
       );
     }
-
-    const invoice = rawInvoice as unknown as InvoicePdfData;
 
     if (invoice.organization_id !== organizationId) {
       return NextResponse.json(
@@ -71,26 +69,60 @@ export async function GET(
       );
     }
 
-    // Fetch billing settings
-    const { data: rawBilling, error: billingError } = await (supabase as any)
+    // Try to serve stored PDF
+    if (invoice.pdf_url) {
+      const serviceClient = createServiceRoleClient();
+      const { data: blob, error: downloadError } = await serviceClient.storage
+        .from('invoices')
+        .download(invoice.pdf_url);
+
+      if (!downloadError && blob) {
+        const buffer = Buffer.from(await blob.arrayBuffer());
+        return new NextResponse(new Uint8Array(buffer), {
+          headers: {
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': `inline; filename="Rechnung_${invoice.invoice_number}.pdf"`,
+          },
+        });
+      }
+      // If download failed, fall through to regeneration
+      console.error('Stored PDF download failed, regenerating:', downloadError);
+    }
+
+    // Fallback: generate PDF (for legacy invoices without stored PDF)
+    const { data: fullInvoice } = await (supabase as any)
+      .from('invoices')
+      .select('*, clients(*), invoice_line_items(*)')
+      .eq('id', id)
+      .single();
+
+    if (!fullInvoice) {
+      return NextResponse.json(
+        { error: 'Rechnung nicht gefunden' },
+        { status: 404 }
+      );
+    }
+
+    const { data: rawBilling } = await (supabase as any)
       .from('organization_billing_settings')
       .select('*')
       .eq('organization_id', organizationId)
       .single();
 
-    if (billingError || !rawBilling) {
+    if (!rawBilling) {
       return NextResponse.json(
         { error: 'Abrechnungseinstellungen nicht gefunden. Bitte zuerst konfigurieren.' },
         { status: 400 }
       );
     }
 
-    const billing = rawBilling as unknown as BillingSettingsData;
+    const pdfBuffer = await generateAndUploadInvoicePdf(
+      id,
+      organizationId,
+      fullInvoice as unknown as InvoicePdfData,
+      rawBilling as unknown as BillingSettingsData,
+    );
 
-    // Generate PDF and upload to storage
-    const pdfBuffer = await generateAndUploadInvoicePdf(id, organizationId, invoice, billing);
-
-    // Return PDF as response
     return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',

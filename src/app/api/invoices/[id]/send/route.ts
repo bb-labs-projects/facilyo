@@ -7,9 +7,9 @@ import type { InvoicePdfData, BillingSettingsData } from '@/lib/invoice-pdf';
 /**
  * POST /api/invoices/[id]/send
  * Send an invoice via email using Resend.
- * Attaches the PDF from storage and transitions status to 'sent'.
+ * Uses the stored PDF from Supabase Storage. Falls back to generating if not stored.
  *
- * Optional body: { email?: string } to override recipient.
+ * Optional body: { email?: string, cc_email?: string } to override recipient.
  */
 export async function POST(
   request: NextRequest,
@@ -110,35 +110,47 @@ export async function POST(
 
     const serviceClient = createServiceRoleClient();
 
-    // 6. Generate PDF (always regenerate to ensure it's up-to-date)
-    // Fetch full invoice with line items for PDF generation
-    const { data: fullInvoice } = await (supabase as any)
-      .from('invoices')
-      .select('*, clients(*), invoice_line_items(*)')
-      .eq('id', id)
-      .single();
-
-    if (!fullInvoice) {
-      return NextResponse.json(
-        { error: 'Rechnung nicht gefunden' },
-        { status: 404 }
-      );
-    }
-
+    // 6. Get PDF — try stored PDF first, fall back to generating
     let pdfBuffer: Buffer;
-    try {
-      pdfBuffer = await generateAndUploadInvoicePdf(
-        id,
-        organizationId,
-        fullInvoice as unknown as InvoicePdfData,
-        billingSettings as unknown as BillingSettingsData,
-      );
-    } catch (pdfError) {
-      console.error('PDF generation failed:', pdfError);
-      return NextResponse.json(
-        { error: 'PDF konnte nicht generiert werden' },
-        { status: 500 }
-      );
+    const storagePath = invoice.pdf_url || `${organizationId}/${id}.pdf`;
+
+    const { data: blob, error: downloadError } = await serviceClient.storage
+      .from('invoices')
+      .download(storagePath);
+
+    if (!downloadError && blob) {
+      pdfBuffer = Buffer.from(await blob.arrayBuffer());
+    } else {
+      // Fallback: generate PDF
+      console.error('Stored PDF download failed, regenerating:', downloadError);
+
+      const { data: fullInvoice } = await (supabase as any)
+        .from('invoices')
+        .select('*, clients(*), invoice_line_items(*)')
+        .eq('id', id)
+        .single();
+
+      if (!fullInvoice) {
+        return NextResponse.json(
+          { error: 'Rechnung nicht gefunden' },
+          { status: 404 }
+        );
+      }
+
+      try {
+        pdfBuffer = await generateAndUploadInvoicePdf(
+          id,
+          organizationId,
+          fullInvoice as unknown as InvoicePdfData,
+          billingSettings as unknown as BillingSettingsData,
+        );
+      } catch (pdfError) {
+        console.error('PDF generation failed:', pdfError);
+        return NextResponse.json(
+          { error: 'PDF konnte nicht generiert werden' },
+          { status: 500 }
+        );
+      }
     }
 
     // 7. Determine recipient email and optional CC

@@ -172,6 +172,11 @@ export function InvoiceSettings() {
     onSuccess: () => {
       toast.success('Einstellungen wurden gespeichert');
       queryClient.invalidateQueries({ queryKey: ['billing-settings', organizationId] });
+
+      // Regenerate PDFs for all draft invoices (fire and forget)
+      fetch('/api/invoices/regenerate-drafts', { method: 'POST' }).catch((err) => {
+        console.error('Draft PDF regeneration failed:', err);
+      });
     },
     onError: (error: Error) => {
       toast.error(`Fehler: ${error.message}`);
