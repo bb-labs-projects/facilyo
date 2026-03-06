@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -88,12 +88,6 @@ function AdminInvoicesPageContent() {
   const [clientFilter, setClientFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Redirect if no permission — only when role is known (not during loading)
-  useEffect(() => {
-    if (permissions.role && !permissions.canManageInvoices) {
-      router.push('/admin');
-    }
-  }, [permissions.role, permissions.canManageInvoices, router]);
 
   // Fetch invoices with client info
   const { data: invoices = [], isLoading } = useQuery({

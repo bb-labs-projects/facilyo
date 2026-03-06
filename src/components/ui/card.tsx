@@ -20,7 +20,7 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
       } : onKeyDown}
       onClick={onClick}
       className={cn(
-        'rounded-xl lg:rounded-2xl border border-slate-200 bg-white text-card-foreground shadow-sm',
+        'rounded-xl lg:rounded-2xl border border-slate-200 bg-white text-card-foreground shadow-sm overflow-hidden',
         interactive && 'card-interactive cursor-pointer hover:shadow-md transition-shadow',
         className
       )}

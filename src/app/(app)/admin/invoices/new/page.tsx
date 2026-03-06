@@ -455,13 +455,6 @@ function NewInvoicePageContent() {
     setHoursGroupsBuilt(true);
   };
 
-  // Permission check redirect — only when role is known (not during loading)
-  useEffect(() => {
-    if (permissions.role && !permissions.canManageInvoices) {
-      router.push('/admin');
-    }
-  }, [permissions.role, permissions.canManageInvoices, router]);
-
   if (!permissions.canManageInvoices) {
     return (
       <PageContainer header={<Header title="Neue Rechnung" />}>
