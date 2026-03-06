@@ -82,7 +82,9 @@ export async function POST(request: NextRequest) {
 
     // If no username provided, generate from name
     if (!username) {
-      username = `${firstName.toLowerCase()}.${lastName.toLowerCase()}`.replace(/[^a-z0-9.-]/g, '');
+      username = `${firstName.toLowerCase()}.${lastName.toLowerCase()}`
+        .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
+        .replace(/[^a-z0-9.-]/g, '');
     }
 
     // Check for username collisions early

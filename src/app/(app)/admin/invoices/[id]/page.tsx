@@ -43,7 +43,7 @@ const STATUS_LABELS: Record<string, string> = {
   approved: 'Genehmigt',
   sent: 'Gesendet',
   paid: 'Bezahlt',
-  overdue: 'Ueberfaellig',
+  overdue: 'Überfällig',
   cancelled: 'Storniert',
 };
 
@@ -112,7 +112,7 @@ function AdminInvoiceDetailPageContent() {
   const [sendToEmail, setSendToEmail] = useState('');
   const [sendCcEmail, setSendCcEmail] = useState('');
   const [sendCcEnabled, setSendCcEnabled] = useState(false);
-  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isOpeningPdf, setIsOpeningPdf] = useState(false);
 
   // Redirect if no permission — only when role is known (not during loading)
   useEffect(() => {
@@ -178,7 +178,7 @@ function AdminInvoiceDetailPageContent() {
   const deleteMutation = useMutation({
     mutationFn: async () => {
       const res = await fetch(`/api/invoices/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Loeschen fehlgeschlagen');
+      if (!res.ok) throw new Error('Löschen fehlgeschlagen');
     },
     onSuccess: () => {
       toast.success('Rechnung geloescht');
@@ -214,22 +214,23 @@ function AdminInvoiceDetailPageContent() {
   });
 
   // PDF preview in new tab
+  const hasPdf = !!invoice?.pdf_url;
   const handlePreviewPdf = async () => {
-    setIsGeneratingPdf(true);
+    setIsOpeningPdf(true);
     try {
       const res = await fetch(`/api/invoices/${id}/pdf`);
       if (!res.ok) {
-        const data = await res.json().catch(() => ({ error: 'PDF-Generierung fehlgeschlagen' }));
-        throw new Error(data.error || 'PDF-Generierung fehlgeschlagen');
+        const data = await res.json().catch(() => ({ error: 'PDF konnte nicht geladen werden' }));
+        throw new Error(data.error || 'PDF konnte nicht geladen werden');
       }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       window.open(url, '_blank');
       queryClient.invalidateQueries({ queryKey: ['invoice', id] });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'PDF-Generierung fehlgeschlagen');
+      toast.error(error instanceof Error ? error.message : 'PDF konnte nicht geladen werden');
     } finally {
-      setIsGeneratingPdf(false);
+      setIsOpeningPdf(false);
     }
   };
 
@@ -326,7 +327,7 @@ function AdminInvoiceDetailPageContent() {
                 <p className="text-sm">{formatDate(invoice.issue_date)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Faelligkeitsdatum</p>
+                <p className="text-xs text-muted-foreground">Fälligkeitsdatum</p>
                 <p className="text-sm">{formatDate(invoice.due_date)}</p>
               </div>
               {invoice.sent_at && (
@@ -421,10 +422,14 @@ function AdminInvoiceDetailPageContent() {
               variant="outline"
               className="w-full"
               onClick={handlePreviewPdf}
-              disabled={isGeneratingPdf}
+              disabled={isOpeningPdf}
             >
               <Eye className="h-4 w-4 mr-2" />
-              {isGeneratingPdf ? 'PDF wird generiert...' : 'PDF Vorschau'}
+              {isOpeningPdf
+                ? hasPdf
+                  ? 'PDF wird geöffnet...'
+                  : 'PDF wird generiert...'
+                : 'PDF Vorschau'}
             </Button>
 
             {/* Draft actions */}
@@ -462,7 +467,7 @@ function AdminInvoiceDetailPageContent() {
                   onClick={() => setShowDeleteDialog(true)}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Loeschen
+                  Löschen
                 </Button>
               </>
             )}
@@ -542,10 +547,10 @@ function AdminInvoiceDetailPageContent() {
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rechnung loeschen</DialogTitle>
+            <DialogTitle>Rechnung löschen</DialogTitle>
             <DialogDescription>
-              Moechten Sie die Rechnung {invoice.invoice_number} wirklich loeschen? Diese Aktion kann nicht
-              rueckgaengig gemacht werden.
+              Möchten Sie die Rechnung {invoice.invoice_number} wirklich löschen? Diese Aktion kann nicht
+              rückgängig gemacht werden.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -560,7 +565,7 @@ function AdminInvoiceDetailPageContent() {
               }}
               disabled={deleteMutation.isPending}
             >
-              Loeschen
+              Löschen
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -573,8 +578,8 @@ function AdminInvoiceDetailPageContent() {
             <DialogTitle>Rechnung stornieren</DialogTitle>
             <DialogDescription>
               {isPaidInvoice
-                ? 'Moechten Sie diese bezahlte Rechnung wirklich stornieren? Zeiteintraege werden wieder freigegeben.'
-                : `Moechten Sie die Rechnung ${invoice.invoice_number} wirklich stornieren?`}
+                ? 'Möchten Sie diese bezahlte Rechnung wirklich stornieren? Zeiteinträge werden wieder freigegeben.'
+                : `Möchten Sie die Rechnung ${invoice.invoice_number} wirklich stornieren?`}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

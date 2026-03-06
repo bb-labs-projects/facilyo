@@ -55,7 +55,9 @@ export function generateTempPassword(length: number = 16): string {
 export function generateUsernameFromEmail(email: string): string {
   const localPart = email.split('@')[0];
   // Clean up: only allow alphanumeric, dots, underscores, hyphens
-  const cleaned = localPart.replace(/[^a-zA-Z0-9._-]/g, '').toLowerCase();
+  const cleaned = localPart.toLowerCase()
+    .replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss')
+    .replace(/[^a-z0-9._-]/g, '');
   return cleaned || 'user';
 }
 
