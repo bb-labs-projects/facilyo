@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Home,
@@ -55,7 +54,7 @@ export function BottomNav() {
           const Icon = item.icon;
 
           return (
-            <Link
+            <a
               key={item.href}
               href={item.href}
               onClick={handleNavClick}
@@ -105,7 +104,7 @@ export function BottomNav() {
               >
                 {item.label}
               </span>
-            </Link>
+            </a>
           );
         })}
       </div>

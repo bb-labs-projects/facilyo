@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { Logo } from '@/components/ui/logo';
 import { usePathname } from 'next/navigation';
 import {
@@ -129,7 +128,7 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
               const Icon = item.icon;
 
               return (
-                <Link
+                <a
                   key={item.href}
                   href={item.href}
                   onClick={handleNavClick}
@@ -168,7 +167,7 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
                   {item.href === '/vacation' && vacationCount > 0 && (
                     <span className="sr-only">, {vacationCount} offen</span>
                   )}
-                </Link>
+                </a>
               );
             })}
           </div>
@@ -186,7 +185,7 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
                   const Icon = item.icon;
 
                   return (
-                    <Link
+                    <a
                       key={item.href}
                       href={item.href}
                       onClick={handleNavClick}
@@ -209,7 +208,7 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
                       {item.href === '/admin/activity' && completedTasksCount > 0 && (
                         <span className="sr-only">, {completedTasksCount} erledigt</span>
                       )}
-                    </Link>
+                    </a>
                   );
                 })}
               </div>
@@ -223,7 +222,7 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
                 Super-Admin
               </p>
               <div className="space-y-1">
-                <Link
+                <a
                   href="/super-admin"
                   onClick={handleNavClick}
                   className={cn(
@@ -235,7 +234,7 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
                 >
                   <Crown className="h-5 w-5" />
                   <span>Super-Admin</span>
-                </Link>
+                </a>
               </div>
             </>
           )}
@@ -243,7 +242,7 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
 
         {/* User Profile Section */}
         <div className="border-t border-primary-800 p-4">
-          <Link
+          <a
             href="/profile"
             onClick={handleNavClick}
             className={cn(
@@ -264,7 +263,7 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
                 {user?.email || ''}
               </span>
             </div>
-          </Link>
+          </a>
         </div>
       </SheetContent>
     </Sheet>
