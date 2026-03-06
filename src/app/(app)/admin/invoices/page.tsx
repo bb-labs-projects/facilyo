@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
-import { Plus, Search, FileText } from 'lucide-react';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { Plus, Search, FileText, Send, Loader2 } from 'lucide-react';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -132,6 +133,59 @@ function AdminInvoicesPageContent() {
     },
     enabled: !!organizationId,
   });
+
+  // Fetch billing settings to check approval_required
+  const { data: billingSettings } = useQuery({
+    queryKey: ['billing-settings'],
+    queryFn: async () => {
+      const supabase = getClient();
+      const { data, error } = await (supabase as any)
+        .from('organization_billing_settings')
+        .select('*')
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!organizationId,
+  });
+
+  const queryClient = useQueryClient();
+  const approvalRequired = billingSettings?.approval_required ?? false;
+  const sendableStatus = approvalRequired ? 'approved' : 'draft';
+  const sendableInvoices = invoices.filter((inv) => inv.status === sendableStatus);
+
+  const bulkSendMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch('/api/invoices/bulk-send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Massenversand fehlgeschlagen');
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-invoices'] });
+      if (data.failed === 0) {
+        toast.success(`${data.sent} Rechnung(en) erfolgreich versendet`);
+      } else {
+        toast.warning(`${data.sent} versendet, ${data.failed} fehlgeschlagen`);
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(error.message);
+    },
+  });
+
+  const handleBulkSend = () => {
+    if (!window.confirm(
+      `Möchten Sie ${sendableInvoices.length} Rechnung(en) versenden?`
+    )) return;
+    bulkSendMutation.mutate();
+  };
 
   // Compute summary values
   const now = new Date();
@@ -314,6 +368,30 @@ function AdminInvoicesPageContent() {
             </select>
           </div>
 
+          {/* Bulk Send Button */}
+          {sendableInvoices.length > 0 && (
+            <div className="mb-4">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={handleBulkSend}
+                disabled={bulkSendMutation.isPending}
+              >
+                {bulkSendMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4 mr-2" />
+                )}
+                {bulkSendMutation.isPending
+                  ? 'Wird versendet...'
+                  : approvalRequired
+                    ? `Alle genehmigten versenden (${sendableInvoices.length})`
+                    : `Alle Entwürfe versenden (${sendableInvoices.length})`
+                }
+              </Button>
+            </div>
+          )}
+
           {/* Invoice List */}
           {isLoading ? (
             <div className="text-center py-12 text-muted-foreground">
@@ -350,6 +428,14 @@ function AdminInvoicesPageContent() {
                           </div>
                           <p className="text-sm text-muted-foreground mt-0.5">
                             {invoice.clients?.name}
+                          </p>
+                          {invoice.clients?.contact_person && (
+                            <p className="text-xs text-muted-foreground">
+                              {invoice.clients.contact_person}
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            {invoice.sent_to_email || invoice.clients?.email || 'Keine E-Mail'}
                           </p>
                           <p className="text-xs text-muted-foreground mt-0.5">
                             {formatDate(invoice.issue_date)}

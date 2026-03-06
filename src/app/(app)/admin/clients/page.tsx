@@ -374,7 +374,7 @@ function AdminClientsPageContent() {
 
   // Subscription CRUD mutations
   const saveSubMutation = useMutation({
-    mutationFn: async (data: { name: string; description: string | null; amount: number; interval: SubscriptionInterval; next_billing_date: string | null; is_active: boolean }) => {
+    mutationFn: async (data: { name: string; description: string | null; yearly_amount: number; interval: SubscriptionInterval; next_billing_date: string | null; is_active: boolean }) => {
       if (!subscriptionsClient) return;
       const supabase = getClient();
       await ensureValidSession();
@@ -439,7 +439,7 @@ function AdminClientsPageContent() {
   const openEditSubForm = (sub: ClientSubscription) => {
     setSubName(sub.name);
     setSubDescription(sub.description || '');
-    setSubAmount(String(sub.amount));
+    setSubAmount(String(sub.yearly_amount));
     setSubInterval(sub.interval);
     setSubNextBillingDate(sub.next_billing_date || '');
     setSubIsActive(sub.is_active);
@@ -969,7 +969,7 @@ function AdminClientsPageContent() {
                               )}
                             </div>
                             <p className="text-sm font-semibold text-primary-600 mt-0.5">
-                              CHF {sub.amount.toFixed(2)} / {INTERVAL_LABELS[sub.interval]}
+                              CHF {sub.yearly_amount.toFixed(2)} / Jahr
                             </p>
                             {sub.description && (
                               <p className="text-sm text-muted-foreground mt-0.5">{sub.description}</p>
@@ -1013,7 +1013,7 @@ function AdminClientsPageContent() {
                   saveSubMutation.mutate({
                     name: subName.trim(),
                     description: subDescription.trim() || null,
-                    amount: parseFloat(subAmount),
+                    yearly_amount: parseFloat(subAmount),
                     interval: subInterval,
                     next_billing_date: subNextBillingDate || null,
                     is_active: subIsActive,
@@ -1045,7 +1045,7 @@ function AdminClientsPageContent() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">
-                      Betrag (CHF) <span className="text-error-500">*</span>
+                      Jahresbetrag (CHF) <span className="text-error-500">*</span>
                     </label>
                     <Input
                       type="number"

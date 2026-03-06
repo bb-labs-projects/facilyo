@@ -91,6 +91,15 @@ function roundTwo(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
+function getPeriodAmount(yearly: number, interval: SubscriptionInterval): number {
+  switch (interval) {
+    case 'monthly': return roundTwo(yearly / 12);
+    case 'quarterly': return roundTwo(yearly / 4);
+    case 'half_yearly': return roundTwo(yearly / 2);
+    case 'annually': return yearly;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Types for the form
 // ---------------------------------------------------------------------------
@@ -98,7 +107,8 @@ function roundTwo(n: number): number {
 interface SubscriptionLineItem {
   subscription_id: string;
   description: string;
-  amount: number;
+  period_amount: number;
+  yearly_amount: number;
   interval: SubscriptionInterval;
   period_start: string;
   period_end: string;
@@ -411,11 +421,12 @@ function NewInvoicePageContent() {
         clientSubscriptions.map((sub) => ({
           subscription_id: sub.id,
           description: sub.name,
-          amount: sub.amount,
+          period_amount: getPeriodAmount(sub.yearly_amount, sub.interval),
+          yearly_amount: sub.yearly_amount,
           interval: sub.interval,
           period_start: formatDate(firstOfMonth),
           period_end: formatDate(endOfMonth),
-          selected: true,
+          selected: false,
         }))
       );
     } else {
@@ -471,8 +482,8 @@ function NewInvoicePageContent() {
     description: s.description,
     quantity: 1,
     unit: 'Stk',
-    unit_price: s.amount,
-    total: roundTwo(s.amount),
+    unit_price: s.period_amount,
+    total: roundTwo(s.period_amount),
     subscription_id: s.subscription_id,
     period_start: s.period_start,
     period_end: s.period_end,
@@ -607,7 +618,7 @@ function NewInvoicePageContent() {
 
   const updateSubscriptionField = (
     subscriptionId: string,
-    field: 'period_start' | 'period_end' | 'amount',
+    field: 'period_start' | 'period_end' | 'period_amount',
     value: string | number
   ) => {
     setSubscriptionItems((prev) =>
@@ -777,7 +788,7 @@ function NewInvoicePageContent() {
                     onChange={(e) => setInvoiceNumber(e.target.value)}
                   />
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-slate-500">
                         Rechnungsdatum
@@ -884,7 +895,7 @@ function NewInvoicePageContent() {
                           <div className="flex-1 min-w-0">
                             <p className="font-medium">{sub.description}</p>
                             <p className="text-sm text-muted-foreground">
-                              CHF {sub.amount.toFixed(2)} / {INTERVAL_LABELS[sub.interval]}
+                              CHF {sub.period_amount.toFixed(2)} / {INTERVAL_LABELS[sub.interval]} (Jahresbetrag: CHF {sub.yearly_amount.toFixed(2)})
                             </p>
                           </div>
                         </label>
@@ -927,17 +938,17 @@ function NewInvoicePageContent() {
                             </div>
                             <div className="space-y-1">
                               <label className="text-xs font-medium text-slate-500">
-                                Betrag (CHF)
+                                Rechnungsbetrag (CHF)
                               </label>
                               <Input
                                 type="number"
                                 step="0.01"
                                 min="0"
-                                value={sub.amount}
+                                value={sub.period_amount}
                                 onChange={(e) =>
                                   updateSubscriptionField(
                                     sub.subscription_id,
-                                    'amount',
+                                    'period_amount',
                                     parseFloat(e.target.value) || 0
                                   )
                                 }

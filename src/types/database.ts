@@ -871,7 +871,7 @@ export interface Database {
           client_id: string;
           name: string;
           description: string | null;
-          amount: number;
+          yearly_amount: number;
           interval: SubscriptionInterval;
           is_active: boolean;
           next_billing_date: string | null;
@@ -884,7 +884,7 @@ export interface Database {
           client_id: string;
           name: string;
           description?: string | null;
-          amount: number;
+          yearly_amount: number;
           interval?: SubscriptionInterval;
           is_active?: boolean;
           next_billing_date?: string | null;
@@ -897,7 +897,7 @@ export interface Database {
           client_id?: string;
           name?: string;
           description?: string | null;
-          amount?: number;
+          yearly_amount?: number;
           interval?: SubscriptionInterval;
           is_active?: boolean;
           next_billing_date?: string | null;

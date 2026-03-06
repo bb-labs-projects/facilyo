@@ -220,6 +220,8 @@ function AdminInvoiceDetailPageContent() {
   const hasPdf = !!invoice?.pdf_url;
   const handlePreviewPdf = async () => {
     setIsOpeningPdf(true);
+    // Open window immediately to preserve user-gesture context (avoids popup blocker)
+    const pdfWindow = window.open('about:blank', '_blank');
     try {
       const res = await fetch(`/api/invoices/${id}/pdf`);
       if (!res.ok) {
@@ -228,9 +230,14 @@ function AdminInvoiceDetailPageContent() {
       }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
+      if (pdfWindow) {
+        pdfWindow.location.href = url;
+      } else {
+        window.open(url, '_blank');
+      }
       queryClient.invalidateQueries({ queryKey: ['invoice', id] });
     } catch (error) {
+      pdfWindow?.close();
       toast.error(error instanceof Error ? error.message : 'PDF konnte nicht geladen werden');
     } finally {
       setIsOpeningPdf(false);
