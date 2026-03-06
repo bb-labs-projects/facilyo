@@ -58,6 +58,7 @@ function AdminClientsPageContent() {
   const [showRatesSheet, setShowRatesSheet] = useState(false);
   const [ratesClient, setRatesClient] = useState<Client | null>(null);
   const [rateOverrides, setRateOverrides] = useState<Record<string, string>>({});
+  const [rateEditing, setRateEditing] = useState<Record<string, boolean>>({});
 
   // Subscriptions state
   const [showSubscriptionsSheet, setShowSubscriptionsSheet] = useState(false);
@@ -893,17 +894,20 @@ function AdminClientsPageContent() {
               {ACTIVITY_TYPES.map((at) => {
                 const orgRate = orgRates.find((r) => r.activity_type === at.key);
                 const clientOverride = clientRateOverrides.find((r) => r.activity_type === at.key);
-                const currentValue = rateOverrides[at.key] ?? (clientOverride ? String(clientOverride.hourly_rate) : '');
+                const rawValue = rateOverrides[at.key] ?? (clientOverride ? String(clientOverride.hourly_rate) : '');
+                const numVal = parseFloat(rawValue);
+                const displayValue = rateEditing[at.key] || !rawValue ? rawValue : (isNaN(numVal) ? rawValue : formatSwissNumber(numVal));
 
                 return (
                   <div key={at.key} className="flex items-center gap-3">
                     <label className="text-sm font-medium w-36 flex-shrink-0">{at.label}</label>
                     <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder={orgRate ? `${orgRate.hourly_rate.toFixed(2)}` : '—'}
-                      value={currentValue}
+                      type="text"
+                      inputMode="decimal"
+                      placeholder={orgRate ? formatSwissNumber(orgRate.hourly_rate) : '—'}
+                      value={displayValue}
+                      onFocus={() => setRateEditing((prev) => ({ ...prev, [at.key]: true }))}
+                      onBlur={() => setRateEditing((prev) => ({ ...prev, [at.key]: false }))}
                       onChange={(e) => setRateOverrides((prev) => ({ ...prev, [at.key]: e.target.value }))}
                       className="flex-1"
                     />

@@ -902,7 +902,7 @@ function NewInvoicePageContent() {
 
                         {sub.selected && (
                           <div className="pl-7 space-y-3">
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-3">
                               <div className="space-y-1">
                                 <label className="text-xs font-medium text-slate-500">
                                   Periode von
@@ -974,7 +974,7 @@ function NewInvoicePageContent() {
                       Zeitraum & Filter
                     </h3>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <label className="text-xs font-medium text-slate-500">
                           Von

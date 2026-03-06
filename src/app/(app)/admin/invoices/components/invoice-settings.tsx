@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
+import { formatSwissNumber } from '@/lib/utils';
 import type { OrganizationBillingSettings, ServiceRate } from '@/types/database';
 
 interface BillingSettingsFormData {
@@ -66,7 +67,7 @@ export function InvoiceSettings() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- Service rates state (all rates at once) ---
-  const [rateValues, setRateValues] = useState<Record<string, { hourly_rate: string; description: string }>>({});
+  const [rateValues, setRateValues] = useState<Record<string, { hourly_rate: string; description: string; editing: boolean }>>({});
 
   // Session refresh helpers
   const sessionRefreshLock = useRef(false);
@@ -242,12 +243,13 @@ export function InvoiceSettings() {
 
   // Initialize rate values from fetched data
   useEffect(() => {
-    const values: Record<string, { hourly_rate: string; description: string }> = {};
+    const values: Record<string, { hourly_rate: string; description: string; editing: boolean }> = {};
     for (const at of ACTIVITY_TYPES) {
       const existing = ratesByType[at.key];
       values[at.key] = {
         hourly_rate: existing ? String(existing.hourly_rate) : '',
         description: existing?.description ?? '',
+        editing: false,
       };
     }
     setRateValues(values);
@@ -521,28 +523,35 @@ export function InvoiceSettings() {
           <h2 className="text-base font-semibold text-slate-800">Stundenansätze</h2>
 
           <div className="space-y-3">
-            {ACTIVITY_TYPES.map((type) => (
-              <div key={type.key} className="grid grid-cols-[1fr,auto] gap-2 items-end">
-                <div className="space-y-1">
+            {ACTIVITY_TYPES.map((type) => {
+              const rv = rateValues[type.key];
+              const rawVal = rv?.hourly_rate ?? '';
+              const numVal = parseFloat(rawVal);
+              const displayVal = rv?.editing || !rawVal ? rawVal : (isNaN(numVal) ? rawVal : formatSwissNumber(numVal));
+              return (
+                <div key={type.key} className="space-y-1">
                   <label className="text-sm font-medium">{type.label}</label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="CHF / Std"
-                    value={rateValues[type.key]?.hourly_rate ?? ''}
-                    onChange={(e) => updateRateField(type.key, 'hourly_rate', e.target.value)}
-                  />
+                  <div className="flex items-center gap-3">
+                    <Input
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="CHF / Std"
+                      value={displayVal}
+                      onFocus={() => setRateValues((prev) => ({
+                        ...prev,
+                        [type.key]: { ...prev[type.key], editing: true },
+                      }))}
+                      onBlur={() => setRateValues((prev) => ({
+                        ...prev,
+                        [type.key]: { ...prev[type.key], editing: false },
+                      }))}
+                      onChange={(e) => updateRateField(type.key, 'hourly_rate', e.target.value)}
+                    />
+                    <span className="text-xs text-muted-foreground w-8 flex-shrink-0">/Std</span>
+                  </div>
                 </div>
-                <Input
-                  type="text"
-                  placeholder="Beschreibung"
-                  className="w-40"
-                  value={rateValues[type.key]?.description ?? ''}
-                  onChange={(e) => updateRateField(type.key, 'description', e.target.value)}
-                />
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <Button
