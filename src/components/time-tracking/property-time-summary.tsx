@@ -2,6 +2,7 @@
 
 import { Building2, Car, Coffee, Wrench, Trees, Scissors, ClipboardList, Sparkles, Palmtree } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTranslations } from 'next-intl';
 import { swissFormat } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import type { TimeEntryWithProperty, TimeEntryType, ActivityType } from '@/types/database';
@@ -22,27 +23,27 @@ interface EntrySummary {
 
 // Entry type display configuration
 const ENTRY_TYPE_CONFIG: Record<TimeEntryType, {
-  label: string;
+  labelKey: string;
   icon: typeof Car;
   color: string;
 }> = {
   property: {
-    label: 'Liegenschaft',
+    labelKey: 'property',
     icon: Building2,
     color: 'text-primary-900',
   },
   travel: {
-    label: 'Fahrzeit',
+    labelKey: 'travel',
     icon: Car,
     color: 'text-amber-600',
   },
   break: {
-    label: 'Pause',
+    labelKey: 'break',
     icon: Coffee,
     color: 'text-orange-600',
   },
   vacation: {
-    label: 'Ferien',
+    labelKey: 'vacation',
     icon: Palmtree,
     color: 'text-green-600',
   },
@@ -50,18 +51,22 @@ const ENTRY_TYPE_CONFIG: Record<TimeEntryType, {
 
 // Activity type display configuration
 const ACTIVITY_TYPE_CONFIG: Record<ActivityType, {
-  label: string;
+  labelKey: string;
   icon: typeof Wrench;
   color: string;
 }> = {
-  hauswartung: { label: 'Hauswartung', icon: Wrench, color: 'text-blue-600' },
-  rasen_maehen: { label: 'Rasen', icon: Trees, color: 'text-green-600' },
-  hecken_schneiden: { label: 'Hecken', icon: Scissors, color: 'text-emerald-600' },
-  regie: { label: 'Regie', icon: ClipboardList, color: 'text-purple-600' },
-  reinigung: { label: 'Reinigung', icon: Sparkles, color: 'text-cyan-600' },
+  hauswartung: { labelKey: 'hauswartung', icon: Wrench, color: 'text-blue-600' },
+  rasen_maehen: { labelKey: 'rasenShort', icon: Trees, color: 'text-green-600' },
+  hecken_schneiden: { labelKey: 'heckenShort', icon: Scissors, color: 'text-emerald-600' },
+  regie: { labelKey: 'regie', icon: ClipboardList, color: 'text-purple-600' },
+  reinigung: { labelKey: 'reinigung', icon: Sparkles, color: 'text-cyan-600' },
 };
 
 export function PropertyTimeSummary({ entries, className }: PropertyTimeSummaryProps) {
+  const tEntry = useTranslations('entryTypes');
+  const tAct = useTranslations('activities');
+  const tTime = useTranslations('timeTracking');
+
   // Aggregate time entries by property (for property entries) or by type (for travel/break)
   // Filter out zero-duration entries (e.g., from auto-stop at same time as start)
   const summaries = entries.reduce<Record<string, EntrySummary>>((acc, entry) => {
@@ -81,10 +86,10 @@ export function PropertyTimeSummary({ entries, className }: PropertyTimeSummaryP
 
     if (entryType === 'property' && entry.property_id) {
       key = `property-${entry.property_id}`;
-      name = entry.property?.name || 'Unbekannte Liegenschaft';
+      name = entry.property?.name || tTime('unknownProperty');
     } else {
       key = entryType;
-      name = ENTRY_TYPE_CONFIG[entryType].label;
+      name = tEntry(ENTRY_TYPE_CONFIG[entryType].labelKey);
     }
 
     if (!acc[key]) {
@@ -141,7 +146,7 @@ export function PropertyTimeSummary({ entries, className }: PropertyTimeSummaryP
     <Card className={className}>
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
-          Zeitübersicht
+          {tTime('overviewTitle')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
@@ -177,7 +182,7 @@ export function PropertyTimeSummary({ entries, className }: PropertyTimeSummaryP
                         <div
                           key={activityType}
                           className="flex items-center gap-1 text-xs"
-                          title={actConfig.label}
+                          title={tAct(actConfig.labelKey)}
                         >
                           <ActivityIcon className={cn('h-3.5 w-3.5', actConfig.color)} />
                           <span className="font-mono text-muted-foreground">

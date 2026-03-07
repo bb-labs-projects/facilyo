@@ -12,6 +12,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import { useTranslations } from 'next-intl';
 import { cn, calculateDistance } from '@/lib/utils';
 import type { Property } from '@/types/database';
 
@@ -36,6 +37,8 @@ export function PropertySelector({
   autoSelectNearest = false,
   className,
 }: PropertySelectorProps) {
+  const tTime = useTranslations('timeTracking');
+  const tProp = useTranslations('properties');
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
 
@@ -104,7 +107,7 @@ export function PropertySelector({
             <div className="flex items-center gap-3">
               <Building2 className="h-5 w-5 text-muted-foreground" />
               <span className={cn(!selectedProperty && 'text-muted-foreground')}>
-                {selectedProperty?.name || 'Liegenschaft wählen'}
+                {selectedProperty?.name || tTime('selectProperty')}
               </span>
             </div>
             <MapPin className="h-5 w-5 text-muted-foreground" />
@@ -113,7 +116,7 @@ export function PropertySelector({
 
         <SheetContent side="bottom" className="h-[80vh]">
           <SheetHeader>
-            <SheetTitle>Liegenschaft wählen</SheetTitle>
+            <SheetTitle>{tTime('selectProperty')}</SheetTitle>
           </SheetHeader>
 
           <div className="mt-4 space-y-4">
@@ -130,13 +133,13 @@ export function PropertySelector({
                 ) : (
                   <Navigation className="h-4 w-4 mr-2" />
                 )}
-                {userCoords ? 'Standort aktualisieren' : 'Standort ermitteln'}
+                {userCoords ? tTime('updateLocation') : tTime('getLocation')}
               </Button>
             )}
 
             {/* Search input */}
             <Input
-              placeholder="Suchen..."
+              placeholder={tProp('searchPlaceholder')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               leftElement={<Search className="h-4 w-4 text-muted-foreground" />}
@@ -147,7 +150,7 @@ export function PropertySelector({
             <div className="space-y-2 overflow-y-auto max-h-[calc(80vh-200px)]">
               {sortedProperties.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
-                  Keine Liegenschaften gefunden
+                  {tTime('noPropertiesFound')}
                 </p>
               ) : (
                 sortedProperties.map((property) => {
@@ -249,11 +252,13 @@ interface PropertyDisplayProps {
 }
 
 export function PropertyDisplay({ property, className }: PropertyDisplayProps) {
+  const tProp = useTranslations('properties');
+
   if (!property) {
     return (
       <div className={cn('flex items-center gap-2 text-muted-foreground', className)}>
         <Building2 className="h-4 w-4" />
-        <span className="text-sm">Keine Liegenschaft</span>
+        <span className="text-sm">{tProp('noProperties')}</span>
       </div>
     );
   }

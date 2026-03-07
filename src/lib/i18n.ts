@@ -1,6 +1,6 @@
 import { getRequestConfig } from 'next-intl/server';
 import { format, formatDistance, formatRelative, parseISO } from 'date-fns';
-import { de, enUS, es, pt, sl, sq, mk, hr, bs, sr } from 'date-fns/locale';
+import { de, enUS, es, pt, sl, sq, mk, hr, bs, sr, fr, it } from 'date-fns/locale';
 
 // Default locale
 export const defaultLocale = 'de-CH';
@@ -16,6 +16,8 @@ export const locales = [
   'sq',
   'es',
   'pt',
+  'fr',
+  'it',
 ] as const;
 export type Locale = (typeof locales)[number];
 
@@ -31,6 +33,8 @@ export const localeNames: Record<Locale, string> = {
   'sq': 'Shqip',
   'es': 'Español',
   'pt': 'Português',
+  'fr': 'Français',
+  'it': 'Italiano',
 };
 
 // Map locales to date-fns locales
@@ -46,6 +50,8 @@ const dateFnsLocales: Record<string, any> = {
   'sq': sq,
   'es': es,
   'pt': pt,
+  'fr': fr,
+  'it': it,
 };
 
 export function getDateFnsLocale(locale: Locale = defaultLocale) {

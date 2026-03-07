@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Users, Building2, ClipboardList, ChevronRight, Settings, Activity, Shield, Clock, CalendarDays, FileText } from 'lucide-react';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,8 +9,8 @@ import { usePermissions } from '@/hooks/use-permissions';
 
 interface AdminMenuItem {
   href: string;
-  label: string;
-  description: string;
+  labelKey: string;
+  descriptionKey: string;
   icon: React.ComponentType<{ className?: string }>;
   requireOwner?: boolean;
   requireRolePermissions?: boolean;
@@ -20,53 +21,53 @@ interface AdminMenuItem {
 const adminMenuItems: AdminMenuItem[] = [
   {
     href: '/admin/users',
-    label: 'Benutzerverwaltung',
-    description: 'Mitarbeiter hinzufügen, Rollen zuweisen',
+    labelKey: 'users',
+    descriptionKey: 'usersDesc',
     icon: Users,
     requireOwner: true,
   },
   {
     href: '/admin/properties',
-    label: 'Liegenschaften',
-    description: 'Liegenschaften verwalten und zuweisen',
+    labelKey: 'properties',
+    descriptionKey: 'propertiesDesc',
     icon: Building2,
   },
   {
     href: '/admin/checklists',
-    label: 'Checklisten-Vorlagen',
-    description: 'Checklisten für Liegenschaften erstellen',
+    labelKey: 'checklists',
+    descriptionKey: 'checklistsDesc',
     icon: ClipboardList,
   },
   {
     href: '/admin/activity',
-    label: 'Aktivitäten',
-    description: 'Erledigte Aufgaben und Checklisten einsehen',
+    labelKey: 'activity',
+    descriptionKey: 'activityDesc',
     icon: Activity,
   },
   {
     href: '/admin/time-overview',
-    label: 'Zeitübersicht',
-    description: 'Arbeitszeiten aller Mitarbeiter einsehen und exportieren',
+    labelKey: 'timeOverview',
+    descriptionKey: 'timeOverviewDesc',
     icon: Clock,
   },
   {
     href: '/admin/calendar',
-    label: 'Benutzerkalender',
-    description: 'Zeiteinträge von Mitarbeitern anzeigen und bearbeiten',
+    labelKey: 'calendar',
+    descriptionKey: 'calendarDesc',
     icon: CalendarDays,
     requireUserCalendar: true,
   },
   {
     href: '/admin/roles',
-    label: 'Rollen & Berechtigungen',
-    description: 'Berechtigungen pro Rolle verwalten',
+    labelKey: 'roles',
+    descriptionKey: 'rolesDesc',
     icon: Shield,
     requireRolePermissions: true,
   },
   {
     href: '/admin/invoices',
-    label: 'Rechnungen',
-    description: 'Rechnungen erstellen, verwalten und versenden',
+    labelKey: 'invoices',
+    descriptionKey: 'invoicesDesc',
     icon: FileText,
     requireInvoices: true,
   },
@@ -74,6 +75,7 @@ const adminMenuItems: AdminMenuItem[] = [
 
 export default function AdminPage() {
   const router = useRouter();
+  const t = useTranslations('admin');
   const permissions = usePermissions();
 
   // Redirect if user doesn't have admin access
@@ -100,7 +102,7 @@ export default function AdminPage() {
 
   return (
     <PageContainer
-      header={<Header title="Verwaltung" />}
+      header={<Header title={t('title')} />}
     >
       <div className="space-y-3">
         {filteredMenuItems.map((item) => {
@@ -118,8 +120,8 @@ export default function AdminPage() {
                     <Icon className="h-6 w-6 text-primary-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium">{item.label}</h3>
-                    <p className="text-sm text-muted-foreground">{item.description}</p>
+                    <h3 className="font-medium">{t(item.labelKey)}</h3>
+                    <p className="text-sm text-muted-foreground">{t(item.descriptionKey)}</p>
                   </div>
                   <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                 </div>

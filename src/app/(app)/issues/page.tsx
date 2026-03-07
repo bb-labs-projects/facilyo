@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { Plus, Filter, AlertTriangle } from 'lucide-react';
@@ -21,23 +22,25 @@ import { getClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
 import type { Issue, IssueWithRelations, IssueStatus, IssuePriority } from '@/types/database';
 
-const statusOptions: { value: IssueStatus | 'all'; label: string }[] = [
-  { value: 'all', label: 'Alle' },
-  { value: 'open', label: 'Offen' },
-  { value: 'in_progress', label: 'In Bearbeitung' },
-  { value: 'resolved', label: 'Gelöst' },
-  { value: 'closed', label: 'Geschlossen' },
-];
-
-const priorityOptions: { value: IssuePriority | 'all'; label: string }[] = [
-  { value: 'all', label: 'Alle' },
-  { value: 'urgent', label: 'Dringend' },
-  { value: 'high', label: 'Hoch' },
-  { value: 'medium', label: 'Mittel' },
-  { value: 'low', label: 'Niedrig' },
-];
-
 export default function IssuesPage() {
+  const t = useTranslations('issues');
+  const tCommon = useTranslations('common');
+
+  const statusOptions: { value: IssueStatus | 'all'; label: string }[] = [
+    { value: 'all', label: tCommon('all') },
+    { value: 'open', label: t('statuses.open') },
+    { value: 'in_progress', label: t('statuses.inProgress') },
+    { value: 'resolved', label: t('statuses.resolved') },
+    { value: 'closed', label: t('statuses.closed') },
+  ];
+
+  const priorityOptions: { value: IssuePriority | 'all'; label: string }[] = [
+    { value: 'all', label: tCommon('all') },
+    { value: 'urgent', label: t('priorities.urgent') },
+    { value: 'high', label: t('priorities.high') },
+    { value: 'medium', label: t('priorities.medium') },
+    { value: 'low', label: t('priorities.low') },
+  ];
   const router = useRouter();
   const profile = useAuthStore((state) => state.profile);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
@@ -100,7 +103,7 @@ export default function IssuesPage() {
     <PageContainer
       header={
         <Header
-          title="Meldungen"
+          title={t('title')}
           rightElement={
             <div className="flex items-center gap-1">
               <Button variant="ghost" size="icon" onClick={handleNewIssue}>
@@ -119,14 +122,14 @@ export default function IssuesPage() {
                 </SheetTrigger>
               <SheetContent side="bottom">
                 <SheetHeader>
-                  <SheetTitle>Filter</SheetTitle>
+                  <SheetTitle>{tCommon('filter')}</SheetTitle>
                 </SheetHeader>
 
                 <div className="mt-4 space-y-6">
                   {/* Status filter */}
                   <div>
                     <label className="text-sm font-medium mb-2 block">
-                      Status
+                      {tCommon('status')}
                     </label>
                     <div className="flex flex-wrap gap-2">
                       {statusOptions.map((option) => (
@@ -149,7 +152,7 @@ export default function IssuesPage() {
                   {/* Priority filter */}
                   <div>
                     <label className="text-sm font-medium mb-2 block">
-                      Priorität
+                      {tCommon('priority')}
                     </label>
                     <div className="flex flex-wrap gap-2">
                       {priorityOptions.map((option) => (
@@ -179,7 +182,7 @@ export default function IssuesPage() {
                         setPriorityFilter('all');
                       }}
                     >
-                      Filter zurücksetzen
+                      {tCommon('resetFilters')}
                     </Button>
                   )}
                 </div>
@@ -211,9 +214,9 @@ export default function IssuesPage() {
         {issues.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Keine Meldungen gefunden</p>
+            <p>{t('noIssues')}</p>
             {activeFilters > 0 && (
-              <p className="text-sm mt-1">Versuchen Sie andere Filter</p>
+              <p className="text-sm mt-1">{tCommon('resetFilters')}</p>
             )}
           </div>
         ) : (

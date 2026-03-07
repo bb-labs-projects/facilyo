@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -29,6 +30,8 @@ function calculateBusinessDays(start: string, end: string, isHalfDay: boolean): 
 
 export default function NewVacationRequestPage() {
   const router = useRouter();
+  const t = useTranslations('vacation');
+  const tCommon = useTranslations('common');
   const queryClient = useQueryClient();
   const profile = useAuthStore((state) => state.profile);
   const organizationId = useAuthStore((state) => state.organizationId);
@@ -82,19 +85,19 @@ export default function NewVacationRequestPage() {
     const newErrors: Record<string, string> = {};
 
     if (!startDate) {
-      newErrors.startDate = 'Startdatum ist erforderlich';
+      newErrors.startDate = t('startRequired');
     } else if (isBefore(parseISO(startDate), startOfDay(new Date()))) {
-      newErrors.startDate = 'Startdatum darf nicht in der Vergangenheit liegen';
+      newErrors.startDate = t('startPast');
     }
 
     if (!endDate) {
-      newErrors.endDate = 'Enddatum ist erforderlich';
+      newErrors.endDate = t('endRequired');
     } else if (startDate && endDate < startDate) {
-      newErrors.endDate = 'Enddatum muss nach dem Startdatum liegen';
+      newErrors.endDate = t('endBeforeStart');
     }
 
     if (totalDays > 0 && totalDays > availableDays) {
-      newErrors.totalDays = `Nicht genug Ferientage verfügbar (${availableDays} verbleibend)`;
+      newErrors.totalDays = t('notEnoughDays', { days: availableDays });
     }
 
     setErrors(newErrors);
@@ -142,7 +145,7 @@ export default function NewVacationRequestPage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('Ferienantrag eingereicht');
+      toast.success(t('submitted'));
       queryClient.invalidateQueries({ queryKey: ['vacation-own'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-pending'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-calendar'] });
@@ -151,7 +154,7 @@ export default function NewVacationRequestPage() {
       router.push('/vacation');
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Ferienantrag konnte nicht eingereicht werden');
+      toast.error(error.message || t('submitError'));
     },
   });
 
@@ -166,7 +169,7 @@ export default function NewVacationRequestPage() {
     <PageContainer
       header={
         <Header
-          title="Ferien beantragen"
+          title={t('request')}
           showBack
           backHref="/vacation"
         />
@@ -177,7 +180,7 @@ export default function NewVacationRequestPage() {
         <Card className="bg-blue-50 border-blue-200">
           <CardContent className="p-4">
             <p className="text-sm text-blue-800 font-medium">
-              Verfügbare Ferientage: {availableDays} von {totalAllowance}
+              {t('available', { available: availableDays, total: totalAllowance })}
             </p>
           </CardContent>
         </Card>
@@ -187,7 +190,7 @@ export default function NewVacationRequestPage() {
           <CardContent className="p-4 space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
-                Startdatum
+                {t('startDate')}
               </label>
               <Input
                 type="date"
@@ -209,7 +212,7 @@ export default function NewVacationRequestPage() {
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
-                Enddatum
+                {t('endDate')}
               </label>
               <Input
                 type="date"
@@ -242,7 +245,7 @@ export default function NewVacationRequestPage() {
                     }}
                     className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="text-sm text-slate-700">Halber Tag</span>
+                  <span className="text-sm text-slate-700">{t('halfDay')}</span>
                 </label>
                 {isHalfDay && (
                   <div className="flex gap-2">
@@ -256,7 +259,7 @@ export default function NewVacationRequestPage() {
                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       )}
                     >
-                      Vormittag
+                      {t('morning')}
                     </button>
                     <button
                       type="button"
@@ -268,7 +271,7 @@ export default function NewVacationRequestPage() {
                           : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                       )}
                     >
-                      Nachmittag
+                      {t('afternoon')}
                     </button>
                   </div>
                 )}
@@ -287,7 +290,7 @@ export default function NewVacationRequestPage() {
                 'text-2xl font-bold',
                 errors.totalDays ? 'text-red-700' : 'text-green-700'
               )}>
-                {totalDays} Arbeitstage
+                {t('workDays', { count: totalDays })}
               </p>
               {errors.totalDays && (
                 <p className="text-sm text-red-600 mt-1">{errors.totalDays}</p>
@@ -300,14 +303,14 @@ export default function NewVacationRequestPage() {
         <Card>
           <CardContent className="p-4">
             <label className="block text-sm font-medium text-slate-700 mb-1">
-              Bemerkungen (optional)
+              {t('remarks')}
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-              placeholder="Zusätzliche Informationen..."
+              placeholder={t('remarksPlaceholder')}
             />
           </CardContent>
         </Card>
@@ -318,7 +321,7 @@ export default function NewVacationRequestPage() {
           className="w-full"
           disabled={isPending || !startDate || !endDate}
         >
-          {isPending ? 'Wird eingereicht...' : 'Ferienantrag einreichen'}
+          {isPending ? tCommon('submitting') : t('submit')}
         </Button>
       </form>
     </PageContainer>

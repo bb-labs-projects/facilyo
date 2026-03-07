@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { useTranslations } from 'next-intl';
 import { cn, hapticFeedback } from '@/lib/utils';
 import type { TimeEntryType } from '@/types/database';
 
@@ -22,32 +23,34 @@ interface StatusBadgeProps {
 }
 
 export function StatusBadge({ entryType, propertyName, className }: StatusBadgeProps) {
+  const tEntry = useTranslations('entryTypes');
+
   if (!entryType) return null;
 
   const config = {
     travel: {
-      label: 'Fahrzeit',
+      label: tEntry('travel'),
       icon: Car,
       bgColor: 'bg-amber-100',
       textColor: 'text-amber-800',
       borderColor: 'border-amber-300',
     },
     property: {
-      label: propertyName || 'Liegenschaft',
+      label: propertyName || tEntry('property'),
       icon: Building2,
       bgColor: 'bg-primary-100',
       textColor: 'text-primary-800',
       borderColor: 'border-primary-300',
     },
     break: {
-      label: 'Pause',
+      label: tEntry('break'),
       icon: Coffee,
       bgColor: 'bg-orange-100',
       textColor: 'text-orange-800',
       borderColor: 'border-orange-300',
     },
     vacation: {
-      label: 'Ferien',
+      label: tEntry('vacation'),
       icon: Palmtree,
       bgColor: 'bg-green-100',
       textColor: 'text-green-800',
@@ -95,6 +98,8 @@ export function TimerControls({
   disabled = false,
   className,
 }: TimerControlsProps) {
+  const tTime = useTranslations('timeTracking');
+
   const handleAction = (action: () => void, feedbackType: 'light' | 'medium' | 'heavy' = 'medium') => {
     hapticFeedback(feedbackType);
     action();
@@ -111,7 +116,7 @@ export function TimerControls({
           className="w-full max-w-xs"
           leftIcon={<Play className="h-6 w-6" />}
         >
-          Starten
+          {tTime('start')}
         </Button>
       </div>
     );
@@ -129,7 +134,7 @@ export function TimerControls({
         className="flex-1"
         leftIcon={<Square className="h-6 w-6" />}
       >
-        Beenden
+        {tTime('stop')}
       </Button>
     </div>
   );
@@ -155,6 +160,9 @@ export function TravelControls({
   showPropertyButton = true,
   className,
 }: TravelControlsProps) {
+  const tEntry = useTranslations('entryTypes');
+  const tTime = useTranslations('timeTracking');
+
   const handleAction = (action: () => void) => {
     hapticFeedback('medium');
     action();
@@ -171,7 +179,7 @@ export function TravelControls({
           className="w-full"
           leftIcon={<Building2 className="h-5 w-5" />}
         >
-          Liegenschaft starten
+          {tEntry('property')} {tTime('start').toLowerCase()}
         </Button>
       )}
       <Button
@@ -182,7 +190,7 @@ export function TravelControls({
         className="w-full"
         leftIcon={<Coffee className="h-5 w-5" />}
       >
-        Pause
+        {tEntry('break')}
       </Button>
     </div>
   );
@@ -204,6 +212,9 @@ export function PropertyControls({
   disabled = false,
   className,
 }: PropertyControlsProps) {
+  const tEntry = useTranslations('entryTypes');
+  const tTime = useTranslations('timeTracking');
+
   const handleAction = (action: () => void) => {
     hapticFeedback('medium');
     action();
@@ -220,7 +231,7 @@ export function PropertyControls({
         className="w-full"
         leftIcon={<StopCircle className="h-5 w-5" />}
       >
-        Arbeit beenden
+        {tTime('stop')}
       </Button>
       <Button
         size="touch"
@@ -231,7 +242,7 @@ export function PropertyControls({
         className="w-full"
         leftIcon={<Coffee className="h-5 w-5" />}
       >
-        Pause
+        {tEntry('break')}
       </Button>
     </div>
   );
@@ -251,6 +262,9 @@ export function BreakControls({
   disabled = false,
   className,
 }: BreakControlsProps) {
+  const tEntry = useTranslations('entryTypes');
+  const tTime = useTranslations('timeTracking');
+
   const handleAction = (action: () => void) => {
     hapticFeedback('heavy');
     action();
@@ -266,7 +280,7 @@ export function BreakControls({
         className="w-full"
         leftIcon={<Play className="h-5 w-5" />}
       >
-        Pause beenden
+        {tEntry('break')} {tTime('stop').toLowerCase()}
       </Button>
     </div>
   );
@@ -294,6 +308,8 @@ export function CircularControls({
   disabled = false,
   className,
 }: CircularControlProps) {
+  const tTime = useTranslations('timeTracking');
+
   const handleAction = (action: () => void) => {
     hapticFeedback('medium');
     action();
@@ -316,7 +332,7 @@ export function CircularControls({
             buttonClass,
             'bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500'
           )}
-          aria-label="Timer starten"
+          aria-label={`Timer ${tTime('start').toLowerCase()}`}
         >
           <Play className="h-10 w-10 ml-1" />
         </button>
@@ -334,7 +350,7 @@ export function CircularControls({
           buttonClass,
           'bg-error-600 text-white hover:bg-error-700 focus:ring-error-500'
         )}
-        aria-label="Timer beenden"
+        aria-label={`Timer ${tTime('stop').toLowerCase()}`}
       >
         <Square className="h-8 w-8" />
       </button>
@@ -365,6 +381,8 @@ export function WorkDayControls({
   className,
 }: WorkDayControlsProps) {
   const [showEndConfirmation, setShowEndConfirmation] = useState(false);
+  const tWork = useTranslations('workDay');
+  const tc = useTranslations('common');
 
   const handleAction = (action: () => void) => {
     hapticFeedback('heavy');
@@ -394,7 +412,7 @@ export function WorkDayControls({
               className="w-full border-error-300 text-error-600 hover:bg-error-50"
               leftIcon={<LogOut className="h-5 w-5" />}
             >
-              Arbeitstag beenden
+              {tWork('end')}
             </Button>
           </div>
         ) : (
@@ -406,22 +424,22 @@ export function WorkDayControls({
             className="w-full"
             leftIcon={<Play className="h-5 w-5" />}
           >
-            Arbeitstag starten
+            {tWork('start')}
           </Button>
         )}
       </div>
 
-      {/* End work day confirmation dialog - UPDATED TEXT */}
+      {/* End work day confirmation dialog */}
       <Dialog open={showEndConfirmation} onOpenChange={setShowEndConfirmation}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Arbeitstag beenden?</DialogTitle>
+            <DialogTitle>{tWork('confirmEndTitle')}</DialogTitle>
             <DialogDescription className="space-y-2">
               <span className="block font-semibold text-error-600">
-                Der Arbeitstag wird endgültig beendet und kann NICHT mehr fortgesetzt werden.
+                {tWork('confirmEndMessage')}
               </span>
               <span className="block">
-                Alle aktiven Zeiten werden gespeichert.
+                {tWork('confirmEndSave')}
               </span>
             </DialogDescription>
           </DialogHeader>
@@ -430,13 +448,13 @@ export function WorkDayControls({
               variant="outline"
               onClick={() => setShowEndConfirmation(false)}
             >
-              Abbrechen
+              {tc('cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={handleEndWorkDay}
             >
-              Endgültig beenden
+              {tWork('confirmEndButton')}
             </Button>
           </DialogFooter>
         </DialogContent>

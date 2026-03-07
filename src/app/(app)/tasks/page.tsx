@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import {
@@ -40,21 +41,38 @@ interface ChecklistWithProperty extends ChecklistTemplate {
 
 type TabType = 'aufgaben' | 'checklisten';
 
-const priorityConfig = {
-  low: { label: 'Niedrig', class: 'bg-muted text-muted-foreground' },
-  medium: { label: 'Mittel', class: 'badge-info' },
-  high: { label: 'Hoch', class: 'badge-warning' },
-  urgent: { label: 'Dringend', class: 'badge-error' },
+const priorityClasses = {
+  low: 'bg-muted text-muted-foreground',
+  medium: 'badge-info',
+  high: 'badge-warning',
+  urgent: 'badge-error',
 };
 
-const statusConfig = {
-  open: { label: 'Offen', class: 'badge-error' },
-  in_progress: { label: 'In Bearbeitung', class: 'badge-warning' },
-  resolved: { label: 'Erledigt', class: 'badge-success' },
-  closed: { label: 'Geschlossen', class: 'bg-muted text-muted-foreground' },
+const statusClasses = {
+  open: 'badge-error',
+  in_progress: 'badge-warning',
+  resolved: 'badge-success',
+  closed: 'bg-muted text-muted-foreground',
 };
 
 export default function TasksPage() {
+  const t = useTranslations('tasks');
+  const tChecklist = useTranslations('checklist');
+  const tCommon = useTranslations('common');
+
+  const priorityConfig = {
+    low: { label: t('priorities.low'), class: priorityClasses.low },
+    medium: { label: t('priorities.medium'), class: priorityClasses.medium },
+    high: { label: t('priorities.high'), class: priorityClasses.high },
+    urgent: { label: t('priorities.urgent'), class: priorityClasses.urgent },
+  };
+
+  const statusConfig = {
+    open: { label: t('statuses.open'), class: statusClasses.open },
+    in_progress: { label: t('statuses.inProgress'), class: statusClasses.in_progress },
+    resolved: { label: t('statuses.completed'), class: statusClasses.resolved },
+    closed: { label: t('statuses.closed'), class: statusClasses.closed },
+  };
   const router = useRouter();
   const profile = useAuthStore((state) => state.profile);
   const queryClient = useQueryClient();
@@ -191,7 +209,7 @@ export default function TasksPage() {
       {aufgaben.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <ListTodo className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p>Keine offenen Aufgaben</p>
+          <p>{t('noTasks')}</p>
           {permissions.canManageAufgaben && (
             <p className="text-sm mt-1">
               Wandeln Sie eine Meldung in eine Aufgabe um
@@ -260,9 +278,9 @@ export default function TasksPage() {
       {Object.keys(checklistsByProperty).length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <ClipboardList className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p>Keine Checklisten vorhanden</p>
+          <p>{tChecklist('noChecklists')}</p>
           <p className="text-sm mt-1">
-            Checklisten werden beim Zeiterfassen angezeigt
+            Checklisten werden beim Zeiterfassen angezeigt.
           </p>
         </div>
       ) : (
@@ -290,7 +308,7 @@ export default function TasksPage() {
                           <div className="flex-1 min-w-0">
                             <h3 className="font-medium">{checklist.name}</h3>
                             <p className="text-sm text-muted-foreground">
-                              {itemCount} {itemCount === 1 ? 'Punkt' : 'Punkte'}
+                              {itemCount} {itemCount === 1 ? tChecklist('point') : tChecklist('points')}
                             </p>
                           </div>
                           <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
@@ -309,7 +327,7 @@ export default function TasksPage() {
       <Card className="mt-6 bg-primary-50 border-primary-200">
         <CardContent className="p-4">
           <h3 className="font-medium text-primary-900 mb-1">
-            Checklisten bearbeiten
+            {tChecklist('editChecklist')}
           </h3>
           <p className="text-sm text-primary-700">
             Starten Sie einen Timer auf der Startseite, um die Checklisten-Punkte
@@ -323,7 +341,7 @@ export default function TasksPage() {
   return (
     <PageContainer
       header={
-        <Header title="Aufgaben" />
+        <Header title={t('title')} />
       }
     >
       <PullToRefresh onRefresh={handleRefresh}>
@@ -343,7 +361,7 @@ export default function TasksPage() {
             )}
           >
             <ListTodo className="h-4 w-4 inline-block mr-2" />
-            Aufgaben
+            {t('title')}
             {aufgaben.length > 0 && (
               <span className="ml-2 bg-primary-100 text-primary-700 px-1.5 py-0.5 rounded-full text-xs">
                 {aufgaben.length}
@@ -364,7 +382,7 @@ export default function TasksPage() {
             )}
           >
             <ClipboardList className="h-4 w-4 inline-block mr-2" />
-            Checklisten
+            {tChecklist('titlePlural')}
           </button>
         </div>
 
@@ -402,8 +420,8 @@ export default function TasksPage() {
                     <div className="flex-1">
                       <p className="font-medium">{item.label}</p>
                       <p className="text-xs text-muted-foreground mt-1 capitalize">
-                        {item.type === 'checkbox' ? 'Checkbox' : item.type === 'text' ? 'Text' : item.type === 'number' ? 'Zahl' : 'Foto'}
-                        {item.required && ' • Pflichtfeld'}
+                        {item.type === 'checkbox' ? tChecklist('typeCheckbox') : item.type === 'text' ? tChecklist('typeText') : item.type === 'number' ? tChecklist('typeNumber') : tChecklist('typePhoto')}
+                        {item.required && ` • ${tChecklist('requiredField')}`}
                       </p>
                     </div>
                   </div>

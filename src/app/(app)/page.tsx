@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Clock, Building2, Car, Coffee } from 'lucide-react';
@@ -28,6 +29,11 @@ import { swissFormat } from '@/lib/i18n';
 import type { Property, TimeEntryWithProperty, ActivityType } from '@/types/database';
 
 export default function HomePage() {
+  const tGreetings = useTranslations('greetings');
+  const tWorkDay = useTranslations('workDay');
+  const tTimeTracking = useTranslations('timeTracking');
+  const tEntryTypes = useTranslations('entryTypes');
+  const tCommon = useTranslations('common');
   const profile = useAuthStore((state) => state.profile);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [selectedActivityType, setSelectedActivityType] = useState<ActivityType | null>(null);
@@ -134,13 +140,13 @@ export default function HomePage() {
   const handleStartWorkDay = async () => {
     try {
       await startWorkDay();
-      toast.success('Arbeitstag gestartet - Fahrzeit läuft');
+      toast.success(tWorkDay('startedWithTravel'));
       refetchEntries();
     } catch (error: any) {
       if (error.message?.includes('endgültig beendet')) {
         toast.error(error.message);
       } else {
-        toast.error(error.message || 'Fehler beim Starten des Arbeitstags');
+        toast.error(error.message || tWorkDay('startError'));
       }
     }
   };
@@ -148,31 +154,31 @@ export default function HomePage() {
   const handleEndWorkDay = async () => {
     try {
       await endWorkDay();
-      toast.success('Arbeitstag wurde beendet');
+      toast.success(tWorkDay('ended'));
       refetchEntries();
     } catch (error: any) {
-      toast.error(error.message || 'Fehler beim Beenden des Arbeitstags');
+      toast.error(error.message || tWorkDay('endError'));
     }
   };
 
   const handleStartPropertyWork = async () => {
     if (!selectedProperty) {
-      toast.error('Bitte wählen Sie eine Liegenschaft');
+      toast.error(tTimeTracking('selectPropertyFirst'));
       return;
     }
 
     if (!selectedActivityType) {
-      toast.error('Bitte wählen Sie eine Tätigkeit');
+      toast.error(tTimeTracking('selectActivityFirst'));
       return;
     }
 
     try {
       await startPropertyWork(selectedProperty.id, selectedActivityType, coords || undefined);
-      toast.success(`Arbeit auf ${selectedProperty.name} gestartet`);
+      toast.success(tTimeTracking('workStarted', { property: selectedProperty.name }));
       setSelectedActivityType(null);
       refetchEntries();
     } catch (error: any) {
-      toast.error(error.message || 'Fehler beim Starten der Arbeit');
+      toast.error(error.message || tTimeTracking('workStartError'));
     }
   };
 
@@ -180,9 +186,9 @@ export default function HomePage() {
     try {
       await updateActivityType(newActivity);
       setIsChangingActivity(false);
-      toast.success('Tätigkeit geändert');
+      toast.success(tTimeTracking('activityChanged'));
     } catch (error: any) {
-      toast.error(error.message || 'Fehler beim Ändern der Tätigkeit');
+      toast.error(error.message || tTimeTracking('activityChangeError'));
     }
   };
 
@@ -190,30 +196,30 @@ export default function HomePage() {
     try {
       await stopPropertyWork(coords || undefined);
       setSelectedProperty(null);
-      toast.success('Arbeit beendet - Fahrzeit läuft');
+      toast.success(tTimeTracking('workEndedTravel'));
       refetchEntries();
     } catch (error: any) {
-      toast.error(error.message || 'Fehler beim Beenden der Arbeit');
+      toast.error(error.message || tTimeTracking('workEndError'));
     }
   };
 
   const handleStartBreak = async () => {
     try {
       await startBreak();
-      toast.success('Pause gestartet');
+      toast.success(tTimeTracking('pauseStarted'));
       refetchEntries();
     } catch (error: any) {
-      toast.error(error.message || 'Fehler beim Starten der Pause');
+      toast.error(error.message || tTimeTracking('pauseStartError'));
     }
   };
 
   const handleEndBreak = async () => {
     try {
       await endBreak();
-      toast.success('Pause beendet');
+      toast.success(tTimeTracking('pauseEnded'));
       refetchEntries();
     } catch (error: any) {
-      toast.error(error.message || 'Fehler beim Beenden der Pause');
+      toast.error(error.message || tTimeTracking('pauseEndError'));
     }
   };
 
@@ -221,7 +227,7 @@ export default function HomePage() {
     try {
       await getCurrentPosition();
     } catch (error) {
-      toast.error('Standort konnte nicht ermittelt werden');
+      toast.error(tTimeTracking('locationError'));
     }
   };
 
@@ -239,18 +245,18 @@ export default function HomePage() {
       }
     },
     onSuccess: () => {
-      toast.success('Zeiteintrag gelöscht');
+      toast.success(tTimeTracking('entryDeleted'));
       refetchEntries();
     },
     onError: (error: any) => {
       console.error('Delete failed:', error);
-      toast.error(`Fehler beim Löschen: ${error?.message || 'Unbekannter Fehler'}`);
+      toast.error(`${tTimeTracking('entryDeleteError')}: ${error?.message || tCommon('unknown')}`);
     },
   });
 
   const handleDeleteEntry = (entry: TimeEntryWithProperty) => {
     if (entry.entry_type === 'vacation') {
-      toast.error('Ferieneinträge können nur über die Ferien-Seite verwaltet werden');
+      toast.error(tTimeTracking('vacationEntryNote'));
       return;
     }
     deleteEntryMutation.mutate(entry.id);
@@ -258,9 +264,9 @@ export default function HomePage() {
 
   const greeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Guten Morgen';
-    if (hour < 17) return 'Guten Tag';
-    return 'Guten Abend';
+    if (hour < 12) return tGreetings('morning');
+    if (hour < 17) return tGreetings('afternoon');
+    return tGreetings('evening');
   };
 
   // Get status icon based on current entry type
@@ -296,12 +302,12 @@ export default function HomePage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5" />
-              Arbeitstag
+              {tWorkDay('title')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground mb-4">
-              Starten Sie Ihren Arbeitstag, um Zeit zu erfassen.
+              {tWorkDay('startDescription')}
             </p>
             <WorkDayControls
               isActive={false}
@@ -331,9 +337,9 @@ export default function HomePage() {
                   currentEntryType === 'property'
                     ? activeProperty?.name
                     : currentEntryType === 'travel'
-                    ? 'Fahrzeit'
+                    ? tEntryTypes('travel')
                     : currentEntryType === 'break'
-                    ? 'Pause'
+                    ? tEntryTypes('break')
                     : undefined
                 }
                 className="mb-6"
@@ -398,7 +404,7 @@ export default function HomePage() {
                         onClick={() => setIsChangingActivity(false)}
                         className="mt-2 w-full text-sm text-muted-foreground hover:text-foreground"
                       >
-                        Abbrechen
+                        {tCommon('cancel')}
                       </button>
                     </div>
                   )}
@@ -471,7 +477,7 @@ export default function HomePage() {
             <CardContent className="py-4">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-muted-foreground">
-                  Gearbeitete Zeit heute
+                  {tWorkDay('workedTimeToday')}
                 </div>
                 <div className="font-mono font-semibold">
                   {formattedWorkDayDuration}
@@ -488,7 +494,7 @@ export default function HomePage() {
           {/* Today's Entries - Grouped by Property */}
           {todayEntries.length > 0 && (
             <div className="mb-6">
-              <h2 className="text-lg font-semibold mb-3">Heutige Einträge</h2>
+              <h2 className="text-lg font-semibold mb-3">{tTimeTracking('todayEntries')}</h2>
               <PropertyGroupedEntries
                 entries={todayEntries}
                 onEntryDelete={handleDeleteEntry}

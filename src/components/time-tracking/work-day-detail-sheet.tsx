@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/sheet';
 import { TimeEntryCard } from './work-day-card';
 import { TimeEntryEditSheet } from './time-entry-edit-sheet';
+import { useTranslations } from 'next-intl';
 import { swissFormat } from '@/lib/i18n';
 import type { WorkDayWithEntries, TimeEntryWithProperty } from '@/types/database';
 
@@ -28,6 +29,11 @@ export function WorkDayDetailSheet({
   onEntryUpdated,
 }: WorkDayDetailSheetProps) {
   const [selectedEntry, setSelectedEntry] = useState<TimeEntryWithProperty | null>(null);
+  const tc = useTranslations('common');
+  const tWork = useTranslations('workDay');
+  const tEntry = useTranslations('entryTypes');
+  const tTime = useTranslations('timeTracking');
+  const tProp = useTranslations('properties');
 
   if (!workDay) return null;
 
@@ -74,24 +80,24 @@ export function WorkDayDetailSheet({
               {swissFormat.date(workDay.date, 'EEEE, dd. MMMM')}
             </SheetTitle>
             <SheetDescription>
-              Arbeitstag Details
+              {tWork('title')} {tc('details')}
             </SheetDescription>
           </SheetHeader>
 
           {/* Summary Row */}
           <div className="grid grid-cols-3 gap-4 mt-6 p-4 bg-muted/50 rounded-lg">
             <div className="text-center">
-              <p className="text-xs text-muted-foreground mb-1">Start</p>
+              <p className="text-xs text-muted-foreground mb-1">{tc('start')}</p>
               <p className="font-semibold">{swissFormat.time(workDay.start_time)}</p>
             </div>
             <div className="text-center">
-              <p className="text-xs text-muted-foreground mb-1">Ende</p>
+              <p className="text-xs text-muted-foreground mb-1">{tc('end')}</p>
               <p className="font-semibold">
                 {workDay.end_time ? swissFormat.time(workDay.end_time) : '—'}
               </p>
             </div>
             <div className="text-center">
-              <p className="text-xs text-muted-foreground mb-1">Total</p>
+              <p className="text-xs text-muted-foreground mb-1">{tc('total')}</p>
               <p className="font-semibold">{swissFormat.durationHuman(workDaySeconds)}</p>
             </div>
           </div>
@@ -101,12 +107,12 @@ export function WorkDayDetailSheet({
             <div className="flex items-center gap-1">
               <MapPin className="h-4 w-4" />
               <span>
-                {uniqueProperties} {uniqueProperties === 1 ? 'Liegenschaft' : 'Liegenschaften'}
+                {uniqueProperties} {uniqueProperties === 1 ? tProp('singular') : tProp('plural')}
               </span>
             </div>
             <div className="flex items-center gap-1">
               <Car className="h-4 w-4" />
-              <span>~{swissFormat.durationHuman(travelSeconds)} Fahrzeit</span>
+              <span>~{swissFormat.durationHuman(travelSeconds)} {tEntry('travel')}</span>
             </div>
           </div>
 
@@ -114,11 +120,11 @@ export function WorkDayDetailSheet({
           <div className="mt-6">
             <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              Zeiteinträge
+              {tTime('entries')}
             </h3>
             {workDay.time_entries.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                Keine Einträge vorhanden
+                {tTime('noEntries')}
               </div>
             ) : (
               <div className="space-y-3">

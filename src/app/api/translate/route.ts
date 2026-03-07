@@ -1,48 +1,75 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
-const SUPPORTED_LOCALES = ['en', 'hr', 'sr', 'bs', 'sl', 'mk', 'sq', 'es', 'pt'] as const;
+const SUPPORTED_LOCALES = ['en', 'hr', 'sr', 'bs', 'sl', 'mk', 'sq', 'es', 'pt', 'fr', 'it'] as const;
 
-// Map our locale codes to MyMemory API language codes
-const localeToLangCode: Record<string, string> = {
-  'en': 'en',
-  'hr': 'hr',
-  'sr': 'sr-Latn',
-  'bs': 'bs',
-  'sl': 'sl',
-  'mk': 'mk',
-  'sq': 'sq',
-  'es': 'es',
-  'pt': 'pt',
+const NEAR_AI_URL = 'https://cloud-api.near.ai/v1';
+const NEAR_AI_KEY = process.env.NEAR_AI_API_KEY || 'sk-f8b3cad314574234b9ad8ac39cc5c016';
+
+const localeNames: Record<string, string> = {
+  'en': 'English',
+  'hr': 'Croatian',
+  'sr': 'Serbian (Latin script)',
+  'bs': 'Bosnian',
+  'sl': 'Slovenian',
+  'mk': 'Macedonian (Cyrillic script)',
+  'sq': 'Albanian',
+  'es': 'Spanish',
+  'pt': 'Brazilian Portuguese',
+  'fr': 'French',
+  'it': 'Italian',
 };
 
-async function translateText(text: string, targetLang: string): Promise<string> {
-  const langCode = localeToLangCode[targetLang] || targetLang;
-  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=de|${langCode}`;
+async function translateBatch(labels: { id: string; label: string }[], targetLang: string): Promise<Record<string, string>> {
+  const langName = localeNames[targetLang] || targetLang;
+  const labelsText = labels.map((l, i) => `${i + 1}. ${l.label}`).join('\n');
 
-  const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
+  const response = await fetch(`${NEAR_AI_URL}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${NEAR_AI_KEY}`,
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a professional translator. Translate the following German facility management checklist items to ${langName}. Return ONLY the translations as a numbered list, one per line, matching the input numbering. No explanations.`,
+        },
+        {
+          role: 'user',
+          content: labelsText,
+        },
+      ],
+      temperature: 0.1,
+    }),
+    signal: AbortSignal.timeout(30000),
+  });
+
   if (!response.ok) {
-    throw new Error(`Translation API error: ${response.status}`);
+    throw new Error(`Near AI API error: ${response.status}`);
   }
 
   const data = await response.json();
-  if (data.responseStatus === 200 && data.responseData?.translatedText) {
-    let translated = data.responseData.translatedText;
-    // MyMemory sometimes returns all-caps for short text, keep original casing
-    if (translated === translated.toUpperCase() && text !== text.toUpperCase()) {
-      translated = translated.charAt(0).toUpperCase() + translated.slice(1).toLowerCase();
-    }
-    return translated;
+  const content = data.choices?.[0]?.message?.content || '';
+
+  // Parse numbered list response
+  const lines = content.trim().split('\n');
+  const result: Record<string, string> = {};
+
+  for (let i = 0; i < labels.length; i++) {
+    const line = lines[i]?.replace(/^\d+\.\s*/, '').trim();
+    result[labels[i].id] = line || labels[i].label;
   }
 
-  throw new Error('Translation failed');
+  return result;
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify authentication
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -69,22 +96,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Items array is required' }, { status: 400 });
     }
 
-    // Translate each item to all supported locales
-    const translatedItems: Record<string, Record<string, string>> = {};
-
-    for (const item of items) {
-      const translations: Record<string, string> = {};
-
-      for (const locale of SUPPORTED_LOCALES) {
-        try {
-          translations[locale] = await translateText(item.label, locale);
-        } catch {
-          // If translation fails for a locale, use the original label
-          translations[locale] = item.label;
-        }
+    // Translate batch to all supported locales in parallel
+    const translationPromises = SUPPORTED_LOCALES.map(async (locale) => {
+      try {
+        const result = await translateBatch(items, locale);
+        return { locale, result };
+      } catch {
+        // Fallback: use original labels
+        const fallback: Record<string, string> = {};
+        items.forEach(item => { fallback[item.id] = item.label; });
+        return { locale, result: fallback };
       }
+    });
 
-      translatedItems[item.id] = translations;
+    const results = await Promise.all(translationPromises);
+
+    // Restructure: { itemId: { locale: translation } }
+    const translatedItems: Record<string, Record<string, string>> = {};
+    for (const item of items) {
+      translatedItems[item.id] = {};
+    }
+    for (const { locale, result } of results) {
+      for (const item of items) {
+        translatedItems[item.id][locale] = result[item.id] || item.label;
+      }
     }
 
     return NextResponse.json({ translations: translatedItems });

@@ -3,6 +3,7 @@
 import { Calendar, User, MapPin, ChevronRight, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { swissFormat } from '@/lib/i18n';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import type { Aufgabe, AufgabeWithRelations } from '@/types/database';
 
@@ -14,17 +15,17 @@ interface AufgabeCardProps {
 }
 
 const priorityConfig = {
-  low: { label: 'Niedrig', class: 'bg-muted text-muted-foreground' },
-  medium: { label: 'Mittel', class: 'badge-info' },
-  high: { label: 'Hoch', class: 'badge-warning' },
-  urgent: { label: 'Dringend', class: 'badge-error' },
+  low: { key: 'low', class: 'bg-muted text-muted-foreground' },
+  medium: { key: 'medium', class: 'badge-info' },
+  high: { key: 'high', class: 'badge-warning' },
+  urgent: { key: 'urgent', class: 'badge-error' },
 };
 
 const statusConfig = {
-  open: { label: 'Offen', class: 'badge-error' },
-  in_progress: { label: 'In Bearbeitung', class: 'badge-warning' },
-  resolved: { label: 'Erledigt', class: 'badge-success' },
-  closed: { label: 'Geschlossen', class: 'bg-muted text-muted-foreground' },
+  open: { key: 'open', class: 'badge-error' },
+  in_progress: { key: 'inProgress', class: 'badge-warning' },
+  resolved: { key: 'completed', class: 'badge-success' },
+  closed: { key: 'closed', class: 'bg-muted text-muted-foreground' },
 };
 
 export function AufgabeCard({
@@ -33,6 +34,7 @@ export function AufgabeCard({
   showProperty = false,
   className,
 }: AufgabeCardProps) {
+  const tTask = useTranslations('tasks');
   const priority = priorityConfig[aufgabe.priority];
   const status = statusConfig[aufgabe.status];
   const hasRelations = 'property' in aufgabe;
@@ -87,7 +89,7 @@ export function AufgabeCard({
                 )}>
                   <Calendar className="h-3 w-3" />
                   {swissFormat.date(aufgabe.due_date)}
-                  {isOverdue && ' (überfällig)'}
+                  {isOverdue && ` (${tTask('overdue')})`}
                 </span>
               )}
               {hasRelations && aufgabeWithRelations.assignee && (
@@ -100,8 +102,8 @@ export function AufgabeCard({
 
             {/* Badges */}
             <div className="flex items-center flex-wrap gap-2 mt-2">
-              <span className={cn('badge', status.class)}>{status.label}</span>
-              <span className={cn('badge', priority.class)}>{priority.label}</span>
+              <span className={cn('badge', status.class)}>{tTask(`statuses.${status.key}`)}</span>
+              <span className={cn('badge', priority.class)}>{tTask(`priorities.${priority.key}`)}</span>
             </div>
 
             {/* Footer */}
@@ -131,13 +133,15 @@ export function AufgabeList({
   aufgaben,
   onAufgabeClick,
   showProperty = false,
-  emptyMessage = 'Keine Aufgaben vorhanden',
+  emptyMessage,
   className,
 }: AufgabeListProps) {
+  const tTask = useTranslations('tasks');
+  const resolvedEmptyMessage = emptyMessage || tTask('noTasks');
   if (aufgaben.length === 0) {
     return (
       <div className={cn('text-center py-8 text-muted-foreground', className)}>
-        {emptyMessage}
+        {resolvedEmptyMessage}
       </div>
     );
   }

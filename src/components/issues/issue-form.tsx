@@ -8,6 +8,7 @@ import { Input, Textarea } from '@/components/ui/input';
 import { PhotoCapture } from './photo-capture';
 import { PropertySelector, PropertyDisplay } from '@/components/time-tracking/property-selector';
 import { issueSchema, type IssueFormData } from '@/lib/validations';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import type { Property, IssueCategory, IssuePriority } from '@/types/database';
 
@@ -21,19 +22,19 @@ interface IssueFormProps {
   className?: string;
 }
 
-const categories: { value: IssueCategory; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { value: 'damage', label: 'Schaden', icon: AlertTriangle },
-  { value: 'cleaning', label: 'Reinigung', icon: Sparkles },
-  { value: 'safety', label: 'Sicherheit', icon: Shield },
-  { value: 'maintenance', label: 'Wartung', icon: Wrench },
-  { value: 'other', label: 'Sonstiges', icon: HelpCircle },
+const categories: { value: IssueCategory; key: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { value: 'damage', key: 'damage', icon: AlertTriangle },
+  { value: 'cleaning', key: 'cleaning', icon: Sparkles },
+  { value: 'safety', key: 'safety', icon: Shield },
+  { value: 'maintenance', key: 'maintenance', icon: Wrench },
+  { value: 'other', key: 'other', icon: HelpCircle },
 ];
 
-const priorities: { value: IssuePriority; label: string; color: string }[] = [
-  { value: 'low', label: 'Niedrig', color: 'bg-muted text-muted-foreground' },
-  { value: 'medium', label: 'Mittel', color: 'bg-primary-100 text-primary-700' },
-  { value: 'high', label: 'Hoch', color: 'bg-warning-100 text-warning-700' },
-  { value: 'urgent', label: 'Dringend', color: 'bg-error-100 text-error-700' },
+const priorities: { value: IssuePriority; key: string; color: string }[] = [
+  { value: 'low', key: 'low', color: 'bg-muted text-muted-foreground' },
+  { value: 'medium', key: 'medium', color: 'bg-primary-100 text-primary-700' },
+  { value: 'high', key: 'high', color: 'bg-warning-100 text-warning-700' },
+  { value: 'urgent', key: 'urgent', color: 'bg-error-100 text-error-700' },
 ];
 
 export function IssueForm({
@@ -45,6 +46,9 @@ export function IssueForm({
   initialData,
   className,
 }: IssueFormProps) {
+  const tIssue = useTranslations('issues');
+  const tc = useTranslations('common');
+  const tProp = useTranslations('properties');
   const {
     register,
     handleSubmit,
@@ -86,7 +90,7 @@ export function IssueForm({
     >
       {/* Property selector */}
       <div className="space-y-2" role="group" aria-labelledby="issue-property-label">
-        <span id="issue-property-label" className="text-sm font-medium">Liegenschaft</span>
+        <span id="issue-property-label" className="text-sm font-medium">{tProp('singular')}</span>
         <PropertySelector
           properties={properties}
           selectedProperty={currentSelectedProperty || null}
@@ -100,7 +104,7 @@ export function IssueForm({
 
       {/* Category selector */}
       <div className="space-y-2" role="group" aria-labelledby="issue-category-label">
-        <span id="issue-category-label" className="text-sm font-medium">Kategorie</span>
+        <span id="issue-category-label" className="text-sm font-medium">{tIssue('category')}</span>
         <div className="grid grid-cols-3 gap-2">
           {categories.map((cat) => {
             const Icon = cat.icon;
@@ -119,7 +123,7 @@ export function IssueForm({
                 )}
               >
                 <Icon className={cn('h-5 w-5', isSelected ? 'text-primary-600' : 'text-muted-foreground')} />
-                <span className="text-xs font-medium">{cat.label}</span>
+                <span className="text-xs font-medium">{tIssue(`categories.${cat.key}`)}</span>
               </button>
             );
           })}
@@ -131,7 +135,7 @@ export function IssueForm({
 
       {/* Priority selector */}
       <div className="space-y-2" role="group" aria-labelledby="issue-priority-label">
-        <span id="issue-priority-label" className="text-sm font-medium">Priorität</span>
+        <span id="issue-priority-label" className="text-sm font-medium">{tIssue('priority')}</span>
         <div className="flex gap-2">
           {priorities.map((pri) => {
             const isSelected = currentPriority === pri.value;
@@ -148,7 +152,7 @@ export function IssueForm({
                     : 'bg-muted text-muted-foreground hover:bg-muted/80'
                 )}
               >
-                {pri.label}
+                {tIssue(`priorities.${pri.key}`)}
               </button>
             );
           })}
@@ -160,23 +164,23 @@ export function IssueForm({
 
       {/* Title */}
       <Input
-        label="Titel"
-        placeholder="Kurze Beschreibung des Problems"
+        label={tc('title')}
+        placeholder={tIssue('titlePlaceholder')}
         error={errors.title?.message}
         {...register('title')}
       />
 
       {/* Description */}
       <Textarea
-        label="Beschreibung (optional)"
-        placeholder="Detaillierte Beschreibung..."
+        label={tIssue('descriptionOptional')}
+        placeholder={tIssue('descriptionPlaceholder')}
         error={errors.description?.message}
         {...register('description')}
       />
 
       {/* Photo capture */}
       <div className="space-y-2">
-        <label className="text-sm font-medium">Fotos (optional)</label>
+        <label className="text-sm font-medium">{tIssue('photosOptional')}</label>
         <PhotoCapture
           photos={photoUrls}
           onPhotosChange={handlePhotosChange}
@@ -190,9 +194,9 @@ export function IssueForm({
         size="touch"
         className="w-full"
         isLoading={isSubmitting}
-        loadingText="Wird gemeldet..."
+        loadingText={tIssue('reporting')}
       >
-        Problem melden
+        {tIssue('create')}
       </Button>
     </form>
   );

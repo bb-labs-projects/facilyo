@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import type {
   Aufgabe,
@@ -26,18 +27,18 @@ interface AufgabeFormProps {
   mode?: 'create' | 'edit';
 }
 
-const priorityOptions: { value: IssuePriority; label: string }[] = [
-  { value: 'low', label: 'Niedrig' },
-  { value: 'medium', label: 'Mittel' },
-  { value: 'high', label: 'Hoch' },
-  { value: 'urgent', label: 'Dringend' },
+const priorityKeys: { value: IssuePriority; key: string }[] = [
+  { value: 'low', key: 'low' },
+  { value: 'medium', key: 'medium' },
+  { value: 'high', key: 'high' },
+  { value: 'urgent', key: 'urgent' },
 ];
 
-const statusOptions: { value: IssueStatus; label: string }[] = [
-  { value: 'open', label: 'Offen' },
-  { value: 'in_progress', label: 'In Bearbeitung' },
-  { value: 'resolved', label: 'Erledigt' },
-  { value: 'closed', label: 'Geschlossen' },
+const statusKeys: { value: IssueStatus; key: string }[] = [
+  { value: 'open', key: 'open' },
+  { value: 'in_progress', key: 'inProgress' },
+  { value: 'resolved', key: 'completed' },
+  { value: 'closed', key: 'closed' },
 ];
 
 export function AufgabeForm({
@@ -47,6 +48,9 @@ export function AufgabeForm({
   isLoading = false,
   mode = 'create',
 }: AufgabeFormProps) {
+  const tTask = useTranslations('tasks');
+  const tc = useTranslations('common');
+  const tProp = useTranslations('properties');
   const profile = useAuthStore((state) => state.profile);
 
   const [title, setTitle] = useState(aufgabe?.title || '');
@@ -114,13 +118,13 @@ export function AufgabeForm({
       {/* Title */}
       <div className="space-y-2">
         <label htmlFor="title" className="text-sm font-medium">
-          Titel <span className="text-error-500">*</span>
+          {tTask('titleLabel')} <span className="text-error-500">*</span>
         </label>
         <Input
           id="title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Aufgabentitel"
+          placeholder={tTask('titlePlaceholder')}
           required
         />
       </div>
@@ -128,13 +132,13 @@ export function AufgabeForm({
       {/* Description */}
       <div className="space-y-2">
         <label htmlFor="description" className="text-sm font-medium">
-          Beschreibung
+          {tc('description')}
         </label>
         <textarea
           id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Beschreiben Sie die Aufgabe..."
+          placeholder={tTask('descriptionPlaceholder')}
           rows={4}
           className="flex w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
         />
@@ -143,7 +147,7 @@ export function AufgabeForm({
       {/* Property selection */}
       <div className="space-y-2">
         <label htmlFor="property" className="text-sm font-medium">
-          Liegenschaft <span className="text-error-500">*</span>
+          {tProp('singular')} <span className="text-error-500">*</span>
         </label>
         <select
           id="property"
@@ -152,7 +156,7 @@ export function AufgabeForm({
           required
           className="flex h-11 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <option value="">Liegenschaft wählen...</option>
+          <option value="">{tProp('selectProperty')}...</option>
           {properties.map((property) => (
             <option key={property.id} value={property.id}>
               {property.name}
@@ -164,7 +168,7 @@ export function AufgabeForm({
       {/* Assignee */}
       <div className="space-y-2">
         <label htmlFor="assignee" className="text-sm font-medium">
-          Zugewiesen an
+          {tTask('assignedTo')}
         </label>
         <select
           id="assignee"
@@ -172,7 +176,7 @@ export function AufgabeForm({
           onChange={(e) => setAssignedTo(e.target.value)}
           className="flex h-11 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <option value="">Niemand zugewiesen</option>
+          <option value="">{tTask('noAssignment')}</option>
           {users.map((user) => (
             <option key={user.id} value={user.id}>
               {user.first_name} {user.last_name} ({user.email})
@@ -183,9 +187,9 @@ export function AufgabeForm({
 
       {/* Priority */}
       <div className="space-y-2" role="group" aria-labelledby="aufgabe-priority-label">
-        <span id="aufgabe-priority-label" className="text-sm font-medium">Priorität</span>
+        <span id="aufgabe-priority-label" className="text-sm font-medium">{tc('priority')}</span>
         <div className="flex flex-wrap gap-2">
-          {priorityOptions.map((option) => (
+          {priorityKeys.map((option) => (
             <button
               key={option.value}
               type="button"
@@ -197,7 +201,7 @@ export function AufgabeForm({
                   : 'bg-muted text-muted-foreground hover:bg-muted/80'
               )}
             >
-              {option.label}
+              {tTask(`priorities.${option.key}`)}
             </button>
           ))}
         </div>
@@ -206,9 +210,9 @@ export function AufgabeForm({
       {/* Status (only for edit mode) */}
       {mode === 'edit' && (
         <div className="space-y-2" role="group" aria-labelledby="aufgabe-status-label">
-          <span id="aufgabe-status-label" className="text-sm font-medium">Status</span>
+          <span id="aufgabe-status-label" className="text-sm font-medium">{tc('status')}</span>
           <div className="flex flex-wrap gap-2">
-            {statusOptions.map((option) => (
+            {statusKeys.map((option) => (
               <button
                 key={option.value}
                 type="button"
@@ -220,7 +224,7 @@ export function AufgabeForm({
                     : 'bg-muted text-muted-foreground hover:bg-muted/80'
                 )}
               >
-                {option.label}
+                {tTask(`statuses.${option.key}`)}
               </button>
             ))}
           </div>
@@ -230,7 +234,7 @@ export function AufgabeForm({
       {/* Due date */}
       <div className="space-y-2">
         <label htmlFor="dueDate" className="text-sm font-medium">
-          Fälligkeitsdatum
+          {tTask('dueDate')}
         </label>
         <Input
           id="dueDate"
@@ -250,7 +254,7 @@ export function AufgabeForm({
             className="flex-1"
             disabled={isLoading}
           >
-            Abbrechen
+            {tc('cancel')}
           </Button>
         )}
         <Button
@@ -260,11 +264,11 @@ export function AufgabeForm({
         >
           {isLoading
             ? mode === 'create'
-              ? 'Wird erstellt...'
-              : 'Wird gespeichert...'
+              ? tc('creating')
+              : tc('saving')
             : mode === 'create'
-            ? 'Aufgabe erstellen'
-            : 'Änderungen speichern'}
+            ? tTask('create')
+            : tTask('saveChanges')}
         </Button>
       </div>
     </form>

@@ -12,54 +12,55 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { useTranslations } from 'next-intl';
 import { swissFormat } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import type { WorkDay, TimeEntryWithProperty, TimeEntryType, ActivityType } from '@/types/database';
 
 // Activity type display configuration
 const ACTIVITY_TYPE_CONFIG: Record<ActivityType, {
-  label: string;
+  labelKey: string;
   icon: typeof Wrench;
   color: string;
 }> = {
-  hauswartung: { label: 'Hauswartung', icon: Wrench, color: 'text-blue-600' },
-  rasen_maehen: { label: 'Rasen mähen', icon: Trees, color: 'text-green-600' },
-  hecken_schneiden: { label: 'Hecken schneiden', icon: Scissors, color: 'text-emerald-600' },
-  regie: { label: 'Regie', icon: ClipboardList, color: 'text-purple-600' },
-  reinigung: { label: 'Reinigung', icon: Sparkles, color: 'text-cyan-600' },
+  hauswartung: { labelKey: 'hauswartung', icon: Wrench, color: 'text-blue-600' },
+  rasen_maehen: { labelKey: 'rasen_maehen', icon: Trees, color: 'text-green-600' },
+  hecken_schneiden: { labelKey: 'hecken_schneiden', icon: Scissors, color: 'text-emerald-600' },
+  regie: { labelKey: 'regie', icon: ClipboardList, color: 'text-purple-600' },
+  reinigung: { labelKey: 'reinigung', icon: Sparkles, color: 'text-cyan-600' },
 };
 
 // Entry type display configuration
 const ENTRY_TYPE_CONFIG: Record<TimeEntryType, {
-  label: string;
+  labelKey: string;
   icon: typeof Car;
   bgColor: string;
   borderColor: string;
   textColor: string;
 }> = {
   property: {
-    label: 'Liegenschaft',
+    labelKey: 'property',
     icon: Building2,
     bgColor: 'bg-primary-50',
     borderColor: 'border-primary-200',
     textColor: 'text-primary-700',
   },
   travel: {
-    label: 'Fahrzeit',
+    labelKey: 'travel',
     icon: Car,
     bgColor: 'bg-amber-50',
     borderColor: 'border-amber-200',
     textColor: 'text-amber-700',
   },
   break: {
-    label: 'Pause',
+    labelKey: 'break',
     icon: Coffee,
     bgColor: 'bg-orange-50',
     borderColor: 'border-orange-200',
     textColor: 'text-orange-700',
   },
   vacation: {
-    label: 'Ferien',
+    labelKey: 'vacation',
     icon: Palmtree,
     bgColor: 'bg-green-50',
     borderColor: 'border-green-200',
@@ -82,6 +83,9 @@ export function WorkDayCard({
   onClick,
   className,
 }: WorkDayCardProps) {
+  const tEntry = useTranslations('entryTypes');
+  const tTime = useTranslations('timeTracking');
+  const tProp = useTranslations('properties');
   // Calculate total work time from work day span (includes travel time)
   const totalSeconds = workDay.end_time
     ? Math.floor((new Date(workDay.end_time).getTime() - new Date(workDay.start_time).getTime()) / 1000)
@@ -110,7 +114,7 @@ export function WorkDayCard({
             {swissFormat.date(workDay.date, 'EEEE, dd. MMMM')}
           </CardTitle>
           {isActive && (
-            <span className="badge badge-success">Aktiv</span>
+            <span className="badge badge-success">{tTime('active')}</span>
           )}
         </div>
       </CardHeader>
@@ -126,7 +130,7 @@ export function WorkDayCard({
             <div className="flex items-center gap-1">
               <MapPin className="h-4 w-4" />
               <span>
-                {uniqueProperties} {uniqueProperties === 1 ? 'Liegenschaft' : 'Liegenschaften'}
+                {uniqueProperties} {uniqueProperties === 1 ? tProp('singular') : tProp('plural')}
               </span>
             </div>
           )}
@@ -158,6 +162,10 @@ export function TimeEntryCard({
   className,
 }: TimeEntryCardProps) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const tEntry = useTranslations('entryTypes');
+  const tAct = useTranslations('activities');
+  const tTime = useTranslations('timeTracking');
+  const tc = useTranslations('common');
   const isActive = entry.status === 'active';
   const isPaused = entry.status === 'paused';
   const entryType = entry.entry_type || 'property';
@@ -179,7 +187,7 @@ export function TimeEntryCard({
     if (entryType === 'property' && entry.property) {
       return entry.property.name;
     }
-    return config.label;
+    return tEntry(config.labelKey);
   };
 
   const handleDeleteClick = (e: React.MouseEvent) => {
@@ -232,7 +240,7 @@ export function TimeEntryCard({
                     entry.status === 'completed' && 'badge-info'
                   )}
                 >
-                  {isActive ? 'Aktiv' : isPaused ? 'Pausiert' : 'Beendet'}
+                  {isActive ? tTime('active') : isPaused ? tTime('paused') : tTime('completed')}
                 </span>
               </div>
               {onDelete && !isActive && entryType !== 'vacation' && (
@@ -261,7 +269,7 @@ export function TimeEntryCard({
                       <>
                         <ActivityIcon className={cn('h-3.5 w-3.5', actConfig.color)} />
                         <span className={cn('text-xs font-medium', actConfig.color)}>
-                          {actConfig.label}
+                          {tAct(actConfig.labelKey)}
                         </span>
                       </>
                     );
@@ -286,7 +294,7 @@ export function TimeEntryCard({
           {/* Pause duration if any */}
           {entry.pause_duration > 0 && (
             <p className="mt-2 text-xs text-muted-foreground">
-              Pause: {swissFormat.durationHuman(entry.pause_duration)}
+              {tEntry('break')}: {swissFormat.durationHuman(entry.pause_duration)}
             </p>
           )}
         </CardContent>
@@ -296,24 +304,18 @@ export function TimeEntryCard({
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Zeiteintrag löschen</DialogTitle>
+            <DialogTitle>{tTime('entries')} {tc('delete').toLowerCase()}</DialogTitle>
             <DialogDescription>
-              Möchten Sie diesen Zeiteintrag wirklich löschen?
-              <br />
-              <span className="font-medium text-foreground">
-                {getDisplayName()} ({swissFormat.time(entry.start_time)}
-                {entry.end_time && ` – ${swissFormat.time(entry.end_time)}`})
-              </span>
-              <br />
-              Diese Aktion kann nicht rückgängig gemacht werden.
+              {getDisplayName()} ({swissFormat.time(entry.start_time)}
+              {entry.end_time && ` – ${swissFormat.time(entry.end_time)}`})
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
-              Abbrechen
+              {tc('cancel')}
             </Button>
             <Button variant="destructive" onClick={handleConfirmDelete}>
-              Löschen
+              {tc('delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -335,13 +337,15 @@ export function TimeEntryList({
   entries,
   onEntryClick,
   onEntryDelete,
-  emptyMessage = 'Keine Einträge vorhanden',
+  emptyMessage,
   className,
 }: TimeEntryListProps) {
+  const tTime = useTranslations('timeTracking');
+  const resolvedEmptyMessage = emptyMessage || tTime('noEntries');
   if (entries.length === 0) {
     return (
       <div className={cn('text-center py-8 text-muted-foreground', className)}>
-        {emptyMessage}
+        {resolvedEmptyMessage}
       </div>
     );
   }
@@ -384,6 +388,9 @@ export function PropertyGroupedEntries({
   onEntryDelete,
   className,
 }: PropertyGroupedEntriesProps) {
+  const tEntry = useTranslations('entryTypes');
+  const tAct = useTranslations('activities');
+  const tTime = useTranslations('timeTracking');
   const [expandedVisits, setExpandedVisits] = useState<Set<string>>(new Set());
 
   // Sort entries by start time first
@@ -495,7 +502,7 @@ export function PropertyGroupedEntries({
   if (entries.length === 0) {
     return (
       <div className={cn('text-center py-8 text-muted-foreground', className)}>
-        Keine Einträge vorhanden
+        {tTime('noEntries')}
       </div>
     );
   }
@@ -538,7 +545,7 @@ export function PropertyGroupedEntries({
                   <div className="flex items-center gap-2">
                     <Building2 className={cn('h-4 w-4', ENTRY_TYPE_CONFIG.property.textColor)} />
                     <h3 className="font-medium truncate">
-                      {visit.property?.name || 'Unbekannte Liegenschaft'}
+                      {visit.property?.name || tTime('unknownProperty')}
                     </h3>
                   </div>
                   {visit.property && (
@@ -554,7 +561,7 @@ export function PropertyGroupedEntries({
                       {swissFormat.duration(visit.totalSeconds)}
                     </span>
                     {hasActiveEntry && (
-                      <span className="badge badge-success ml-2">Aktiv</span>
+                      <span className="badge badge-success ml-2">{tTime('active')}</span>
                     )}
                   </div>
                   {(hasMultipleActivities || visit.entries.length > 1) && (
@@ -590,7 +597,7 @@ export function PropertyGroupedEntries({
                         >
                           <ActivityIcon className={cn('h-3.5 w-3.5', actConfig.color)} />
                           <span className={cn('font-medium', actConfig.color)}>
-                            {actConfig.label}
+                            {tAct(actConfig.labelKey)}
                           </span>
                           <span className="text-muted-foreground font-mono">
                             {swissFormat.duration(seconds)}
@@ -605,7 +612,7 @@ export function PropertyGroupedEntries({
               {isExpanded && (
                 <div className="mt-4 pt-4 border-t space-y-2">
                   <p className="text-xs font-medium text-muted-foreground mb-2">
-                    Einzelne Einträge ({visit.entries.length})
+                    {tTime('entries')} ({visit.entries.length})
                   </p>
                   {visit.entries
                     .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
@@ -625,7 +632,7 @@ export function PropertyGroupedEntries({
                             )}
                             <div>
                               <span className={cn('text-sm font-medium', actConfig?.color)}>
-                                {actConfig?.label || 'Keine Tätigkeit'}
+                                {actConfig ? tAct(actConfig.labelKey) : ''}
                               </span>
                               <p className="text-xs text-muted-foreground">
                                 {swissFormat.time(entry.start_time)}
@@ -638,7 +645,7 @@ export function PropertyGroupedEntries({
                               {swissFormat.duration(duration)}
                             </span>
                             {entry.status === 'active' && (
-                              <span className="badge badge-success text-xs">Aktiv</span>
+                              <span className="badge badge-success text-xs">{tTime('active')}</span>
                             )}
                             {onEntryDelete && entry.status !== 'active' && (
                               <Button

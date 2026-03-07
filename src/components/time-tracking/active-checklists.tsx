@@ -137,11 +137,11 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
     },
     onSuccess: (_, variables) => {
       hapticFeedback('medium');
-      toast.success('Checkliste gespeichert');
+      toast.success(t('saved'));
       queryClient.invalidateQueries({ queryKey: ['checklist-instances', timeEntryId] });
     },
     onError: (error: Error) => {
-      toast.error(`Fehler beim Speichern: ${error.message}`);
+      toast.error(`${t('saveError')}: ${error.message}`);
     },
   });
 
@@ -200,7 +200,7 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
     const validation = validateRequiredFields(templateId);
 
     if (!validation.valid) {
-      toast.error(`Bitte füllen Sie alle Pflichtfelder aus: ${validation.missingFields.join(', ')}`);
+      toast.error(`${t('fillRequired')}: ${validation.missingFields.join(', ')}`);
       return;
     }
 
@@ -245,7 +245,7 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
     <div className={cn('space-y-3', className)}>
       <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
         <ClipboardList className="h-4 w-4" />
-        Checklisten
+        {t('titlePlural')}
       </h3>
 
       {checklists.map((checklist) => {
@@ -290,15 +290,15 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
                   <div className="flex-1 min-w-0">
                     <CardTitle className="text-base">{checklist.name}</CardTitle>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {progress.completed} von {progress.total} erledigt
+                      {t('completedOf', { completed: progress.completed, total: progress.total })}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     {hasChanges && (
-                      <span className="badge badge-warning text-xs">Nicht gespeichert</span>
+                      <span className="badge badge-warning text-xs">{t('unsaved')}</span>
                     )}
                     {!hasChanges && progress.completed === progress.total && progress.total > 0 && (
-                      <span className="badge badge-success text-xs">Fertig</span>
+                      <span className="badge badge-success text-xs">{t('done')}</span>
                     )}
                     {isExpanded ? (
                       <ChevronUp className="h-5 w-5 text-muted-foreground" />
@@ -336,7 +336,7 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
                           className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors"
                         >
                           <FileText className="h-8 w-8 text-red-500 flex-shrink-0" />
-                          <span className="text-sm font-medium">Pflichtenheft anzeigen</span>
+                          <span className="text-sm font-medium">{t('showSpec')}</span>
                         </a>
                       ) : (
                         <button
@@ -346,7 +346,7 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
                         >
                           <img
                             src={checklist.image_url}
-                            alt="Pflichtenheft"
+                            alt={t('spec')}
                             className="w-full max-h-48 object-contain"
                           />
                         </button>
@@ -370,7 +370,7 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
                       className="w-full mt-4"
                     >
                       <Save className="h-4 w-4 mr-2" />
-                      {savingChecklistId === checklist.id ? 'Wird gespeichert...' : 'Speichern'}
+                      {savingChecklistId === checklist.id ? tc('saving') : tc('save')}
                     </Button>
                   </CardContent>
                 </motion.div>
@@ -395,7 +395,7 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
           </button>
           <img
             src={enlargedImageUrl}
-            alt="Pflichtenheft"
+            alt={t('spec')}
             className="max-w-full max-h-full object-contain rounded-lg"
           />
         </div>
@@ -519,6 +519,7 @@ function TextItem({
   onChange: (value: string) => void;
   required?: boolean;
 }) {
+  const t = useTranslations('checklist');
   return (
     <div className="p-3 rounded-lg border bg-card space-y-2">
       <label className="text-sm font-medium">
@@ -528,7 +529,7 @@ function TextItem({
       <Input
         value={value || ''}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Eingeben..."
+        placeholder={t('enterText')}
       />
     </div>
   );
@@ -574,6 +575,8 @@ function PhotoItem({
   required?: boolean;
 }) {
   const organizationId = useAuthStore((state) => state.organizationId);
+  const t = useTranslations('checklist');
+  const tc = useTranslations('common');
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -630,7 +633,7 @@ function PhotoItem({
       hapticFeedback('medium');
     } catch (error: any) {
       console.error('Failed to upload photo:', error);
-      toast.error(error?.message || 'Foto konnte nicht hochgeladen werden');
+      toast.error(error?.message || t('photoUploadError'));
       hapticFeedback('heavy');
     } finally {
       setIsUploading(false);
@@ -652,7 +655,7 @@ function PhotoItem({
       {isUploading ? (
         <div className="w-full h-24 border-2 border-dashed border-primary-300 rounded-lg flex flex-col items-center justify-center gap-2 bg-primary-50">
           <Loader2 className="h-6 w-6 text-primary-500 animate-spin" />
-          <span className="text-sm text-primary-600">Wird hochgeladen...</span>
+          <span className="text-sm text-primary-600">{tc('uploading')}</span>
         </div>
       ) : value ? (
         <div className="relative w-[200px] h-[200px] rounded-lg overflow-hidden bg-slate-100 border border-slate-200">
@@ -687,7 +690,7 @@ function PhotoItem({
           className="w-full h-24 border-2 border-dashed border-muted-foreground/50 rounded-lg flex flex-col items-center justify-center gap-2 hover:border-primary-500 transition-colors"
         >
           <Camera className="h-6 w-6 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">Foto aufnehmen</span>
+          <span className="text-sm text-muted-foreground">{t('takePhoto')}</span>
         </button>
       )}
 
