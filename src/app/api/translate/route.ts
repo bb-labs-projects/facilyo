@@ -7,67 +7,7 @@ const SUPPORTED_LOCALES = ['de-CH', 'de-DE', 'en', 'hr', 'sr', 'bs', 'sl', 'mk',
 const NEAR_AI_URL = 'https://cloud-api.near.ai/v1';
 const NEAR_AI_KEY = process.env.NEAR_AI_API_KEY || 'sk-f8b3cad314574234b9ad8ac39cc5c016';
 
-const localeNames: Record<string, string> = {
-  'de-CH': 'German (Switzerland)',
-  'de-DE': 'German (Germany)',
-  'en': 'English',
-  'hr': 'Croatian',
-  'sr': 'Serbian (Latin script)',
-  'bs': 'Bosnian',
-  'sl': 'Slovenian',
-  'mk': 'Macedonian (Cyrillic script)',
-  'sq': 'Albanian',
-  'es': 'Spanish',
-  'pt': 'Brazilian Portuguese',
-  'fr': 'French',
-  'it': 'Italian',
-};
-
-async function translateBatch(labels: { id: string; label: string }[], targetLang: string): Promise<Record<string, string>> {
-  const langName = localeNames[targetLang] || targetLang;
-  const labelsText = labels.map((l, i) => `${i + 1}. ${l.label}`).join('\n');
-
-  const response = await fetch(`${NEAR_AI_URL}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${NEAR_AI_KEY}`,
-    },
-    body: JSON.stringify({
-      model: 'openai/gpt-oss-120b',
-      messages: [
-        {
-          role: 'system',
-          content: `You are a professional translator. Translate the following facility management checklist items to ${langName}. Each item may be in a different language — auto-detect the language of EACH item individually and translate it to ${langName}. If an item is already in ${langName}, return it unchanged. Return ONLY the translations as a numbered list, one per line, matching the input numbering. No explanations.`,
-        },
-        {
-          role: 'user',
-          content: labelsText,
-        },
-      ],
-      temperature: 0.1,
-    }),
-    signal: AbortSignal.timeout(60000),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Near AI API error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  const content = data.choices?.[0]?.message?.content || '';
-
-  // Parse numbered list response
-  const lines = content.trim().split('\n');
-  const result: Record<string, string> = {};
-
-  for (let i = 0; i < labels.length; i++) {
-    const line = lines[i]?.replace(/^\d+\.\s*/, '').trim();
-    result[labels[i].id] = line || labels[i].label;
-  }
-
-  return result;
-}
+export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   try {
@@ -98,36 +38,84 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Items array is required' }, { status: 400 });
     }
 
-    // Translate batch to all supported locales sequentially in groups of 3
-    // to avoid rate limiting on Near AI
-    const results: { locale: string; result: Record<string, string> }[] = [];
-    for (let i = 0; i < SUPPORTED_LOCALES.length; i += 3) {
-      const batch = SUPPORTED_LOCALES.slice(i, i + 3);
-      const batchResults = await Promise.all(
-        batch.map(async (locale) => {
-          try {
-            const result = await translateBatch(items, locale);
-            return { locale, result };
-          } catch (err) {
-            console.error(`Translation failed for ${locale}:`, err);
-            // Fallback: use original labels
-            const fallback: Record<string, string> = {};
-            items.forEach(item => { fallback[item.id] = item.label; });
-            return { locale, result: fallback };
-          }
-        })
-      );
-      results.push(...batchResults);
+    // Build a single prompt that translates all items to all locales at once
+    const itemsList = items.map((item, i) => `${i + 1}. ${item.label}`).join('\n');
+    const localesList = SUPPORTED_LOCALES.join(', ');
+
+    const response = await fetch(`${NEAR_AI_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${NEAR_AI_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'openai/gpt-oss-120b',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a professional translator for facility management software. You will receive checklist items that may each be in a different language. Auto-detect the language of each item individually.
+
+Translate ALL items to ALL of these locales: ${localesList}
+
+Locale details:
+- de-CH: German (Switzerland)
+- de-DE: German (Germany)
+- en: English
+- hr: Croatian
+- sr: Serbian (Latin script)
+- bs: Bosnian
+- sl: Slovenian
+- mk: Macedonian (Cyrillic script)
+- sq: Albanian
+- es: Spanish
+- pt: Brazilian Portuguese
+- fr: French
+- it: Italian
+
+Return ONLY valid JSON in this exact format, no markdown, no explanation:
+{
+  "0": {"de-CH": "...", "de-DE": "...", "en": "...", "hr": "...", "sr": "...", "bs": "...", "sl": "...", "mk": "...", "sq": "...", "es": "...", "pt": "...", "fr": "...", "it": "..."},
+  "1": {"de-CH": "...", ...}
+}
+
+Keys are zero-based item indices. Values are the translated strings.`,
+          },
+          {
+            role: 'user',
+            content: itemsList,
+          },
+        ],
+        temperature: 0.1,
+      }),
+      signal: AbortSignal.timeout(55000),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error('Near AI API error:', response.status, errText);
+      throw new Error(`Near AI API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || '';
+
+    // Parse JSON response - strip markdown code fences if present
+    const jsonStr = content.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+    let parsed: Record<string, Record<string, string>>;
+    try {
+      parsed = JSON.parse(jsonStr);
+    } catch (parseErr) {
+      console.error('Failed to parse translation JSON:', jsonStr);
+      throw new Error('Failed to parse translation response');
     }
 
     // Restructure: { itemId: { locale: translation } }
     const translatedItems: Record<string, Record<string, string>> = {};
-    for (const item of items) {
-      translatedItems[item.id] = {};
-    }
-    for (const { locale, result } of results) {
-      for (const item of items) {
-        translatedItems[item.id][locale] = result[item.id] || item.label;
+    for (let i = 0; i < items.length; i++) {
+      const itemTranslations = parsed[String(i)] || {};
+      translatedItems[items[i].id] = {};
+      for (const locale of SUPPORTED_LOCALES) {
+        translatedItems[items[i].id][locale] = itemTranslations[locale] || items[i].label;
       }
     }
 
