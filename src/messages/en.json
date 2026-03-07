@@ -599,7 +599,16 @@
     "alreadyProcessed": "Request has already been processed",
     "notEnoughBalance": "Not enough vacation days: {available} available, {requested} requested",
     "conflictWorkEntries": "Conflict: There are already work entries on {dates}. Please remove existing entries first.",
-    "partialCancelError": "Cancellation partially failed. Please check the time entries."
+    "partialCancelError": "Cancellation partially failed. Please check the time entries.",
+    "weekdays": {
+      "mo": "Mon",
+      "tu": "Tue",
+      "we": "Wed",
+      "th": "Thu",
+      "fr": "Fri",
+      "sa": "Sat",
+      "su": "Sun"
+    }
   },
   "profile": {
     "title": "Profile",

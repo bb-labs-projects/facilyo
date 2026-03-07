@@ -599,7 +599,16 @@
     "alreadyProcessed": "La solicitud ya ha sido procesada",
     "notEnoughBalance": "Días de vacaciones insuficientes: {available} disponibles, {requested} solicitados",
     "conflictWorkEntries": "Conflicto: Ya existen registros de trabajo en {dates}. Por favor elimine los registros existentes primero.",
-    "partialCancelError": "La cancelación falló parcialmente. Por favor revise los registros de tiempo."
+    "partialCancelError": "La cancelación falló parcialmente. Por favor revise los registros de tiempo.",
+    "weekdays": {
+      "mo": "Lun",
+      "tu": "Mar",
+      "we": "Mié",
+      "th": "Jue",
+      "fr": "Vie",
+      "sa": "Sáb",
+      "su": "Dom"
+    }
   },
   "profile": {
     "title": "Perfil",

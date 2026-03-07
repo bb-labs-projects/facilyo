@@ -41,8 +41,5 @@ export function getChecklistItemLabel(
   item: { label: string; translations?: Record<string, string> },
   locale: string
 ): string {
-  if (locale === 'de-CH' || locale === 'de-DE') {
-    return item.label;
-  }
   return item.translations?.[locale] || item.label;
 }

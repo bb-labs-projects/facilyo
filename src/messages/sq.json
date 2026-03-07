@@ -599,7 +599,16 @@
     "alreadyProcessed": "Kërkesa është përpunuar tashmë",
     "notEnoughBalance": "Ditë pushimi të pamjaftueshme: {available} të disponueshme, {requested} të kërkuara",
     "conflictWorkEntries": "Konflikt: Tashmë ekzistojnë regjistrime pune në {dates}. Ju lutem hiqni regjistrimet ekzistuese fillimisht.",
-    "partialCancelError": "Anulimi dështoi pjesërisht. Ju lutem kontrolloni regjistrimet kohore."
+    "partialCancelError": "Anulimi dështoi pjesërisht. Ju lutem kontrolloni regjistrimet kohore.",
+    "weekdays": {
+      "mo": "Hën",
+      "tu": "Mar",
+      "we": "Mër",
+      "th": "Enj",
+      "fr": "Pre",
+      "sa": "Sht",
+      "su": "Diel"
+    }
   },
   "profile": {
     "title": "Profili",

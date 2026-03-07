@@ -599,7 +599,16 @@
     "alreadyProcessed": "La richiesta è già stata elaborata",
     "notEnoughBalance": "Giorni di ferie insufficienti: {available} disponibili, {requested} richiesti",
     "conflictWorkEntries": "Conflitto: Esistono già registrazioni di lavoro il {dates}. Rimuovere prima le registrazioni esistenti.",
-    "partialCancelError": "Annullamento parzialmente fallito. Verificare le registrazioni orarie."
+    "partialCancelError": "Annullamento parzialmente fallito. Verificare le registrazioni orarie.",
+    "weekdays": {
+      "mo": "Lun",
+      "tu": "Mar",
+      "we": "Mer",
+      "th": "Gio",
+      "fr": "Ven",
+      "sa": "Sab",
+      "su": "Dom"
+    }
   },
   "profile": {
     "title": "Profilo",

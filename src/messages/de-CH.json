@@ -599,7 +599,16 @@
     "alreadyProcessed": "Antrag wurde bereits bearbeitet",
     "notEnoughBalance": "Nicht genügend Ferientage: {available} verfügbar, {requested} beantragt",
     "conflictWorkEntries": "Konflikt: Es bestehen bereits Arbeitseinträge am {dates}. Bitte zuerst die bestehenden Einträge entfernen.",
-    "partialCancelError": "Stornierung teilweise fehlgeschlagen. Bitte prüfen Sie die Zeiteinträge."
+    "partialCancelError": "Stornierung teilweise fehlgeschlagen. Bitte prüfen Sie die Zeiteinträge.",
+    "weekdays": {
+      "mo": "Mo",
+      "tu": "Di",
+      "we": "Mi",
+      "th": "Do",
+      "fr": "Fr",
+      "sa": "Sa",
+      "su": "So"
+    }
   },
   "profile": {
     "title": "Profil",

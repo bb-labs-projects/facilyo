@@ -599,7 +599,16 @@
     "alreadyProcessed": "Zahtjev je već obrađen",
     "notEnoughBalance": "Nedovoljno dana odmora: {available} dostupno, {requested} zatraženo",
     "conflictWorkEntries": "Konflikt: Već postoje radni unosi na {dates}. Molimo prvo uklonite postojeće unose.",
-    "partialCancelError": "Storniranje djelomično neuspjelo. Molimo provjerite vremenske unose."
+    "partialCancelError": "Storniranje djelomično neuspjelo. Molimo provjerite vremenske unose.",
+    "weekdays": {
+      "mo": "Pon",
+      "tu": "Uto",
+      "we": "Sri",
+      "th": "Čet",
+      "fr": "Pet",
+      "sa": "Sub",
+      "su": "Ned"
+    }
   },
   "profile": {
     "title": "Profil",

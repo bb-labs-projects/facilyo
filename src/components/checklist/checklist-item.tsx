@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { cn, hapticFeedback } from '@/lib/utils';
 import { getClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
+import { useLocale, getChecklistItemLabel } from '@/hooks/use-locale';
 import type { ChecklistItem as ChecklistItemType } from '@/types/database';
 
 interface ChecklistItemProps {
@@ -29,6 +30,9 @@ export function ChecklistItem({
   dragHandleProps,
   className,
 }: ChecklistItemProps) {
+  const { locale } = useLocale();
+  const localizedLabel = getChecklistItemLabel(item, locale);
+
   const renderInput = () => {
     switch (item.type) {
       case 'checkbox':
@@ -36,7 +40,7 @@ export function ChecklistItem({
           <CheckboxInput
             checked={value as boolean}
             onChange={(checked) => onChange(checked)}
-            label={item.label}
+            label={localizedLabel}
             required={item.required}
           />
         );
@@ -46,7 +50,7 @@ export function ChecklistItem({
           <TextInput
             value={value as string}
             onChange={(text) => onChange(text)}
-            label={item.label}
+            label={localizedLabel}
             required={item.required}
           />
         );
@@ -56,7 +60,7 @@ export function ChecklistItem({
           <NumberInput
             value={value as number}
             onChange={(num) => onChange(num)}
-            label={item.label}
+            label={localizedLabel}
             required={item.required}
           />
         );
@@ -66,7 +70,7 @@ export function ChecklistItem({
           <PhotoInput
             value={value as string}
             onChange={(url) => onChange(url)}
-            label={item.label}
+            label={localizedLabel}
             required={item.required}
           />
         );

@@ -599,7 +599,16 @@
     "alreadyProcessed": "La demande a deja ete traitee",
     "notEnoughBalance": "Jours de vacances insuffisants : {available} disponibles, {requested} demandes",
     "conflictWorkEntries": "Conflit : Des entrees de travail existent deja le {dates}. Veuillez d'abord supprimer les entrees existantes.",
-    "partialCancelError": "L'annulation a partiellement echoue. Veuillez verifier les entrees de temps."
+    "partialCancelError": "L'annulation a partiellement echoue. Veuillez verifier les entrees de temps.",
+    "weekdays": {
+      "mo": "Lun",
+      "tu": "Mar",
+      "we": "Mer",
+      "th": "Jeu",
+      "fr": "Ven",
+      "sa": "Sam",
+      "su": "Dim"
+    }
   },
   "profile": {
     "title": "Profil",

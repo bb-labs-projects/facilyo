@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
-const SUPPORTED_LOCALES = ['de-DE', 'en', 'hr', 'sr', 'bs', 'sl', 'mk', 'sq', 'es', 'pt', 'fr', 'it'] as const;
+const SUPPORTED_LOCALES = ['de-CH', 'de-DE', 'en', 'hr', 'sr', 'bs', 'sl', 'mk', 'sq', 'es', 'pt', 'fr', 'it'] as const;
 
 const NEAR_AI_URL = 'https://cloud-api.near.ai/v1';
 const NEAR_AI_KEY = process.env.NEAR_AI_API_KEY || 'sk-f8b3cad314574234b9ad8ac39cc5c016';
 
 const localeNames: Record<string, string> = {
+  'de-CH': 'German (Switzerland)',
   'de-DE': 'German (Germany)',
   'en': 'English',
   'hr': 'Croatian',
@@ -37,7 +38,7 @@ async function translateBatch(labels: { id: string; label: string }[], targetLan
       messages: [
         {
           role: 'system',
-          content: `You are a professional translator. Translate the following facility management checklist items to ${langName}. The source text may be in any language — auto-detect it. Return ONLY the translations as a numbered list, one per line, matching the input numbering. No explanations.`,
+          content: `You are a professional translator. Translate the following facility management checklist items to ${langName}. Each item may be in a different language — auto-detect the language of EACH item individually and translate it to ${langName}. If an item is already in ${langName}, return it unchanged. Return ONLY the translations as a numbered list, one per line, matching the input numbering. No explanations.`,
         },
         {
           role: 'user',

@@ -599,7 +599,16 @@
     "alreadyProcessed": "Prošnja je bila že obdelana",
     "notEnoughBalance": "Premalo dni dopusta: {available} razpoložljivih, {requested} zaprošenih",
     "conflictWorkEntries": "Konflikt: Na {dates} že obstajajo delovni vnosi. Prosimo, najprej odstranite obstoječe vnose.",
-    "partialCancelError": "Preklic delno neuspešen. Prosimo, preverite časovne vnose."
+    "partialCancelError": "Preklic delno neuspešen. Prosimo, preverite časovne vnose.",
+    "weekdays": {
+      "mo": "Pon",
+      "tu": "Tor",
+      "we": "Sre",
+      "th": "Čet",
+      "fr": "Pet",
+      "sa": "Sob",
+      "su": "Ned"
+    }
   },
   "profile": {
     "title": "Profil",

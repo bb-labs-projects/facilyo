@@ -189,7 +189,7 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
       }
 
       if (!isValid) {
-        missingFields.push(item.label);
+        missingFields.push(getChecklistItemLabel(item, locale));
       }
     });
 
