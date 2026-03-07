@@ -13,6 +13,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { useTranslations } from 'next-intl';
 import { formatCHF } from '@/lib/utils';
 import type { Invoice, InvoiceLineItem, Client } from '@/types/database';
 import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react';
@@ -52,6 +53,7 @@ function EditInvoicePageContent() {
   const router = useRouter();
   const permissions = usePermissions();
   const organizationId = useAuthStore((state) => state.organizationId);
+  const tInv = useTranslations('invoicesAdmin');
 
   // Form state
   const [issueDate, setIssueDate] = useState('');
@@ -78,7 +80,7 @@ function EditInvoicePageContent() {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error || !session) {
         const { error: refreshError } = await supabase.auth.refreshSession();
-        if (refreshError) throw new Error('Sitzung abgelaufen.');
+        if (refreshError) throw new Error(tInv('edit.sessionExpired'));
       }
       lastSessionCheck.current = now;
     } finally {
@@ -191,7 +193,7 @@ function EditInvoicePageContent() {
   // Save handler
   const handleSave = async () => {
     if (lineItems.length === 0) {
-      toast.error('Mindestens eine Position erforderlich.');
+      toast.error(tInv('edit.minOneLineItem'));
       return;
     }
 
@@ -229,13 +231,13 @@ function EditInvoicePageContent() {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || 'Speichern fehlgeschlagen');
+        throw new Error(errData.error || tInv('edit.saveFailed'));
       }
 
-      toast.success('Rechnung wurde aktualisiert');
+      toast.success(tInv('edit.updateSuccess'));
       router.push(`/admin/invoices/${id}`);
     } catch (error: any) {
-      toast.error(error.message || 'Fehler beim Speichern');
+      toast.error(error.message || tInv('edit.saveError'));
     } finally {
       setIsSaving(false);
     }
@@ -247,17 +249,17 @@ function EditInvoicePageContent() {
 
   if (isLoading || !initialized) {
     return (
-      <PageContainer header={<Header title="Rechnung bearbeiten" />}>
-        <div className="text-center py-12 text-muted-foreground">Wird geladen...</div>
+      <PageContainer header={<Header title={tInv('edit.title')} />}>
+        <div className="text-center py-12 text-muted-foreground">{tInv('edit.loading')}</div>
       </PageContainer>
     );
   }
 
   if (!invoice) {
     return (
-      <PageContainer header={<Header title="Rechnung bearbeiten" />}>
+      <PageContainer header={<Header title={tInv('edit.title')} />}>
         <div className="text-center py-12 text-muted-foreground">
-          Rechnung nicht gefunden
+          {tInv('edit.notFound')}
         </div>
       </PageContainer>
     );
@@ -265,16 +267,16 @@ function EditInvoicePageContent() {
 
   if (invoice.status !== 'draft') {
     return (
-      <PageContainer header={<Header title="Rechnung bearbeiten" />}>
+      <PageContainer header={<Header title={tInv('edit.title')} />}>
         <div className="text-center py-12 text-muted-foreground">
-          Nur Entwürfe können bearbeitet werden.
+          {tInv('edit.onlyDrafts')}
         </div>
       </PageContainer>
     );
   }
 
   return (
-    <PageContainer header={<Header title="Rechnung bearbeiten" />}>
+    <PageContainer header={<Header title={tInv('edit.title')} />}>
       <div className="space-y-4 max-w-3xl mx-auto">
         {/* Back link */}
         <Link
@@ -282,7 +284,7 @@ function EditInvoicePageContent() {
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          Zurück zur Rechnung
+          {tInv('edit.backToInvoice')}
         </Link>
 
         {/* Invoice header */}
@@ -290,18 +292,18 @@ function EditInvoicePageContent() {
           <CardContent className="p-4 space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-xs text-muted-foreground">Rechnungsnummer</p>
+                <p className="text-xs text-muted-foreground">{tInv('edit.invoiceNumber')}</p>
                 <p className="text-sm font-medium">{invoice.invoice_number}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Kunde</p>
+                <p className="text-xs text-muted-foreground">{tInv('edit.client')}</p>
                 <p className="text-sm font-medium">{invoice.clients?.name}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-xs font-medium text-slate-500">Rechnungsdatum</label>
+                <label className="text-xs font-medium text-slate-500">{tInv('edit.invoiceDate')}</label>
                 <Input
                   type="date"
                   value={issueDate}
@@ -309,7 +311,7 @@ function EditInvoicePageContent() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-medium text-slate-500">Fälligkeitsdatum</label>
+                <label className="text-xs font-medium text-slate-500">{tInv('edit.dueDate')}</label>
                 <Input
                   type="date"
                   value={dueDate}
@@ -323,24 +325,24 @@ function EditInvoicePageContent() {
         {/* Line items */}
         <Card>
           <CardContent className="p-4 space-y-4">
-            <h3 className="font-medium">Positionen</h3>
+            <h3 className="font-medium">{tInv('edit.lineItems')}</h3>
 
             {lineItems.map((item) => (
               <div key={item.key} className="space-y-3 p-3 rounded-lg border border-muted">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 space-y-3">
                     <div className="space-y-1">
-                      <label className="text-xs font-medium text-slate-500">Beschreibung</label>
+                      <label className="text-xs font-medium text-slate-500">{tInv('edit.description')}</label>
                       <Input
                         value={item.description}
                         onChange={(e) => updateLineItem(item.key, 'description', e.target.value)}
-                        placeholder="Positionsbeschreibung"
+                        placeholder={tInv('edit.descriptionPlaceholder')}
                       />
                     </div>
 
                     <div className="grid grid-cols-3 gap-3">
                       <div className="space-y-1">
-                        <label className="text-xs font-medium text-slate-500">Menge</label>
+                        <label className="text-xs font-medium text-slate-500">{tInv('edit.quantity')}</label>
                         <Input
                           type="number"
                           step="0.01"
@@ -352,15 +354,15 @@ function EditInvoicePageContent() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-xs font-medium text-slate-500">Einheit</label>
+                        <label className="text-xs font-medium text-slate-500">{tInv('edit.unit')}</label>
                         <Input
                           value={item.unit}
                           onChange={(e) => updateLineItem(item.key, 'unit', e.target.value)}
-                          placeholder="Stk"
+                          placeholder={tInv('edit.unitPlaceholder')}
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-xs font-medium text-slate-500">Preis (CHF)</label>
+                        <label className="text-xs font-medium text-slate-500">{tInv('edit.priceCHF')}</label>
                         <Input
                           type="number"
                           step="0.01"
@@ -383,7 +385,7 @@ function EditInvoicePageContent() {
                     size="icon"
                     onClick={() => removeLineItem(item.key)}
                     className="text-error-500 hover:text-error-600 flex-shrink-0"
-                    title="Entfernen"
+                    title={tInv('edit.removeTitle')}
                     type="button"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -394,13 +396,13 @@ function EditInvoicePageContent() {
 
             <Button variant="outline" className="w-full" onClick={addLineItem} type="button">
               <Plus className="h-4 w-4 mr-2" />
-              Position hinzufügen
+              {tInv('edit.addLineItem')}
             </Button>
 
             {/* Totals */}
             <div className="border-t border-slate-200 pt-3 space-y-1">
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Zwischensumme</span>
+                <span className="text-muted-foreground">{tInv('edit.subtotal')}</span>
                 <span className="font-medium">{formatCHF(subtotal)}</span>
               </div>
               {mwstEnabled && mwstRate > 0 && (
@@ -410,7 +412,7 @@ function EditInvoicePageContent() {
                 </div>
               )}
               <div className="flex justify-between text-base font-bold pt-1 border-t border-slate-200">
-                <span>Total</span>
+                <span>{tInv('edit.total')}</span>
                 <span>{formatCHF(total)}</span>
               </div>
             </div>
@@ -420,11 +422,11 @@ function EditInvoicePageContent() {
         {/* Notes */}
         <Card>
           <CardContent className="p-4 space-y-2">
-            <label className="text-sm font-medium text-slate-500">Bemerkungen</label>
+            <label className="text-sm font-medium text-slate-500">{tInv('edit.notes')}</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Bemerkungen zur Rechnung..."
+              placeholder={tInv('edit.notesPlaceholder')}
               rows={3}
               className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
@@ -438,7 +440,7 @@ function EditInvoicePageContent() {
           disabled={isSaving || lineItems.length === 0}
         >
           <Save className="h-4 w-4 mr-2" />
-          {isSaving ? 'Wird gespeichert...' : 'Speichern'}
+          {isSaving ? tInv('edit.saving') : tInv('edit.save')}
         </Button>
       </div>
     </PageContainer>

@@ -13,6 +13,7 @@ import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
 import { cn, formatSwissNumber } from '@/lib/utils';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { useTranslations } from 'next-intl';
 import type {
   Client,
   ClientSubscription,
@@ -38,21 +39,6 @@ import {
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
-const ACTIVITY_LABELS: Record<string, string> = {
-  hauswartung: 'Hauswartung',
-  rasen_maehen: 'Rasen mähen',
-  hecken_schneiden: 'Hecken schneiden',
-  regie: 'Regie',
-  reinigung: 'Reinigung',
-};
-
-const INTERVAL_LABELS: Record<SubscriptionInterval, string> = {
-  monthly: 'Monatlich',
-  quarterly: 'Quartalsweise',
-  half_yearly: 'Halbjährlich',
-  annually: 'Jährlich',
-};
 
 const ACTIVITY_TYPES: ActivityType[] = [
   'hauswartung',
@@ -145,6 +131,7 @@ function NewInvoicePageContent() {
   const permissions = usePermissions();
   const organizationId = useAuthStore((state) => state.organizationId);
   const user = useAuthStore((state) => state.user);
+  const tInv = useTranslations('invoicesAdmin');
 
   // -----------------------------------------------------------------------
   // Session refresh
@@ -165,7 +152,7 @@ function NewInvoicePageContent() {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error || !session) {
         const { error: refreshError } = await supabase.auth.refreshSession();
-        if (refreshError) throw new Error('Sitzung abgelaufen.');
+        if (refreshError) throw new Error(tInv('create.sessionExpired'));
       }
       lastSessionCheck.current = now;
     } finally {
@@ -457,9 +444,9 @@ function NewInvoicePageContent() {
 
   if (!permissions.canManageInvoices) {
     return (
-      <PageContainer header={<Header title="Neue Rechnung" />}>
+      <PageContainer header={<Header title={tInv('create.title')} />}>
         <div className="text-center py-12 text-muted-foreground">
-          Wird geladen...
+          {tInv('create.loading')}
         </div>
       </PageContainer>
     );
@@ -490,7 +477,7 @@ function NewInvoicePageContent() {
     .filter((g) => g.totalHours > 0)
     .map((g) => ({
       line_type: 'hours' as InvoiceLineItemType,
-      description: ACTIVITY_LABELS[g.activity_type] || g.activity_type,
+      description: tInv(`activities.${g.activity_type}`) || g.activity_type,
       quantity: roundTwo(g.totalHours),
       unit: 'Std',
       unit_price: g.rate,
@@ -529,7 +516,7 @@ function NewInvoicePageContent() {
   // -----------------------------------------------------------------------
   const handleSave = async () => {
     if (!selectedClientId || allLineItems.length === 0) {
-      toast.error('Bitte mindestens eine Position hinzufügen.');
+      toast.error(tInv('create.minOneLineItem'));
       return;
     }
 
@@ -555,14 +542,14 @@ function NewInvoicePageContent() {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || 'Rechnung konnte nicht erstellt werden.');
+        throw new Error(errData.error || tInv('create.createError'));
       }
 
       const result = await res.json();
-      toast.success('Rechnung wurde als Entwurf gespeichert.');
+      toast.success(tInv('create.createSuccess'));
       router.push(`/admin/invoices/${result.id}`);
     } catch (error: any) {
-      toast.error(error.message || 'Fehler beim Speichern.');
+      toast.error(error.message || tInv('create.saveError'));
     } finally {
       setIsSaving(false);
     }
@@ -644,16 +631,16 @@ function NewInvoicePageContent() {
 
   if (clientsLoading) {
     return (
-      <PageContainer header={<Header title="Neue Rechnung" />}>
+      <PageContainer header={<Header title={tInv('create.title')} />}>
         <div className="text-center py-12 text-muted-foreground">
-          Wird geladen...
+          {tInv('create.loading')}
         </div>
       </PageContainer>
     );
   }
 
   return (
-    <PageContainer header={<Header title="Neue Rechnung" />}>
+    <PageContainer header={<Header title={tInv('create.title')} />}>
       <div className="space-y-6">
         {/* Step indicator */}
         <div className="flex items-center justify-center gap-2">
@@ -690,9 +677,9 @@ function NewInvoicePageContent() {
         </div>
 
         <p className="text-center text-sm text-muted-foreground">
-          {step === 1 && 'Kunde auswählen'}
-          {step === 2 && 'Positionen hinzufügen'}
-          {step === 3 && 'Vorschau & Speichern'}
+          {step === 1 && tInv('create.stepSelectClient')}
+          {step === 2 && tInv('create.stepAddItems')}
+          {step === 3 && tInv('create.stepPreviewSave')}
         </p>
 
         {/* ----------------------------------------------------------------- */}
@@ -703,12 +690,12 @@ function NewInvoicePageContent() {
             <Card>
               <CardContent className="p-4 space-y-4">
                 <h2 className="text-base font-semibold text-slate-800">
-                  Kunde auswählen
+                  {tInv('create.selectClientTitle')}
                 </h2>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-500">
-                    Kunde
+                    {tInv('create.clientLabel')}
                   </label>
                   <select
                     value={selectedClientId}
@@ -722,7 +709,7 @@ function NewInvoicePageContent() {
                     }}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   >
-                    <option value="">— Kunde wählen —</option>
+                    <option value="">{tInv('create.chooseClient')}</option>
                     {clients.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
@@ -768,11 +755,11 @@ function NewInvoicePageContent() {
               <Card>
                 <CardContent className="p-4 space-y-4">
                   <h2 className="text-base font-semibold text-slate-800">
-                    Rechnungsdaten
+                    {tInv('create.invoiceDetails')}
                   </h2>
 
                   <Input
-                    label="Rechnungsnummer"
+                    label={tInv('create.invoiceNumber')}
                     value={invoiceNumber}
                     onChange={(e) => setInvoiceNumber(e.target.value)}
                   />
@@ -780,7 +767,7 @@ function NewInvoicePageContent() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-slate-500">
-                        Rechnungsdatum
+                        {tInv('create.invoiceDate')}
                       </label>
                       <Input
                         type="date"
@@ -790,7 +777,7 @@ function NewInvoicePageContent() {
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-slate-500">
-                        Fälligkeitsdatum
+                        {tInv('create.dueDate')}
                       </label>
                       <Input
                         type="date"
@@ -808,7 +795,7 @@ function NewInvoicePageContent() {
               disabled={!selectedClientId}
               onClick={() => setStep(2)}
             >
-              Weiter
+              {tInv('create.next')}
               <ChevronRight className="h-4 w-4 ml-2" />
             </Button>
           </div>
@@ -831,7 +818,7 @@ function NewInvoicePageContent() {
                     : 'text-slate-500 hover:text-slate-700'
                 )}
               >
-                Abonnements
+                {tInv('create.subscriptionsTab')}
               </button>
               <button
                 type="button"
@@ -843,7 +830,7 @@ function NewInvoicePageContent() {
                     : 'text-slate-500 hover:text-slate-700'
                 )}
               >
-                Stundenaufwand
+                {tInv('create.hoursTab')}
               </button>
               <button
                 type="button"
@@ -855,7 +842,7 @@ function NewInvoicePageContent() {
                     : 'text-slate-500 hover:text-slate-700'
                 )}
               >
-                Manuell
+                {tInv('create.manualTab')}
               </button>
             </div>
 
@@ -867,7 +854,7 @@ function NewInvoicePageContent() {
                 {subscriptionItems.length === 0 ? (
                   <Card>
                     <CardContent className="p-4 text-center text-sm text-muted-foreground py-8">
-                      Keine aktiven Abonnements für diesen Kunden.
+                      {tInv('create.noActiveSubscriptions')}
                     </CardContent>
                   </Card>
                 ) : (
@@ -884,7 +871,7 @@ function NewInvoicePageContent() {
                           <div className="flex-1 min-w-0">
                             <p className="font-medium">{sub.description}</p>
                             <p className="text-sm text-muted-foreground">
-                              CHF {formatSwissNumber(sub.period_amount)} / {INTERVAL_LABELS[sub.interval]} (Jahresbetrag: CHF {formatSwissNumber(sub.yearly_amount)})
+                              CHF {formatSwissNumber(sub.period_amount)} / {tInv(`intervals.${sub.interval}`)} ({tInv('create.yearlyAmount')}: CHF {formatSwissNumber(sub.yearly_amount)})
                             </p>
                           </div>
                         </label>
@@ -894,7 +881,7 @@ function NewInvoicePageContent() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               <div className="space-y-1">
                                 <label className="text-xs font-medium text-slate-500">
-                                  Periode von
+                                  {tInv('create.periodFrom')}
                                 </label>
                                 <Input
                                   type="date"
@@ -910,7 +897,7 @@ function NewInvoicePageContent() {
                               </div>
                               <div className="space-y-1">
                                 <label className="text-xs font-medium text-slate-500">
-                                  Periode bis
+                                  {tInv('create.periodTo')}
                                 </label>
                                 <Input
                                   type="date"
@@ -927,7 +914,7 @@ function NewInvoicePageContent() {
                             </div>
                             <div className="space-y-1">
                               <label className="text-xs font-medium text-slate-500">
-                                Rechnungsbetrag (CHF)
+                                {tInv('create.invoiceAmountCHF')}
                               </label>
                               <Input
                                 type="number"
@@ -960,13 +947,13 @@ function NewInvoicePageContent() {
                 <Card>
                   <CardContent className="p-4 space-y-4">
                     <h3 className="text-sm font-semibold text-slate-800">
-                      Zeitraum & Filter
+                      {tInv('create.periodFilter')}
                     </h3>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1">
                         <label className="text-xs font-medium text-slate-500">
-                          Von
+                          {tInv('create.from')}
                         </label>
                         <Input
                           type="date"
@@ -979,7 +966,7 @@ function NewInvoicePageContent() {
                       </div>
                       <div className="space-y-1">
                         <label className="text-xs font-medium text-slate-500">
-                          Bis
+                          {tInv('create.to')}
                         </label>
                         <Input
                           type="date"
@@ -994,7 +981,7 @@ function NewInvoicePageContent() {
 
                     <div className="space-y-1">
                       <label className="text-xs font-medium text-slate-500">
-                        Tätigkeitstyp
+                        {tInv('create.activityType')}
                       </label>
                       <select
                         value={hoursActivityFilter}
@@ -1004,10 +991,10 @@ function NewInvoicePageContent() {
                         }}
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       >
-                        <option value="all">Alle Tätigkeiten</option>
+                        <option value="all">{tInv('create.allActivities')}</option>
                         {ACTIVITY_TYPES.map((at) => (
                           <option key={at} value={at}>
-                            {ACTIVITY_LABELS[at]}
+                            {tInv(`activities.${at}`)}
                           </option>
                         ))}
                       </select>
@@ -1019,7 +1006,7 @@ function NewInvoicePageContent() {
                       onClick={buildHoursGroups}
                     >
                       <Clock className="h-4 w-4 mr-2" />
-                      Stunden laden ({filteredTimeEntries.length} Einträge)
+                      {tInv('create.loadHours', { count: filteredTimeEntries.length })}
                     </Button>
                   </CardContent>
                 </Card>
@@ -1029,7 +1016,7 @@ function NewInvoicePageContent() {
                     {hoursGroups.length === 0 ? (
                       <Card>
                         <CardContent className="p-4 text-center text-sm text-muted-foreground py-8">
-                          Keine nicht-verrechneten Zeiteinträge im gewählten Zeitraum gefunden.
+                          {tInv('create.noUninvoicedEntries')}
                         </CardContent>
                       </Card>
                     ) : (
@@ -1038,17 +1025,17 @@ function NewInvoicePageContent() {
                           <CardContent className="p-4 space-y-2">
                             <div className="flex items-center justify-between">
                               <h4 className="font-medium">
-                                {ACTIVITY_LABELS[group.activity_type] || group.activity_type}
+                                {tInv(`activities.${group.activity_type}`) || group.activity_type}
                               </h4>
                               <span className="text-sm text-muted-foreground">
-                                {group.timeEntryIds.length} Einträge
+                                {group.timeEntryIds.length} {tInv('create.entries')}
                               </span>
                             </div>
 
                             <div className="grid grid-cols-3 gap-3">
                               <div className="space-y-1">
                                 <label className="text-xs font-medium text-slate-500">
-                                  Stunden
+                                  {tInv('create.hours')}
                                 </label>
                                 <p className="text-sm font-medium">
                                   {group.totalHours.toFixed(2)} Std
@@ -1056,7 +1043,7 @@ function NewInvoicePageContent() {
                               </div>
                               <div className="space-y-1">
                                 <label className="text-xs font-medium text-slate-500">
-                                  Ansatz (CHF)
+                                  {tInv('create.rateCHF')}
                                 </label>
                                 <Input
                                   type="number"
@@ -1101,21 +1088,21 @@ function NewInvoicePageContent() {
                         <div className="flex-1 space-y-3">
                           <div className="space-y-1">
                             <label className="text-xs font-medium text-slate-500">
-                              Beschreibung
+                              {tInv('create.description')}
                             </label>
                             <Input
                               value={item.description}
                               onChange={(e) =>
                                 updateManualItem(item.id, 'description', e.target.value)
                               }
-                              placeholder="Positionsbeschreibung"
+                              placeholder={tInv('create.descriptionPlaceholder')}
                             />
                           </div>
 
                           <div className="grid grid-cols-3 gap-3">
                             <div className="space-y-1">
                               <label className="text-xs font-medium text-slate-500">
-                                Menge
+                                {tInv('create.quantity')}
                               </label>
                               <Input
                                 type="number"
@@ -1133,19 +1120,19 @@ function NewInvoicePageContent() {
                             </div>
                             <div className="space-y-1">
                               <label className="text-xs font-medium text-slate-500">
-                                Einheit
+                                {tInv('create.unit')}
                               </label>
                               <Input
                                 value={item.unit}
                                 onChange={(e) =>
                                   updateManualItem(item.id, 'unit', e.target.value)
                                 }
-                                placeholder="Stk"
+                                placeholder={tInv('create.unitPlaceholder')}
                               />
                             </div>
                             <div className="space-y-1">
                               <label className="text-xs font-medium text-slate-500">
-                                Preis (CHF)
+                                {tInv('create.priceCHF')}
                               </label>
                               <Input
                                 type="number"
@@ -1173,7 +1160,7 @@ function NewInvoicePageContent() {
                           size="icon"
                           onClick={() => removeManualItem(item.id)}
                           className="text-error-500 hover:text-error-600 flex-shrink-0"
-                          title="Entfernen"
+                          title={tInv('create.removeTitle')}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -1188,7 +1175,7 @@ function NewInvoicePageContent() {
                   onClick={addManualItem}
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  Zeile hinzufügen
+                  {tInv('create.addLine')}
                 </Button>
               </div>
             )}
@@ -1201,10 +1188,10 @@ function NewInvoicePageContent() {
                 onClick={() => setStep(1)}
               >
                 <ChevronLeft className="h-4 w-4 mr-2" />
-                Zurück
+                {tInv('create.back')}
               </Button>
               <Button className="flex-1" onClick={() => setStep(3)}>
-                Vorschau
+                {tInv('create.preview')}
                 <ChevronRight className="h-4 w-4 ml-2" />
               </Button>
             </div>
@@ -1224,7 +1211,7 @@ function NewInvoicePageContent() {
                     {invoiceNumber}
                   </h2>
                   <span className="badge bg-gray-100 text-gray-700 text-xs">
-                    Entwurf
+                    {tInv('create.draftBadge')}
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground">
@@ -1233,11 +1220,11 @@ function NewInvoicePageContent() {
                 <div className="flex gap-4 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
-                    Datum: {new Date(issueDate).toLocaleDateString('de-CH')}
+                    {tInv('create.dateLabel')}: {new Date(issueDate).toLocaleDateString('de-CH')}
                   </span>
                   <span className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
-                    Fällig: {new Date(dueDate).toLocaleDateString('de-CH')}
+                    {tInv('create.dueLabel')}: {new Date(dueDate).toLocaleDateString('de-CH')}
                   </span>
                 </div>
               </CardContent>
@@ -1247,12 +1234,12 @@ function NewInvoicePageContent() {
             <Card>
               <CardContent className="p-4 space-y-3">
                 <h3 className="text-sm font-semibold text-slate-800">
-                  Positionen
+                  {tInv('create.lineItems')}
                 </h3>
 
                 {allLineItems.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-4">
-                    Keine Positionen hinzugefügt.
+                    {tInv('create.noLineItemsAdded')}
                   </p>
                 ) : (
                   <div className="space-y-2">
@@ -1269,7 +1256,7 @@ function NewInvoicePageContent() {
                           </p>
                           {('period_start' in item) && (item as any).period_start && (
                             <p className="text-xs text-muted-foreground">
-                              Periode:{' '}
+                              {tInv('create.period')}:{' '}
                               {new Date((item as any).period_start).toLocaleDateString('de-CH')}
                               {' — '}
                               {(item as any).period_end && new Date((item as any).period_end).toLocaleDateString('de-CH')}
@@ -1287,7 +1274,7 @@ function NewInvoicePageContent() {
                 {/* Totals */}
                 <div className="border-t border-slate-200 pt-3 space-y-1">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Zwischensumme</span>
+                    <span className="text-muted-foreground">{tInv('create.subtotal')}</span>
                     <span className="font-medium">CHF {formatSwissNumber(subtotal)}</span>
                   </div>
 
@@ -1303,7 +1290,7 @@ function NewInvoicePageContent() {
                   )}
 
                   <div className="flex justify-between text-base font-bold pt-1 border-t border-slate-200">
-                    <span>Total</span>
+                    <span>{tInv('create.total')}</span>
                     <span>CHF {formatSwissNumber(total)}</span>
                   </div>
                 </div>
@@ -1314,12 +1301,12 @@ function NewInvoicePageContent() {
             <Card>
               <CardContent className="p-4 space-y-2">
                 <label className="text-sm font-medium text-slate-500">
-                  Bemerkungen (optional)
+                  {tInv('create.notesOptional')}
                 </label>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Bemerkungen zur Rechnung..."
+                  placeholder={tInv('create.notesPlaceholder')}
                   rows={3}
                   className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 />
@@ -1335,7 +1322,7 @@ function NewInvoicePageContent() {
                 disabled={isSaving}
               >
                 <ChevronLeft className="h-4 w-4 mr-2" />
-                Zurück
+                {tInv('create.back')}
               </Button>
               <Button
                 className="flex-1"
@@ -1343,7 +1330,7 @@ function NewInvoicePageContent() {
                 disabled={isSaving || allLineItems.length === 0}
               >
                 <FileText className="h-4 w-4 mr-2" />
-                {isSaving ? 'Wird gespeichert...' : 'Als Entwurf speichern'}
+                {isSaving ? tInv('create.saving') : tInv('create.saveAsDraft')}
               </Button>
             </div>
           </div>

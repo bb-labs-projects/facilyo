@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dialog';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useAuthStore } from '@/stores/auth-store';
+import { useTranslations } from 'next-intl';
 import { getClient } from '@/lib/supabase/client';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { cn, formatCHF } from '@/lib/utils';
@@ -36,16 +37,6 @@ import {
   Clock,
   CheckCircle,
 } from 'lucide-react';
-
-const STATUS_LABELS: Record<string, string> = {
-  draft: 'Entwurf',
-  pending_approval: 'Genehmigung ausstehend',
-  approved: 'Genehmigt',
-  sent: 'Gesendet',
-  paid: 'Bezahlt',
-  overdue: 'Überfällig',
-  cancelled: 'Storniert',
-};
 
 function getStatusBadgeClasses(status: string): string {
   switch (status) {
@@ -98,6 +89,7 @@ function AdminInvoiceDetailPageContent() {
   const queryClient = useQueryClient();
   const permissions = usePermissions();
   const organizationId = useAuthStore((state) => state.organizationId);
+  const tInv = useTranslations('invoicesAdmin');
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -154,12 +146,12 @@ function AdminInvoiceDetailPageContent() {
       });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Statusaenderung fehlgeschlagen');
+        throw new Error(data.error || tInv('detail.statusUpdateError'));
       }
       return res.json();
     },
     onSuccess: () => {
-      toast.success('Status aktualisiert');
+      toast.success(tInv('detail.statusUpdateSuccess'));
       queryClient.invalidateQueries({ queryKey: ['invoice', id] });
       queryClient.invalidateQueries({ queryKey: ['admin-invoices'] });
     },
@@ -172,10 +164,10 @@ function AdminInvoiceDetailPageContent() {
   const deleteMutation = useMutation({
     mutationFn: async () => {
       const res = await fetch(`/api/invoices/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Löschen fehlgeschlagen');
+      if (!res.ok) throw new Error(tInv('detail.deleteFailed'));
     },
     onSuccess: () => {
-      toast.success('Rechnung gelöscht');
+      toast.success(tInv('detail.deleteSuccess'));
       queryClient.invalidateQueries({ queryKey: ['admin-invoices'] });
       router.push('/admin/invoices');
     },
@@ -194,12 +186,12 @@ function AdminInvoiceDetailPageContent() {
       });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Versand fehlgeschlagen');
+        throw new Error(data.error || tInv('detail.sendFailed'));
       }
       return res.json();
     },
     onSuccess: (data) => {
-      toast.success(`Rechnung an ${data.sent_to} gesendet`);
+      toast.success(tInv('detail.sendSuccess', { email: data.sent_to }));
       setShowSendDialog(false);
       queryClient.invalidateQueries({ queryKey: ['invoice', id] });
       queryClient.invalidateQueries({ queryKey: ['admin-invoices'] });
@@ -218,8 +210,8 @@ function AdminInvoiceDetailPageContent() {
     try {
       const res = await fetch(`/api/invoices/${id}/pdf`);
       if (!res.ok) {
-        const data = await res.json().catch(() => ({ error: 'PDF konnte nicht geladen werden' }));
-        throw new Error(data.error || 'PDF konnte nicht geladen werden');
+        const data = await res.json().catch(() => ({ error: tInv('detail.pdfFailed') }));
+        throw new Error(data.error || tInv('detail.pdfFailed'));
       }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -231,7 +223,7 @@ function AdminInvoiceDetailPageContent() {
       queryClient.invalidateQueries({ queryKey: ['invoice', id] });
     } catch (error) {
       pdfWindow?.close();
-      toast.error(error instanceof Error ? error.message : 'PDF konnte nicht geladen werden');
+      toast.error(error instanceof Error ? error.message : tInv('detail.pdfFailed'));
     } finally {
       setIsOpeningPdf(false);
     }
@@ -251,18 +243,18 @@ function AdminInvoiceDetailPageContent() {
 
   if (isLoading) {
     return (
-      <PageContainer header={<Header title="Rechnung" />}>
-        <div className="text-center py-12 text-muted-foreground">Wird geladen...</div>
+      <PageContainer header={<Header title={tInv('detail.invoice')} />}>
+        <div className="text-center py-12 text-muted-foreground">{tInv('detail.loading')}</div>
       </PageContainer>
     );
   }
 
   if (!invoice) {
     return (
-      <PageContainer header={<Header title="Rechnung" />}>
+      <PageContainer header={<Header title={tInv('detail.invoice')} />}>
         <div className="text-center py-12 text-muted-foreground">
           <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p>Rechnung nicht gefunden</p>
+          <p>{tInv('detail.invoiceNotFound')}</p>
         </div>
       </PageContainer>
     );
@@ -279,7 +271,7 @@ function AdminInvoiceDetailPageContent() {
     <PageContainer
       header={
         <Header
-          title={`Rechnung ${invoice.invoice_number}`}
+          title={tInv('detail.invoiceTitle', { number: invoice.invoice_number })}
         />
       }
     >
@@ -290,7 +282,7 @@ function AdminInvoiceDetailPageContent() {
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          Zurück zu Rechnungen
+          {tInv('detail.backToInvoices')}
         </Link>
 
         {/* Status Badge */}
@@ -301,7 +293,7 @@ function AdminInvoiceDetailPageContent() {
               getStatusBadgeClasses(displayStatus)
             )}
           >
-            {STATUS_LABELS[displayStatus] ?? displayStatus}
+            {tInv(`statuses.${displayStatus}`)}
           </span>
         </div>
 
@@ -309,7 +301,7 @@ function AdminInvoiceDetailPageContent() {
         <Card>
           <CardContent className="p-4 space-y-3">
             <div>
-              <p className="text-xs text-muted-foreground">Kunde</p>
+              <p className="text-xs text-muted-foreground">{tInv('detail.client')}</p>
               <p className="font-medium">{invoice.clients?.name}</p>
               {invoice.clients?.address && (
                 <p className="text-sm text-muted-foreground">
@@ -322,26 +314,26 @@ function AdminInvoiceDetailPageContent() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <p className="text-xs text-muted-foreground">Rechnungsnummer</p>
+                <p className="text-xs text-muted-foreground">{tInv('detail.invoiceNumber')}</p>
                 <p className="text-sm font-medium">{invoice.invoice_number}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Rechnungsdatum</p>
+                <p className="text-xs text-muted-foreground">{tInv('detail.invoiceDate')}</p>
                 <p className="text-sm">{formatDate(invoice.issue_date)}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Fälligkeitsdatum</p>
+                <p className="text-xs text-muted-foreground">{tInv('detail.dueDate')}</p>
                 <p className="text-sm">{formatDate(invoice.due_date)}</p>
               </div>
               {invoice.sent_at && (
                 <div>
-                  <p className="text-xs text-muted-foreground">Gesendet am</p>
+                  <p className="text-xs text-muted-foreground">{tInv('detail.sentAt')}</p>
                   <p className="text-sm">{formatDate(invoice.sent_at)}</p>
                 </div>
               )}
               {invoice.paid_at && (
                 <div>
-                  <p className="text-xs text-muted-foreground">Bezahlt am</p>
+                  <p className="text-xs text-muted-foreground">{tInv('detail.paidAt')}</p>
                   <p className="text-sm">{formatDate(invoice.paid_at)}</p>
                 </div>
               )}
@@ -352,19 +344,19 @@ function AdminInvoiceDetailPageContent() {
         {/* Line Items */}
         <Card>
           <CardContent className="p-4">
-            <h3 className="font-medium mb-3">Positionen</h3>
+            <h3 className="font-medium mb-3">{tInv('detail.lineItems')}</h3>
             {/* Header */}
             <div className="grid grid-cols-12 gap-2 text-xs text-muted-foreground font-medium pb-2 border-b">
-              <div className="col-span-5">Beschreibung</div>
-              <div className="col-span-1 text-right">Menge</div>
-              <div className="col-span-2 text-right">Einheit</div>
-              <div className="col-span-2 text-right">Einzelpreis</div>
-              <div className="col-span-2 text-right">Gesamt</div>
+              <div className="col-span-5">{tInv('detail.description')}</div>
+              <div className="col-span-1 text-right">{tInv('detail.quantity')}</div>
+              <div className="col-span-2 text-right">{tInv('detail.unit')}</div>
+              <div className="col-span-2 text-right">{tInv('detail.unitPrice')}</div>
+              <div className="col-span-2 text-right">{tInv('detail.lineTotal')}</div>
             </div>
             {/* Rows */}
             {lineItems.length === 0 ? (
               <div className="py-4 text-center text-sm text-muted-foreground">
-                Keine Positionen
+                {tInv('detail.noLineItems')}
               </div>
             ) : (
               lineItems.map((item) => (
@@ -390,17 +382,17 @@ function AdminInvoiceDetailPageContent() {
             {/* Totals */}
             <div className="mt-3 pt-3 border-t space-y-1">
               <div className="flex justify-between text-sm">
-                <span>Zwischensumme</span>
+                <span>{tInv('detail.subtotal')}</span>
                 <span>{formatCHF(invoice.subtotal)}</span>
               </div>
               {invoice.mwst_rate > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span>{invoice.mwst_rate}% MWST</span>
+                  <span>{tInv('detail.mwstLabel', { rate: invoice.mwst_rate })}</span>
                   <span>{formatCHF(invoice.mwst_amount)}</span>
                 </div>
               )}
               <div className="flex justify-between font-bold text-base pt-1">
-                <span>Total</span>
+                <span>{tInv('detail.total')}</span>
                 <span>{formatCHF(invoice.total)}</span>
               </div>
             </div>
@@ -411,7 +403,7 @@ function AdminInvoiceDetailPageContent() {
         {invoice.notes && (
           <Card>
             <CardContent className="p-4">
-              <h3 className="font-medium mb-2">Bemerkungen</h3>
+              <h3 className="font-medium mb-2">{tInv('detail.notes')}</h3>
               <p className="text-sm text-muted-foreground whitespace-pre-wrap">{invoice.notes}</p>
             </CardContent>
           </Card>
@@ -430,9 +422,9 @@ function AdminInvoiceDetailPageContent() {
               <Eye className="h-4 w-4 mr-2" />
               {isOpeningPdf
                 ? hasPdf
-                  ? 'PDF wird geöffnet...'
-                  : 'PDF wird generiert...'
-                : 'PDF Vorschau'}
+                  ? tInv('detail.pdfOpening')
+                  : tInv('detail.pdfGenerating')
+                : tInv('detail.pdfPreview')}
             </Button>
 
             {/* Draft actions */}
@@ -444,7 +436,7 @@ function AdminInvoiceDetailPageContent() {
                   onClick={() => router.push(`/admin/invoices/${id}/edit`)}
                 >
                   <Edit className="h-4 w-4 mr-2" />
-                  Bearbeiten
+                  {tInv('detail.edit')}
                 </Button>
                 {approvalRequired ? (
                   <Button
@@ -453,7 +445,7 @@ function AdminInvoiceDetailPageContent() {
                     disabled={updateStatusMutation.isPending}
                   >
                     <Clock className="h-4 w-4 mr-2" />
-                    Zur Genehmigung einreichen
+                    {tInv('detail.submitForApproval')}
                   </Button>
                 ) : (
                   <Button
@@ -461,7 +453,7 @@ function AdminInvoiceDetailPageContent() {
                     onClick={handleOpenSendDialog}
                   >
                     <Send className="h-4 w-4 mr-2" />
-                    Per E-Mail senden
+                    {tInv('detail.sendByEmail')}
                   </Button>
                 )}
                 <Button
@@ -470,7 +462,7 @@ function AdminInvoiceDetailPageContent() {
                   onClick={() => setShowDeleteDialog(true)}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Löschen
+                  {tInv('detail.delete')}
                 </Button>
               </>
             )}
@@ -484,7 +476,7 @@ function AdminInvoiceDetailPageContent() {
                   disabled={updateStatusMutation.isPending}
                 >
                   <Check className="h-4 w-4 mr-2" />
-                  Genehmigen
+                  {tInv('detail.approve')}
                 </Button>
                 <Button
                   variant="outline"
@@ -493,7 +485,7 @@ function AdminInvoiceDetailPageContent() {
                   disabled={updateStatusMutation.isPending}
                 >
                   <X className="h-4 w-4 mr-2" />
-                  Ablehnen
+                  {tInv('detail.reject')}
                 </Button>
               </>
             )}
@@ -505,7 +497,7 @@ function AdminInvoiceDetailPageContent() {
                 onClick={handleOpenSendDialog}
               >
                 <Send className="h-4 w-4 mr-2" />
-                Per E-Mail senden
+                {tInv('detail.sendByEmail')}
               </Button>
             )}
 
@@ -518,7 +510,7 @@ function AdminInvoiceDetailPageContent() {
                   disabled={updateStatusMutation.isPending}
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
-                  Als bezahlt markieren
+                  {tInv('detail.markAsPaid')}
                 </Button>
                 <Button
                   variant="destructive"
@@ -526,7 +518,7 @@ function AdminInvoiceDetailPageContent() {
                   onClick={() => setShowCancelDialog(true)}
                 >
                   <X className="h-4 w-4 mr-2" />
-                  Stornieren
+                  {tInv('detail.cancel')}
                 </Button>
               </>
             )}
@@ -539,7 +531,7 @@ function AdminInvoiceDetailPageContent() {
                 onClick={() => setShowCancelDialog(true)}
               >
                 <X className="h-4 w-4 mr-2" />
-                Stornieren
+                {tInv('detail.cancel')}
               </Button>
             )}
 
@@ -551,7 +543,7 @@ function AdminInvoiceDetailPageContent() {
                 onClick={() => setShowDeleteDialog(true)}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                Löschen
+                {tInv('detail.delete')}
               </Button>
             )}
           </CardContent>
@@ -562,15 +554,14 @@ function AdminInvoiceDetailPageContent() {
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rechnung löschen</DialogTitle>
+            <DialogTitle>{tInv('detail.deleteInvoiceTitle')}</DialogTitle>
             <DialogDescription>
-              Möchten Sie die Rechnung {invoice.invoice_number} wirklich löschen? Diese Aktion kann nicht
-              rückgängig gemacht werden.
+              {tInv('detail.deleteInvoiceDescription', { number: invoice.invoice_number })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-              Abbrechen
+              {tInv('detail.cancelBtn')}
             </Button>
             <Button
               variant="destructive"
@@ -580,7 +571,7 @@ function AdminInvoiceDetailPageContent() {
               }}
               disabled={deleteMutation.isPending}
             >
-              Löschen
+              {tInv('detail.deleteBtn')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -590,16 +581,16 @@ function AdminInvoiceDetailPageContent() {
       <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rechnung stornieren</DialogTitle>
+            <DialogTitle>{tInv('detail.cancelInvoiceTitle')}</DialogTitle>
             <DialogDescription>
               {isPaidInvoice
-                ? 'Möchten Sie diese bezahlte Rechnung wirklich stornieren? Zeiteinträge werden wieder freigegeben.'
-                : `Möchten Sie die Rechnung ${invoice.invoice_number} wirklich stornieren?`}
+                ? tInv('detail.cancelInvoiceDescPaid')
+                : tInv('detail.cancelInvoiceDesc', { number: invoice.invoice_number })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCancelDialog(false)}>
-              Abbrechen
+              {tInv('detail.cancelBtn')}
             </Button>
             <Button
               variant="destructive"
@@ -609,7 +600,7 @@ function AdminInvoiceDetailPageContent() {
               }}
               disabled={updateStatusMutation.isPending}
             >
-              Stornieren
+              {tInv('detail.cancelInvoiceBtn')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -619,20 +610,20 @@ function AdminInvoiceDetailPageContent() {
       <Dialog open={showSendDialog} onOpenChange={setShowSendDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rechnung versenden</DialogTitle>
+            <DialogTitle>{tInv('detail.sendInvoiceTitle')}</DialogTitle>
             <DialogDescription>
-              Rechnung {invoice.invoice_number} per E-Mail versenden
+              {tInv('detail.sendInvoiceDesc', { number: invoice.invoice_number })}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="send-to">An</Label>
+              <Label htmlFor="send-to">{tInv('detail.recipientLabel')}</Label>
               <Input
                 id="send-to"
                 type="email"
                 value={sendToEmail}
                 onChange={(e) => setSendToEmail(e.target.value)}
-                placeholder="E-Mail-Adresse des Empfängers"
+                placeholder={tInv('detail.recipientPlaceholder')}
               />
             </div>
             <div className="space-y-2">
@@ -644,7 +635,7 @@ function AdminInvoiceDetailPageContent() {
                   onChange={(e) => setSendCcEnabled(e.target.checked)}
                   className="h-4 w-4 rounded border-gray-300"
                 />
-                <Label htmlFor="send-cc-enabled">Kopie an (CC)</Label>
+                <Label htmlFor="send-cc-enabled">{tInv('detail.ccLabel')}</Label>
               </div>
               {sendCcEnabled && (
                 <Input
@@ -652,14 +643,14 @@ function AdminInvoiceDetailPageContent() {
                   type="email"
                   value={sendCcEmail}
                   onChange={(e) => setSendCcEmail(e.target.value)}
-                  placeholder="CC E-Mail-Adresse"
+                  placeholder={tInv('detail.ccPlaceholder')}
                 />
               )}
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowSendDialog(false)}>
-              Abbrechen
+              {tInv('detail.cancelBtn')}
             </Button>
             <Button
               onClick={() => {
@@ -671,7 +662,7 @@ function AdminInvoiceDetailPageContent() {
               disabled={sendInvoiceMutation.isPending || !sendToEmail}
             >
               <Send className="h-4 w-4 mr-2" />
-              {sendInvoiceMutation.isPending ? 'Wird gesendet...' : 'Senden'}
+              {sendInvoiceMutation.isPending ? tInv('detail.sendingBtn') : tInv('detail.sendBtn')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -16,6 +16,7 @@ import {
 import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
 import { formatSwissNumber } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 import type { Client, ClientSubscription, SubscriptionInterval } from '@/types/database';
 
 interface BulkPreviewItem {
@@ -37,13 +38,6 @@ interface BulkCreateResult {
   skipped_details: Array<{ subscription_name: string; client_name: string; reason: string }>;
 }
 
-const INTERVAL_LABELS: Record<SubscriptionInterval, string> = {
-  monthly: 'Monatlich',
-  quarterly: 'Quartalsweise',
-  half_yearly: 'Halbjährlich',
-  annually: 'Jährlich',
-};
-
 function getPeriodAmount(yearly: number, interval: SubscriptionInterval): number {
   switch (interval) {
     case 'monthly': return yearly / 12;
@@ -58,6 +52,7 @@ type SubWithClient = ClientSubscription & { clients: { name: string } | null };
 export function InvoiceSubscriptions() {
   const queryClient = useQueryClient();
   const organizationId = useAuthStore((state) => state.organizationId);
+  const tInv = useTranslations('invoicesAdmin');
 
   const [showForm, setShowForm] = useState(false);
   const [editingSub, setEditingSub] = useState<SubWithClient | null>(null);
@@ -93,7 +88,7 @@ export function InvoiceSubscriptions() {
       if (error || !session) {
         const { error: refreshError } = await supabase.auth.refreshSession();
         if (refreshError) {
-          throw new Error('Sitzung abgelaufen. Bitte melden Sie sich erneut an.');
+          throw new Error(tInv('subscriptionMgmt.sessionExpired'));
         }
       }
       lastSessionCheck.current = now;
@@ -208,12 +203,12 @@ export function InvoiceSubscriptions() {
       }
     },
     onSuccess: () => {
-      toast.success(editingSub ? 'Abonnement aktualisiert' : 'Abonnement erstellt');
+      toast.success(editingSub ? tInv('subscriptionMgmt.updated') : tInv('subscriptionMgmt.created'));
       queryClient.invalidateQueries({ queryKey: ['all-subscriptions'] });
       resetForm();
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`${tInv('subscriptionMgmt.error')}: ${error.message}`);
     },
   });
 
@@ -240,11 +235,11 @@ export function InvoiceSubscriptions() {
       }
     },
     onSuccess: () => {
-      toast.success('Abonnement gelöscht');
+      toast.success(tInv('subscriptionMgmt.deleted'));
       queryClient.invalidateQueries({ queryKey: ['all-subscriptions'] });
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`${tInv('subscriptionMgmt.error')}: ${error.message}`);
     },
   });
 
@@ -295,18 +290,18 @@ export function InvoiceSubscriptions() {
         preview.push({
           subscription_id: sub.id,
           subscription_name: sub.name,
-          client_name: sub.clients?.name || 'Unbekannt',
+          client_name: sub.clients?.name || tInv('subscriptionMgmt.unknown'),
           interval: sub.interval,
           period_amount: Math.round(periodAmount * 100) / 100,
           period_start: pStart,
           period_end: pEnd,
           status: existing && existing.length > 0 ? 'skipped' : 'eligible',
-          skip_reason: existing && existing.length > 0 ? 'Bereits abgerechnet' : undefined,
+          skip_reason: existing && existing.length > 0 ? tInv('subscriptionMgmt.alreadyInvoiced') : undefined,
         });
       }
       setBulkPreview(preview);
     } catch (error: any) {
-      toast.error(`Fehler beim Laden der Vorschau: ${error.message}`);
+      toast.error(`${tInv('subscriptionMgmt.previewError')}: ${error.message}`);
     } finally {
       setBulkPreviewLoading(false);
     }
@@ -322,18 +317,18 @@ export function InvoiceSubscriptions() {
       });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Fehler beim Erstellen der Rechnungen');
+        throw new Error(data.error || tInv('subscriptionMgmt.bulkCreateError'));
       }
       return await res.json() as BulkCreateResult;
     },
     onSuccess: (data) => {
       setBulkResult(data);
       if (data.created > 0) {
-        toast.success(`${data.created} Rechnung(en) erstellt`);
+        toast.success(tInv('subscriptionMgmt.invoicesCreated', { count: data.created }));
         queryClient.invalidateQueries({ queryKey: ['all-subscriptions'] });
         queryClient.invalidateQueries({ queryKey: ['admin-invoices'] });
       } else {
-        toast.info('Keine Rechnungen erstellt');
+        toast.info(tInv('subscriptionMgmt.noInvoicesCreated'));
       }
     },
     onError: (error: Error) => {
@@ -344,7 +339,7 @@ export function InvoiceSubscriptions() {
   if (isLoading) {
     return (
       <div className="text-center py-12 text-muted-foreground">
-        Wird geladen...
+        {tInv('subscriptionMgmt.loading')}
       </div>
     );
   }
@@ -354,14 +349,14 @@ export function InvoiceSubscriptions() {
       {subscriptions.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <Repeat className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p>Keine Abonnements vorhanden</p>
+          <p>{tInv('subscriptionMgmt.noSubscriptions')}</p>
           <Button
             variant="outline"
             className="mt-4"
             onClick={() => setShowForm(true)}
           >
             <Plus className="h-4 w-4 mr-2" />
-            Neues Abonnement
+            {tInv('subscriptionMgmt.newSubscription')}
           </Button>
         </div>
       ) : (
@@ -371,7 +366,7 @@ export function InvoiceSubscriptions() {
             className="w-full"
           >
             <Play className="h-4 w-4 mr-2" />
-            Rechnungslauf starten
+            {tInv('subscriptionMgmt.startBillingRun')}
           </Button>
           <Button
             onClick={() => setShowForm(true)}
@@ -379,7 +374,7 @@ export function InvoiceSubscriptions() {
             variant="outline"
           >
             <Plus className="h-4 w-4 mr-2" />
-            Neues Abonnement
+            {tInv('subscriptionMgmt.newSubscription')}
           </Button>
 
           {subscriptions.map((sub) => (
@@ -391,11 +386,11 @@ export function InvoiceSubscriptions() {
                       <h4 className="font-medium">{sub.name}</h4>
                       {sub.is_active ? (
                         <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                          Aktiv
+                          {tInv('subscriptionMgmt.active')}
                         </span>
                       ) : (
                         <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                          Inaktiv
+                          {tInv('subscriptionMgmt.inactive')}
                         </span>
                       )}
                     </div>
@@ -403,17 +398,17 @@ export function InvoiceSubscriptions() {
                       {sub.clients?.name}
                     </p>
                     <p className="text-sm font-semibold text-primary-600 mt-0.5">
-                      CHF {formatSwissNumber(sub.yearly_amount)} / Jahr
+                      CHF {formatSwissNumber(sub.yearly_amount)} / {tInv('subscriptionMgmt.perYear')}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      CHF {formatSwissNumber(getPeriodAmount(sub.yearly_amount, sub.interval))} / {INTERVAL_LABELS[sub.interval]}
+                      CHF {formatSwissNumber(getPeriodAmount(sub.yearly_amount, sub.interval))} / {tInv(`intervals.${sub.interval}`)}
                     </p>
                     {sub.description && (
                       <p className="text-sm text-muted-foreground mt-0.5">{sub.description}</p>
                     )}
                     {sub.next_billing_date && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        Nächste Abrechnung: {new Date(sub.next_billing_date).toLocaleDateString('de-CH')}
+                        {tInv('subscriptionMgmt.nextBilling')}: {new Date(sub.next_billing_date).toLocaleDateString('de-CH')}
                       </p>
                     )}
                   </div>
@@ -422,7 +417,7 @@ export function InvoiceSubscriptions() {
                       variant="ghost"
                       size="icon"
                       onClick={() => openEditForm(sub)}
-                      title="Bearbeiten"
+                      title={tInv('subscriptionMgmt.editTitle')}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -431,7 +426,7 @@ export function InvoiceSubscriptions() {
                       size="icon"
                       onClick={() => deleteMutation.mutate(sub.id)}
                       disabled={deleteMutation.isPending}
-                      title="Löschen"
+                      title={tInv('subscriptionMgmt.deleteTitle')}
                       className="text-error-500 hover:text-error-600"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -449,7 +444,7 @@ export function InvoiceSubscriptions() {
         <SheetContent side="bottom" className="h-[85vh]">
           <SheetHeader>
             <SheetTitle>
-              {editingSub ? 'Abonnement bearbeiten' : 'Neues Abonnement'}
+              {editingSub ? tInv('subscriptionMgmt.editSubscription') : tInv('subscriptionMgmt.newSubscriptionTitle')}
             </SheetTitle>
           </SheetHeader>
 
@@ -470,7 +465,7 @@ export function InvoiceSubscriptions() {
           >
             <div className="space-y-2">
               <label className="text-sm font-medium">
-                Kunde <span className="text-error-500">*</span>
+                {tInv('subscriptionMgmt.clientLabel')} <span className="text-error-500">*</span>
               </label>
               <select
                 value={clientId}
@@ -479,7 +474,7 @@ export function InvoiceSubscriptions() {
                 required
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <option value="">Kunde auswählen...</option>
+                <option value="">{tInv('subscriptionMgmt.selectClient')}</option>
                 {clients.map((client) => (
                   <option key={client.id} value={client.id}>
                     {client.name}
@@ -490,29 +485,29 @@ export function InvoiceSubscriptions() {
 
             <div className="space-y-2">
               <label className="text-sm font-medium">
-                Name <span className="text-error-500">*</span>
+                {tInv('subscriptionMgmt.nameLabel')} <span className="text-error-500">*</span>
               </label>
               <Input
                 value={subName}
                 onChange={(e) => setSubName(e.target.value)}
-                placeholder="z.B. Hauswartung Monatspauschale"
+                placeholder={tInv('subscriptionMgmt.namePlaceholder')}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Beschreibung</label>
+              <label className="text-sm font-medium">{tInv('subscriptionMgmt.descriptionLabel')}</label>
               <Input
                 value={subDescription}
                 onChange={(e) => setSubDescription(e.target.value)}
-                placeholder="Optionale Beschreibung"
+                placeholder={tInv('subscriptionMgmt.descriptionPlaceholder')}
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <label className="text-sm font-medium">
-                  Jahresbetrag (CHF) <span className="text-error-500">*</span>
+                  {tInv('subscriptionMgmt.yearlyAmountLabel')} <span className="text-error-500">*</span>
                 </label>
                 <Input
                   type="number"
@@ -525,28 +520,28 @@ export function InvoiceSubscriptions() {
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Intervall</label>
+                <label className="text-sm font-medium">{tInv('subscriptionMgmt.intervalLabel')}</label>
                 <select
                   value={subInterval}
                   onChange={(e) => setSubInterval(e.target.value as SubscriptionInterval)}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
-                  <option value="monthly">Monatlich</option>
-                  <option value="quarterly">Quartalsweise</option>
-                  <option value="half_yearly">Halbjährlich</option>
-                  <option value="annually">Jährlich</option>
+                  <option value="monthly">{tInv('intervals.monthly')}</option>
+                  <option value="quarterly">{tInv('intervals.quarterly')}</option>
+                  <option value="half_yearly">{tInv('intervals.half_yearly')}</option>
+                  <option value="annually">{tInv('intervals.annually')}</option>
                 </select>
               </div>
             </div>
 
             {subYearlyAmount && parseFloat(subYearlyAmount) > 0 && (
               <p className="text-sm text-muted-foreground">
-                Rechnungsbetrag pro Periode: CHF {formatSwissNumber(getPeriodAmount(parseFloat(subYearlyAmount), subInterval))}
+                {tInv('subscriptionMgmt.periodAmountLabel')}: CHF {formatSwissNumber(getPeriodAmount(parseFloat(subYearlyAmount), subInterval))}
               </p>
             )}
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Nächstes Abrechnungsdatum</label>
+              <label className="text-sm font-medium">{tInv('subscriptionMgmt.nextBillingDateLabel')}</label>
               <Input
                 type="date"
                 value={subNextBillingDate}
@@ -561,7 +556,7 @@ export function InvoiceSubscriptions() {
                 onChange={(e) => setSubIsActive(e.target.checked)}
                 className="rounded border-gray-300"
               />
-              <span>Aktiv</span>
+              <span>{tInv('subscriptionMgmt.activeLabel')}</span>
             </label>
 
             <div className="flex gap-3 pt-4">
@@ -571,7 +566,7 @@ export function InvoiceSubscriptions() {
                 className="flex-1"
                 onClick={resetForm}
               >
-                Abbrechen
+                {tInv('subscriptionMgmt.cancel')}
               </Button>
               <Button
                 type="submit"
@@ -579,10 +574,10 @@ export function InvoiceSubscriptions() {
                 disabled={saveMutation.isPending || !subName.trim() || !subYearlyAmount || !clientId}
               >
                 {saveMutation.isPending
-                  ? 'Wird gespeichert...'
+                  ? tInv('subscriptionMgmt.saving')
                   : editingSub
-                  ? 'Speichern'
-                  : 'Erstellen'}
+                  ? tInv('subscriptionMgmt.save')
+                  : tInv('subscriptionMgmt.create')}
               </Button>
             </div>
           </form>
@@ -593,7 +588,7 @@ export function InvoiceSubscriptions() {
       <Sheet open={showBulkRun} onOpenChange={(open) => !open && resetBulkRun()}>
         <SheetContent side="bottom" className="h-[85vh]">
           <SheetHeader>
-            <SheetTitle>Rechnungslauf</SheetTitle>
+            <SheetTitle>{tInv('subscriptionMgmt.billingRun')}</SheetTitle>
           </SheetHeader>
 
           <div className="mt-4 space-y-4 overflow-y-auto max-h-[calc(85vh-120px)]">
@@ -601,7 +596,7 @@ export function InvoiceSubscriptions() {
               <>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">
-                    Abrechnungsperiode bis
+                    {tInv('subscriptionMgmt.billingPeriodEnd')}
                   </label>
                   <Input
                     type="date"
@@ -612,7 +607,7 @@ export function InvoiceSubscriptions() {
                     }}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Alle aktiven Abonnements mit Abrechnungsdatum bis zu diesem Datum werden einbezogen.
+                    {tInv('subscriptionMgmt.billingPeriodHint')}
                   </p>
                 </div>
 
@@ -625,10 +620,10 @@ export function InvoiceSubscriptions() {
                   {bulkPreviewLoading ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Wird geladen...
+                      {tInv('subscriptionMgmt.loadingPreview')}
                     </>
                   ) : (
-                    'Vorschau laden'
+                    tInv('subscriptionMgmt.loadPreview')
                   )}
                 </Button>
 
@@ -636,7 +631,7 @@ export function InvoiceSubscriptions() {
                   <>
                     {bulkPreview.length === 0 ? (
                       <div className="text-center py-6 text-muted-foreground">
-                        Keine Abonnements zur Abrechnung gefunden.
+                        {tInv('subscriptionMgmt.noSubscriptionsForBilling')}
                       </div>
                     ) : (
                       <>
@@ -650,11 +645,11 @@ export function InvoiceSubscriptions() {
                                       <span className="font-medium text-sm">{item.subscription_name}</span>
                                       {item.status === 'eligible' ? (
                                         <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                                          Wird abgerechnet
+                                          {tInv('subscriptionMgmt.willBeInvoiced')}
                                         </span>
                                       ) : (
                                         <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                                          Uebersprungen
+                                          {tInv('subscriptionMgmt.skipped')}
                                         </span>
                                       )}
                                     </div>
@@ -684,7 +679,7 @@ export function InvoiceSubscriptions() {
                             className="flex-1"
                             onClick={resetBulkRun}
                           >
-                            Abbrechen
+                            {tInv('subscriptionMgmt.cancel')}
                           </Button>
                           <Button
                             className="flex-1"
@@ -694,10 +689,10 @@ export function InvoiceSubscriptions() {
                             {bulkCreateMutation.isPending ? (
                               <>
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                Wird erstellt...
+                                {tInv('subscriptionMgmt.creating')}
                               </>
                             ) : (
-                              `${bulkPreview.filter(i => i.status === 'eligible').length} Rechnung(en) erstellen`
+                              tInv('subscriptionMgmt.createInvoices', { count: bulkPreview.filter(i => i.status === 'eligible').length })
                             )}
                           </Button>
                         </div>
@@ -711,14 +706,14 @@ export function InvoiceSubscriptions() {
                 <div className="flex items-center gap-2 text-green-700">
                   <CheckCircle className="h-5 w-5" />
                   <span className="font-medium">
-                    {bulkResult.created} Rechnung(en) erstellt
-                    {bulkResult.skipped > 0 && `, ${bulkResult.skipped} uebersprungen`}
+                    {tInv('subscriptionMgmt.invoicesCreated', { count: bulkResult.created })}
+                    {bulkResult.skipped > 0 && `, ${tInv('subscriptionMgmt.invoicesCreatedAndSkipped', { count: bulkResult.skipped })}`}
                   </span>
                 </div>
 
                 {bulkResult.details.length > 0 && (
                   <div className="space-y-2">
-                    <h4 className="text-sm font-medium">Erstellte Rechnungen:</h4>
+                    <h4 className="text-sm font-medium">{tInv('subscriptionMgmt.createdInvoices')}</h4>
                     {bulkResult.details.map((inv) => (
                       <Card key={inv.invoice_id}>
                         <CardContent className="p-3">
@@ -745,7 +740,7 @@ export function InvoiceSubscriptions() {
 
                 {bulkResult.skipped_details.length > 0 && (
                   <div className="space-y-2">
-                    <h4 className="text-sm font-medium text-muted-foreground">Uebersprungen:</h4>
+                    <h4 className="text-sm font-medium text-muted-foreground">{tInv('subscriptionMgmt.skippedLabel')}</h4>
                     {bulkResult.skipped_details.map((skip, i) => (
                       <div key={i} className="text-xs text-muted-foreground flex items-center gap-1">
                         <AlertCircle className="h-3 w-3 text-amber-500" />
@@ -756,7 +751,7 @@ export function InvoiceSubscriptions() {
                 )}
 
                 <Button onClick={resetBulkRun} className="w-full">
-                  Schliessen
+                  {tInv('subscriptionMgmt.close')}
                 </Button>
               </div>
             )}
