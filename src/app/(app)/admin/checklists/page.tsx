@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/sheet';
 import { useTranslations } from 'next-intl';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useLocale, getChecklistItemLabel } from '@/hooks/use-locale';
 import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
@@ -65,6 +66,7 @@ export default function AdminChecklistsPage() {
   const organizationId = useAuthStore((state) => state.organizationId);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
   const tCheck = useTranslations('checklistAdmin');
+  const { locale } = useLocale();
 
   const itemTypeConfig: Record<ChecklistItemType, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
     checkbox: { label: tCheck('itemTypes.checkbox'), icon: Check },
@@ -801,7 +803,7 @@ export default function AdminChecklistsPage() {
                         <TypeIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">
-                            {item.label}
+                            {getChecklistItemLabel(item, locale)}
                             {item.required && <span className="text-error-500 ml-1">*</span>}
                           </p>
                           <p className="text-xs text-muted-foreground">
