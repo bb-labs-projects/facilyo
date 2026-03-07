@@ -341,7 +341,12 @@
     "typeText": "Text",
     "typeNumber": "Zahl",
     "typePhoto": "Foto",
-    "translationFailed": "Automatische Übersetzung fehlgeschlagen – Checkliste wird ohne Übersetzungen gespeichert"
+    "translationFailed": "Automatische Übersetzung fehlgeschlagen – Checkliste wird ohne Übersetzungen gespeichert",
+    "allRequiredComplete": "Alle Pflichtfelder erledigt",
+    "requiredProgress": "{completed}/{total} Pflichtfelder",
+    "noChecklistItems": "Keine Checklistenpunkte vorhanden",
+    "shownDuringTimeTracking": "Checklisten werden beim Zeiterfassen angezeigt.",
+    "startTimerHint": "Starten Sie einen Timer auf der Startseite, um die Checklisten-Punkte während der Arbeit abzuhaken."
   },
   "checklistAdmin": {
     "title": "Checklisten",
@@ -438,7 +443,31 @@
     },
     "noIssues": "Keine Probleme vorhanden",
     "filterByStatus": "Nach Status filtern",
-    "filterByPriority": "Nach Priorität filtern"
+    "filterByPriority": "Nach Priorität filtern",
+    "detail": {
+      "title": "Problem",
+      "notFound": "Problem nicht gefunden",
+      "property": "Liegenschaft",
+      "reportedBy": "Gemeldet von",
+      "assignedTo": "Zugewiesen an",
+      "created": "Erstellt",
+      "location": "Standort",
+      "showOnMap": "Auf Karte anzeigen",
+      "resolved": "Gelöst",
+      "photoAlt": "Foto {index}",
+      "convertToTask": "In Aufgabe umwandeln",
+      "deleteIssue": "Meldung löschen",
+      "deleteTitle": "Meldung löschen",
+      "deleteConfirm": "Sind Sie sicher, dass Sie diese Meldung löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+      "deleting": "Wird gelöscht...",
+      "convertTitle": "In Aufgabe umwandeln",
+      "convertConfirm": "Möchten Sie diese Meldung in eine Aufgabe umwandeln?",
+      "converting": "Wird umgewandelt...",
+      "convert": "Umwandeln",
+      "deleted": "Meldung wurde gelöscht",
+      "converted": "Meldung wurde in Aufgabe umgewandelt",
+      "cannotDelete": "Diese Meldung kann nicht gelöscht werden, da Aufgaben darauf verweisen."
+    }
   },
   "tasks": {
     "title": "Aufgaben",
@@ -465,6 +494,33 @@
       "inProgress": "In Bearbeitung",
       "completed": "Erledigt",
       "closed": "Geschlossen"
+    },
+    "convertIssueHint": "Wandeln Sie eine Meldung in eine Aufgabe um",
+    "detail": {
+      "title": "Aufgabe",
+      "notFound": "Aufgabe nicht gefunden",
+      "property": "Liegenschaft",
+      "created": "Erstellt",
+      "createdBy": "von {name}",
+      "issuePhotos": "Meldungsfotos",
+      "issuePhotoAlt": "Meldungsfoto {index}",
+      "completedAt": "Erledigt am {date}",
+      "completionNotes": "Abschluss-Notizen",
+      "completionNotesPlaceholder": "Beschreiben Sie die durchgeführten Arbeiten...",
+      "proofPhotos": "Nachweisfotos",
+      "proofPhotoAlt": "Nachweis {index}",
+      "markComplete": "Als erledigt markieren",
+      "marking": "Wird markiert...",
+      "deleteTask": "Aufgabe löschen",
+      "deleteTitle": "Aufgabe löschen",
+      "deleteConfirm": "Sind Sie sicher, dass Sie diese Aufgabe löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+      "deleting": "Wird gelöscht...",
+      "completeTitle": "Aufgabe abschliessen",
+      "completeDescription": "Optional: Beschreiben Sie die Lösung und fügen Sie Fotos hinzu.",
+      "photosOptional": "Fotos (optional)",
+      "updated": "Aufgabe wurde aktualisiert",
+      "markedComplete": "Aufgabe als erledigt markiert",
+      "deleted": "Aufgabe wurde gelöscht"
     }
   },
   "vacation": {
@@ -917,5 +973,51 @@
       "sa": "Sa",
       "su": "So"
     }
+  },
+  "timeEntryEdit": {
+    "title": "Zeiteintrag bearbeiten",
+    "entrySaved": "Eintrag wurde gespeichert",
+    "saveError": "Fehler beim Speichern",
+    "entryDeleted": "Eintrag wurde gelöscht",
+    "deleteError": "Fehler beim Löschen",
+    "deleteConfirm": "Eintrag löschen?",
+    "deleteIrreversible": "Diese Aktion kann nicht rückgängig gemacht werden.",
+    "vacationEntry": "Ferieneintrag",
+    "vacationManageNote": "Ferieneinträge können nur über die Ferien-Seite verwaltet werden",
+    "activeCannotDelete": "Aktive Einträge können nicht gelöscht werden",
+    "selectProperty": "Bitte wählen Sie eine Liegenschaft",
+    "enterStartTime": "Bitte geben Sie eine Startzeit ein",
+    "property": "Liegenschaft",
+    "startTime": "Startzeit",
+    "endTime": "Endzeit",
+    "pauseMinutes": "Pause in Minuten",
+    "duration": "Dauer",
+    "notes": "Notizen",
+    "notesPlaceholder": "Optionale Notizen...",
+    "timeEntry": "Zeiteintrag",
+    "vacationEditError": "Ferieneinträge können nur über die Ferien-Seite verwaltet werden",
+    "activeDeleteError": "Aktive Einträge können nicht gelöscht werden"
+  },
+  "activeAufgaben": {
+    "titleForProperty": "Aufgaben für diese Liegenschaft",
+    "completeTask": "Aufgabe abschliessen",
+    "completeDescription": "Optional: Beschreiben Sie die Lösung und fügen Sie Fotos hinzu.",
+    "completionNotes": "Abschluss-Notizen",
+    "completionNotesPlaceholder": "Beschreiben Sie die durchgeführten Arbeiten...",
+    "photosOptional": "Fotos (optional)",
+    "taskCompleted": "Aufgabe wurde als erledigt markiert",
+    "markComplete": "Als erledigt markieren"
+  },
+  "photoCapture": {
+    "camera": "Kamera",
+    "gallery": "Galerie",
+    "uploading": "Wird hochgeladen...",
+    "uploadError": "Foto konnte nicht hochgeladen werden",
+    "photoCount": "{current} von {max} Fotos",
+    "photoAlt": "Foto {index}",
+    "removePhoto": "Foto entfernen",
+    "takePhoto": "Foto aufnehmen",
+    "selectFromGallery": "Foto aus Galerie wählen",
+    "uploadProgress": "Upload-Fortschritt"
   }
 }

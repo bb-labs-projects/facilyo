@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { Camera, X, Plus, Image, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 // browser-image-compression is dynamically imported when needed to reduce initial bundle size
 import { Button } from '@/components/ui/button';
 import { cn, hapticFeedback } from '@/lib/utils';
@@ -23,6 +24,7 @@ export function PhotoCapture({
   className,
 }: PhotoCaptureProps) {
   const organizationId = useAuthStore((state) => state.organizationId);
+  const t = useTranslations('photoCapture');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -101,7 +103,7 @@ export function PhotoCapture({
         hapticFeedback('medium');
       } catch (error: any) {
         console.error('Failed to upload photo:', error);
-        toast.error(error?.message || 'Foto konnte nicht hochgeladen werden');
+        toast.error(error?.message || t('uploadError'));
         hapticFeedback('heavy');
       } finally {
         setIsUploading(false);
@@ -149,7 +151,7 @@ export function PhotoCapture({
               >
                 <img
                   src={url}
-                  alt={`Foto ${index + 1}`}
+                  alt={t('photoAlt', { index: index + 1 })}
                   className="w-full h-full object-contain"
                   loading="lazy"
                 />
@@ -162,7 +164,7 @@ export function PhotoCapture({
                   handleRemovePhoto(index);
                 }}
                 className="absolute top-0.5 right-0.5 p-0.5 min-w-[44px] min-h-[44px] flex items-center justify-center bg-error-500 text-white rounded-full shadow-md"
-                aria-label="Foto entfernen"
+                aria-label={t('removePhoto')}
               >
                 <X className="h-3 w-3" />
               </button>
@@ -176,7 +178,7 @@ export function PhotoCapture({
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
-            <span>Wird hochgeladen...</span>
+            <span>{t('uploading')}</span>
           </div>
           <div
             className="h-2 bg-muted rounded-full overflow-hidden"
@@ -184,7 +186,7 @@ export function PhotoCapture({
             aria-valuenow={Math.round(uploadProgress)}
             aria-valuemin={0}
             aria-valuemax={100}
-            aria-label="Upload-Fortschritt"
+            aria-label={t('uploadProgress')}
           >
             <div
               className="h-full bg-primary-500 transition-all duration-300"
@@ -204,7 +206,7 @@ export function PhotoCapture({
             onClick={openCamera}
           >
             <Camera className="h-4 w-4 mr-2" />
-            Kamera
+            {t('camera')}
           </Button>
           <Button
             type="button"
@@ -213,14 +215,14 @@ export function PhotoCapture({
             onClick={openGallery}
           >
             <Image className="h-4 w-4 mr-2" aria-hidden="true" />
-            Galerie
+            {t('gallery')}
           </Button>
         </div>
       )}
 
       {/* Photo count */}
       <p className="text-xs text-muted-foreground text-center">
-        {photos.length} von {maxPhotos} Fotos
+        {t('photoCount', { current: photos.length, max: maxPhotos })}
       </p>
 
       {/* Hidden file inputs */}
@@ -231,7 +233,7 @@ export function PhotoCapture({
         capture="environment"
         onChange={(e) => handleFileSelect(e.target.files)}
         className="hidden"
-        aria-label="Foto aufnehmen"
+        aria-label={t('takePhoto')}
       />
       <input
         ref={fileInputRef}
@@ -240,7 +242,7 @@ export function PhotoCapture({
         multiple
         onChange={(e) => handleFileSelect(e.target.files)}
         className="hidden"
-        aria-label="Foto aus Galerie wählen"
+        aria-label={t('selectFromGallery')}
       />
     </div>
   );
@@ -274,7 +276,7 @@ export function PhotoPreview({
         >
           <img
             src={url}
-            alt={`Foto ${index + 1}`}
+            alt={`Photo ${index + 1}`}
             className="w-full h-full object-cover"
             width={32}
             height={32}

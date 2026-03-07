@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MapPin, Clock, User, Building2, Trash2, ArrowRightCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,29 +24,45 @@ import { swissFormat } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import type { IssueWithRelations } from '@/types/database';
 
-const priorityConfig = {
-  low: { label: 'Niedrig', class: 'bg-muted text-muted-foreground' },
-  medium: { label: 'Mittel', class: 'badge-info' },
-  high: { label: 'Hoch', class: 'badge-warning' },
-  urgent: { label: 'Dringend', class: 'badge-error' },
+const priorityClasses = {
+  low: 'bg-muted text-muted-foreground',
+  medium: 'badge-info',
+  high: 'badge-warning',
+  urgent: 'badge-error',
 };
 
-const statusConfig = {
-  open: { label: 'Offen', class: 'badge-error' },
-  in_progress: { label: 'In Bearbeitung', class: 'badge-warning' },
-  resolved: { label: 'Gelöst', class: 'badge-success' },
-  closed: { label: 'Geschlossen', class: 'bg-muted text-muted-foreground' },
-};
-
-const categoryConfig = {
-  damage: 'Schaden',
-  cleaning: 'Reinigung',
-  safety: 'Sicherheit',
-  maintenance: 'Wartung',
-  other: 'Sonstiges',
+const statusClasses = {
+  open: 'badge-error',
+  in_progress: 'badge-warning',
+  resolved: 'badge-success',
+  closed: 'bg-muted text-muted-foreground',
 };
 
 export default function IssueDetailPage() {
+  const t = useTranslations('issues');
+  const tCommon = useTranslations('common');
+
+  const priorityConfig = {
+    low: { label: t('priorities.low'), class: priorityClasses.low },
+    medium: { label: t('priorities.medium'), class: priorityClasses.medium },
+    high: { label: t('priorities.high'), class: priorityClasses.high },
+    urgent: { label: t('priorities.urgent'), class: priorityClasses.urgent },
+  };
+
+  const statusConfig = {
+    open: { label: t('statuses.open'), class: statusClasses.open },
+    in_progress: { label: t('statuses.inProgress'), class: statusClasses.in_progress },
+    resolved: { label: t('statuses.resolved'), class: statusClasses.resolved },
+    closed: { label: t('statuses.closed'), class: statusClasses.closed },
+  };
+
+  const categoryConfig = {
+    damage: t('categories.damage'),
+    cleaning: t('categories.cleaning'),
+    safety: t('categories.safety'),
+    maintenance: t('categories.maintenance'),
+    other: t('categories.other'),
+  };
   const params = useParams();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -87,7 +104,7 @@ export default function IssueDetailPage() {
         .eq('source_meldung_id', issueId);
 
       if (count && count > 0) {
-        throw new Error('Diese Meldung kann nicht gelöscht werden, da Aufgaben darauf verweisen.');
+        throw new Error(t('detail.cannotDelete'));
       }
 
       // Fetch photo URLs before deleting
@@ -124,13 +141,13 @@ export default function IssueDetailPage() {
       }
     },
     onSuccess: async () => {
-      toast.success('Meldung wurde gelöscht');
+      toast.success(t('detail.deleted'));
       await queryClient.invalidateQueries({ queryKey: ['meldungen'] });
       await queryClient.invalidateQueries({ queryKey: ['open-issues-count'] });
       router.push('/issues');
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`${tCommon('error')}: ${error.message}`);
     },
   });
 
@@ -146,7 +163,7 @@ export default function IssueDetailPage() {
       return data;
     },
     onSuccess: async () => {
-      toast.success('Meldung wurde in Aufgabe umgewandelt');
+      toast.success(t('detail.converted'));
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['meldungen'] }),
         queryClient.invalidateQueries({ queryKey: ['aufgaben'] }),
@@ -157,13 +174,13 @@ export default function IssueDetailPage() {
       router.push('/issues');
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`${tCommon('error')}: ${error.message}`);
     },
   });
 
   if (isLoading) {
     return (
-      <PageContainer header={<Header title="Problem" showBack />}>
+      <PageContainer header={<Header title={t('detail.title')} showBack />}>
         <div className="space-y-4">
           <div className="skeleton h-8 w-3/4" />
           <div className="skeleton h-24 w-full" />
@@ -175,9 +192,9 @@ export default function IssueDetailPage() {
 
   if (!issue) {
     return (
-      <PageContainer header={<Header title="Problem" showBack />}>
+      <PageContainer header={<Header title={t('detail.title')} showBack />}>
         <div className="text-center py-12 text-muted-foreground">
-          Problem nicht gefunden
+          {t('detail.notFound')}
         </div>
       </PageContainer>
     );
@@ -188,7 +205,7 @@ export default function IssueDetailPage() {
 
   return (
     <PageContainer
-      header={<Header title="Problem" showBack backHref="/issues" />}
+      header={<Header title={t('detail.title')} showBack backHref="/issues" />}
     >
       {/* Status and priority badges */}
       <div className="flex gap-2 mb-4">
@@ -207,7 +224,7 @@ export default function IssueDetailPage() {
         <Card className="mb-4">
           <CardContent className="p-4">
             <h2 className="text-sm font-medium text-muted-foreground mb-2">
-              Beschreibung
+              {tCommon('description')}
             </h2>
             <p className="whitespace-pre-wrap">{issue.description}</p>
           </CardContent>
@@ -219,7 +236,7 @@ export default function IssueDetailPage() {
         <Card className="mb-4">
           <CardContent className="p-4">
             <h2 className="text-sm font-medium text-muted-foreground mb-3">
-              Fotos ({issue.photo_urls.length})
+              {t('photos')} ({issue.photo_urls.length})
             </h2>
             <div className="grid grid-cols-2 gap-2">
               {issue.photo_urls.map((url, index) => (
@@ -232,7 +249,7 @@ export default function IssueDetailPage() {
                 >
                   <img
                     src={url}
-                    alt={`Foto ${index + 1}`}
+                    alt={t('detail.photoAlt', { index: index + 1 })}
                     className="w-full h-full object-cover"
                   />
                 </a>
@@ -249,7 +266,7 @@ export default function IssueDetailPage() {
           <div className="flex items-start gap-3">
             <Building2 className="h-5 w-5 text-muted-foreground mt-0.5" />
             <div>
-              <p className="text-sm text-muted-foreground">Liegenschaft</p>
+              <p className="text-sm text-muted-foreground">{t('detail.property')}</p>
               <p className="font-medium">{issue.property.name}</p>
               <p className="text-sm text-muted-foreground">
                 {issue.property.address}, {issue.property.postal_code}{' '}
@@ -262,7 +279,7 @@ export default function IssueDetailPage() {
           <div className="flex items-start gap-3">
             <User className="h-5 w-5 text-muted-foreground mt-0.5" />
             <div>
-              <p className="text-sm text-muted-foreground">Gemeldet von</p>
+              <p className="text-sm text-muted-foreground">{t('detail.reportedBy')}</p>
               <p className="font-medium">
                 {issue.reporter.first_name} {issue.reporter.last_name}
               </p>
@@ -274,7 +291,7 @@ export default function IssueDetailPage() {
             <div className="flex items-start gap-3">
               <User className="h-5 w-5 text-muted-foreground mt-0.5" />
               <div>
-                <p className="text-sm text-muted-foreground">Zugewiesen an</p>
+                <p className="text-sm text-muted-foreground">{t('detail.assignedTo')}</p>
                 <p className="font-medium">
                   {issue.assignee.first_name} {issue.assignee.last_name}
                 </p>
@@ -286,7 +303,7 @@ export default function IssueDetailPage() {
           <div className="flex items-start gap-3">
             <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
             <div>
-              <p className="text-sm text-muted-foreground">Erstellt</p>
+              <p className="text-sm text-muted-foreground">{t('detail.created')}</p>
               <p className="font-medium">
                 {swissFormat.datetime(issue.created_at)}
               </p>
@@ -301,14 +318,14 @@ export default function IssueDetailPage() {
             <div className="flex items-start gap-3">
               <MapPin className="h-5 w-5 text-muted-foreground mt-0.5" />
               <div>
-                <p className="text-sm text-muted-foreground">Standort</p>
+                <p className="text-sm text-muted-foreground">{t('detail.location')}</p>
                 <a
                   href={`https://maps.google.com/?q=${issue.latitude},${issue.longitude}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-primary-600 hover:underline"
                 >
-                  Auf Karte anzeigen
+                  {t('detail.showOnMap')}
                 </a>
               </div>
             </div>
@@ -319,7 +336,7 @@ export default function IssueDetailPage() {
             <div className="flex items-start gap-3">
               <Clock className="h-5 w-5 text-success-500 mt-0.5" />
               <div>
-                <p className="text-sm text-muted-foreground">Gelöst</p>
+                <p className="text-sm text-muted-foreground">{t('detail.resolved')}</p>
                 <p className="font-medium">
                   {swissFormat.datetime(issue.resolved_at)}
                 </p>
@@ -339,7 +356,7 @@ export default function IssueDetailPage() {
             onClick={() => setShowConvertDialog(true)}
             leftIcon={<ArrowRightCircle className="h-5 w-5" />}
           >
-            In Aufgabe umwandeln
+            {t('detail.convertToTask')}
           </Button>
         </div>
       )}
@@ -354,7 +371,7 @@ export default function IssueDetailPage() {
             onClick={() => setShowDeleteDialog(true)}
             leftIcon={<Trash2 className="h-5 w-5" />}
           >
-            Meldung löschen
+            {t('detail.deleteIssue')}
           </Button>
         </div>
       )}
@@ -363,21 +380,21 @@ export default function IssueDetailPage() {
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Meldung löschen</DialogTitle>
+            <DialogTitle>{t('detail.deleteTitle')}</DialogTitle>
             <DialogDescription>
-              Sind Sie sicher, dass Sie diese Meldung löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.
+              {t('detail.deleteConfirm')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-              Abbrechen
+              {tCommon('cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={() => deleteMutation.mutate()}
               disabled={deleteMutation.isPending}
             >
-              {deleteMutation.isPending ? 'Wird gelöscht...' : 'Löschen'}
+              {deleteMutation.isPending ? t('detail.deleting') : tCommon('delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -387,9 +404,9 @@ export default function IssueDetailPage() {
       <Dialog open={showConvertDialog} onOpenChange={setShowConvertDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>In Aufgabe umwandeln</DialogTitle>
+            <DialogTitle>{t('detail.convertTitle')}</DialogTitle>
             <DialogDescription>
-              Möchten Sie diese Meldung in eine Aufgabe umwandeln?
+              {t('detail.convertConfirm')}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -402,13 +419,13 @@ export default function IssueDetailPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowConvertDialog(false)}>
-              Abbrechen
+              {tCommon('cancel')}
             </Button>
             <Button
               onClick={() => convertMutation.mutate()}
               disabled={convertMutation.isPending}
             >
-              {convertMutation.isPending ? 'Wird umgewandelt...' : 'Umwandeln'}
+              {convertMutation.isPending ? t('detail.converting') : t('detail.convert')}
             </Button>
           </DialogFooter>
         </DialogContent>

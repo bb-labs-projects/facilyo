@@ -49,7 +49,7 @@ export function BottomNav() {
   };
 
   return (
-    <nav className="bottom-nav lg:hidden" role="navigation" aria-label="Hauptnavigation">
+    <nav className="bottom-nav lg:hidden" role="navigation" aria-label="Main navigation">
       <div className="flex items-stretch">
         {navItems.map((item) => {
           const active = isActive(item.href);

@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input, Textarea } from '@/components/ui/input';
+import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
 import { swissFormat } from '@/lib/i18n';
@@ -36,6 +37,9 @@ export function TimeEntryEditSheet({
 }: TimeEntryEditSheetProps) {
   const queryClient = useQueryClient();
   const profile = useAuthStore((state) => state.profile);
+  const t = useTranslations('timeEntryEdit');
+  const tCommon = useTranslations('common');
+  const tEntry = useTranslations('entryTypes');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Form state
@@ -96,7 +100,7 @@ export function TimeEntryEditSheet({
 
       // Prevent editing vacation entries
       if (entry.entry_type === 'vacation') {
-        throw new Error('Ferieneinträge können nur über die Ferien-Seite verwaltet werden');
+        throw new Error(t('vacationEditError'));
       }
 
       const supabase = getClient();
@@ -122,11 +126,11 @@ export function TimeEntryEditSheet({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['work-days'] });
       queryClient.invalidateQueries({ queryKey: ['time-entries'] });
-      toast.success('Eintrag wurde gespeichert');
+      toast.success(t('entrySaved'));
       onSaved();
     },
     onError: () => {
-      toast.error('Fehler beim Speichern');
+      toast.error(t('saveError'));
     },
   });
 
@@ -142,12 +146,12 @@ export function TimeEntryEditSheet({
 
       // Prevent deletion of active entries
       if (isActive) {
-        throw new Error('Aktive Einträge können nicht gelöscht werden');
+        throw new Error(t('activeDeleteError'));
       }
 
-      // Prevent deletion of vacation entries (must be managed via Ferien page)
+      // Prevent deletion of vacation entries (must be managed via vacation page)
       if (isVacation) {
-        throw new Error('Ferieneinträge können nur über die Ferien-Seite verwaltet werden');
+        throw new Error(t('vacationEditError'));
       }
 
       const supabase = getClient();
@@ -197,22 +201,22 @@ export function TimeEntryEditSheet({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['work-days'] });
       queryClient.invalidateQueries({ queryKey: ['time-entries'] });
-      toast.success('Eintrag wurde gelöscht');
+      toast.success(t('entryDeleted'));
       setShowDeleteDialog(false);
       onDeleted();
     },
     onError: () => {
-      toast.error('Fehler beim Löschen');
+      toast.error(t('deleteError'));
     },
   });
 
   const handleSave = () => {
     if (entry?.entry_type === 'property' && !propertyId) {
-      toast.error('Bitte wählen Sie eine Liegenschaft');
+      toast.error(t('selectProperty'));
       return;
     }
     if (!startTime) {
-      toast.error('Bitte geben Sie eine Startzeit ein');
+      toast.error(t('enterStartTime'));
       return;
     }
     updateMutation.mutate();
@@ -229,22 +233,22 @@ export function TimeEntryEditSheet({
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto">
           <SheetHeader className="text-left">
-            <SheetTitle>Zeiteintrag bearbeiten</SheetTitle>
+            <SheetTitle>{t('title')}</SheetTitle>
             <SheetDescription>
-              {entry.property?.name || (entry.entry_type === 'travel' ? 'Fahrzeit' : entry.entry_type === 'break' ? 'Pause' : 'Zeiteintrag')}
+              {entry.property?.name || (entry.entry_type === 'travel' ? tEntry('travel') : entry.entry_type === 'break' ? tEntry('break') : t('timeEntry'))}
             </SheetDescription>
           </SheetHeader>
 
           {isVacation ? (
             <div className="mt-6 space-y-3">
               <div className="p-4 bg-green-50 rounded-lg border border-green-200 text-sm text-green-800">
-                <p className="font-medium mb-1">Ferieneintrag</p>
-                <p>Startzeit: {startTime}</p>
-                <p>Endzeit: {endTime}</p>
-                {durationPreview && <p>Dauer: {durationPreview}</p>}
+                <p className="font-medium mb-1">{t('vacationEntry')}</p>
+                <p>{t('startTime')}: {startTime}</p>
+                <p>{t('endTime')}: {endTime}</p>
+                {durationPreview && <p>{t('duration')}: {durationPreview}</p>}
               </div>
               <p className="text-xs text-center text-muted-foreground">
-                Ferieneinträge können nur über die Ferien-Seite verwaltet werden
+                {t('vacationManageNote')}
               </p>
             </div>
           ) : (
@@ -253,7 +257,7 @@ export function TimeEntryEditSheet({
             {entry.entry_type === 'property' && (
               <div className="w-full">
                 <label className="mb-2 block text-sm font-medium text-foreground">
-                  Liegenschaft
+                  {t('property')}
                 </label>
                 <select
                   value={propertyId}
@@ -271,7 +275,7 @@ export function TimeEntryEditSheet({
 
             {/* Start Time */}
             <Input
-              label="Startzeit"
+              label={t('startTime')}
               type="time"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
@@ -279,7 +283,7 @@ export function TimeEntryEditSheet({
 
             {/* End Time */}
             <Input
-              label="Endzeit"
+              label={t('endTime')}
               type="time"
               value={endTime}
               onChange={(e) => setEndTime(e.target.value)}
@@ -287,7 +291,7 @@ export function TimeEntryEditSheet({
 
             {/* Pause Duration */}
             <Input
-              label="Pause in Minuten"
+              label={t('pauseMinutes')}
               type="number"
               min="0"
               value={pauseMinutes}
@@ -299,17 +303,17 @@ export function TimeEntryEditSheet({
               <div className="flex items-center gap-2 p-3 bg-primary-50 rounded-lg">
                 <Clock className="h-4 w-4 text-primary-600" />
                 <span className="text-sm text-primary-700">
-                  Dauer: <span className="font-semibold">{durationPreview}</span>
+                  {t('duration')}: <span className="font-semibold">{durationPreview}</span>
                 </span>
               </div>
             )}
 
             {/* Notes */}
             <Textarea
-              label="Notizen"
+              label={t('notes')}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Optionale Notizen..."
+              placeholder={t('notesPlaceholder')}
               rows={3}
             />
           </div>
@@ -322,7 +326,7 @@ export function TimeEntryEditSheet({
               isLoading={updateMutation.isPending}
               className="w-full"
             >
-              Speichern
+              {tCommon('save')}
             </Button>
             )}
             {!isActive && !isVacation && !showDeleteDialog && (
@@ -332,7 +336,7 @@ export function TimeEntryEditSheet({
                 leftIcon={<Trash2 className="h-4 w-4" />}
                 className="w-full"
               >
-                Löschen
+                {tCommon('delete')}
               </Button>
             )}
             {!isActive && !isVacation && showDeleteDialog && (
@@ -340,9 +344,9 @@ export function TimeEntryEditSheet({
                 <div className="flex items-start gap-2">
                   <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-red-900">Eintrag löschen?</p>
+                    <p className="text-sm font-medium text-red-900">{t('deleteConfirm')}</p>
                     <p className="text-sm text-red-700 mt-1">
-                      Diese Aktion kann nicht rückgängig gemacht werden.
+                      {t('deleteIrreversible')}
                     </p>
                   </div>
                 </div>
@@ -353,7 +357,7 @@ export function TimeEntryEditSheet({
                     className="flex-1"
                     onClick={() => setShowDeleteDialog(false)}
                   >
-                    Abbrechen
+                    {tCommon('cancel')}
                   </Button>
                   <Button
                     variant="destructive"
@@ -362,19 +366,19 @@ export function TimeEntryEditSheet({
                     onClick={handleDelete}
                     isLoading={deleteMutation.isPending}
                   >
-                    Löschen
+                    {tCommon('delete')}
                   </Button>
                 </div>
               </div>
             )}
             {isActive && (
               <p className="text-xs text-center text-muted-foreground">
-                Aktive Einträge können nicht gelöscht werden
+                {t('activeCannotDelete')}
               </p>
             )}
             {isVacation && (
               <p className="text-xs text-center text-muted-foreground">
-                Ferieneinträge können nur über die Ferien-Seite verwaltet werden
+                {t('vacationManageNote')}
               </p>
             )}
           </SheetFooter>

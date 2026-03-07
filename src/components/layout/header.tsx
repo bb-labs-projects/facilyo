@@ -76,7 +76,7 @@ export function Header({
               size="icon"
               onClick={onMenuClick || mobileMenu.open}
               className="-ml-2 lg:hidden"
-              aria-label="Menü öffnen"
+              aria-label="Open menu"
             >
               <Menu className="h-6 w-6 text-foreground" />
             </Button>
@@ -87,7 +87,7 @@ export function Header({
               size="icon"
               onClick={handleBack}
               className="-ml-2"
-              aria-label="Zurück"
+              aria-label="Back"
             >
               <ChevronLeft className="h-6 w-6 text-foreground" />
             </Button>
@@ -110,7 +110,7 @@ export function Header({
               onClick={handleRefresh}
               disabled={isRefreshing}
               className="lg:hidden"
-              aria-label="Seite aktualisieren"
+              aria-label="Refresh"
             >
               <RefreshCw className={cn('h-5 w-5', isRefreshing && 'animate-spin')} />
             </Button>
@@ -162,7 +162,7 @@ export function HeaderMenu({ children, trigger }: DropdownMenuProps) {
   return (
     <div className="relative">
       {trigger || (
-        <Button variant="ghost" size="icon" aria-label="Menü">
+        <Button variant="ghost" size="icon" aria-label="Menu">
           <MoreVertical className="h-5 w-5" />
         </Button>
       )}

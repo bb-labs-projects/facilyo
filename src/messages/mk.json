@@ -341,7 +341,12 @@
     "typeText": "Текст",
     "typeNumber": "Број",
     "typePhoto": "Фотографија",
-    "translationFailed": "Автоматскиот превод не успеа – контролната листа ќе биде зачувана без преводи"
+    "translationFailed": "Автоматскиот превод не успеа – контролната листа ќе биде зачувана без преводи",
+    "allRequiredComplete": "Сите задолжителни полиња се пополнети",
+    "requiredProgress": "{completed}/{total} задолжителни полиња",
+    "noChecklistItems": "Нема ставки од контролна листа",
+    "shownDuringTimeTracking": "Контролните листи се прикажуваат за време на следење на времето.",
+    "startTimerHint": "Стартувајте тајмер на почетната страница за да ги штиклирате ставките од контролната листа додека работите."
   },
   "checklistAdmin": {
     "title": "Контролни листи",
@@ -438,7 +443,31 @@
     },
     "noIssues": "Нема проблеми",
     "filterByStatus": "Филтрирај по статус",
-    "filterByPriority": "Филтрирај по приоритет"
+    "filterByPriority": "Филтрирај по приоритет",
+    "detail": {
+      "title": "Проблем",
+      "notFound": "Проблемот не е пронајден",
+      "property": "Имот",
+      "reportedBy": "Пријавил/а",
+      "assignedTo": "Доделено",
+      "created": "Креирано",
+      "location": "Локација",
+      "showOnMap": "Прикажи на карта",
+      "resolved": "Решено",
+      "photoAlt": "Фотографија {index}",
+      "convertToTask": "Претвори во задача",
+      "deleteIssue": "Избриши пријава",
+      "deleteTitle": "Избриши пријава",
+      "deleteConfirm": "Дали сте сигурни дека сакате да ја избришете оваа пријава? Ова дејство не може да се поништи.",
+      "deleting": "Бришење...",
+      "convertTitle": "Претвори во задача",
+      "convertConfirm": "Дали сакате да ја претворите оваа пријава во задача?",
+      "converting": "Претворување...",
+      "convert": "Претвори",
+      "deleted": "Пријавата е избришана",
+      "converted": "Пријавата е претворена во задача",
+      "cannotDelete": "Оваа пријава не може да се избрише бидејќи задачи упатуваат на неа."
+    }
   },
   "tasks": {
     "title": "Задачи",
@@ -465,6 +494,33 @@
       "inProgress": "Во тек",
       "completed": "Завршено",
       "closed": "Затворено"
+    },
+    "convertIssueHint": "Претворете пријава во задача",
+    "detail": {
+      "title": "Задача",
+      "notFound": "Задачата не е пронајдена",
+      "property": "Имот",
+      "created": "Креирано",
+      "createdBy": "од {name}",
+      "issuePhotos": "Фотографии од пријавата",
+      "issuePhotoAlt": "Фотографија од пријава {index}",
+      "completedAt": "Завршено на {date}",
+      "completionNotes": "Белешки за завршување",
+      "completionNotesPlaceholder": "Опишете ја извршената работа...",
+      "proofPhotos": "Доказни фотографии",
+      "proofPhotoAlt": "Доказ {index}",
+      "markComplete": "Означи како завршено",
+      "marking": "Означување...",
+      "deleteTask": "Избриши задача",
+      "deleteTitle": "Избриши задача",
+      "deleteConfirm": "Дали сте сигурни дека сакате да ја избришете оваа задача? Ова дејство не може да се поништи.",
+      "deleting": "Бришење...",
+      "completeTitle": "Заврши задача",
+      "completeDescription": "Опционално: Опишете го решението и додајте фотографии.",
+      "photosOptional": "Фотографии (опционално)",
+      "updated": "Задачата е ажурирана",
+      "markedComplete": "Задачата е означена како завршена",
+      "deleted": "Задачата е избришана"
     }
   },
   "vacation": {
@@ -917,5 +973,51 @@
       "sa": "Саб",
       "su": "Нед"
     }
+  },
+  "timeEntryEdit": {
+    "title": "Уреди временски запис",
+    "entrySaved": "Записот е зачуван",
+    "saveError": "Грешка при зачувување",
+    "entryDeleted": "Записот е избришан",
+    "deleteError": "Грешка при бришење",
+    "deleteConfirm": "Избриши запис?",
+    "deleteIrreversible": "Ова дејство не може да се поврати.",
+    "vacationEntry": "Запис за одмор",
+    "vacationManageNote": "Записите за одмор можат да се управуваат само преку страницата за одмор",
+    "activeCannotDelete": "Активните записи не можат да се избришат",
+    "selectProperty": "Ве молиме изберете имот",
+    "enterStartTime": "Ве молиме внесете почетно време",
+    "property": "Имот",
+    "startTime": "Почетно време",
+    "endTime": "Крајно време",
+    "pauseMinutes": "Пауза во минути",
+    "duration": "Траење",
+    "notes": "Белешки",
+    "notesPlaceholder": "Опционални белешки...",
+    "timeEntry": "Временски запис",
+    "vacationEditError": "Записите за одмор можат да се управуваат само преку страницата за одмор",
+    "activeDeleteError": "Активните записи не можат да се избришат"
+  },
+  "activeAufgaben": {
+    "titleForProperty": "Задачи за овој имот",
+    "completeTask": "Заврши задача",
+    "completeDescription": "Опционално: Опишете го решението и додајте фотографии.",
+    "completionNotes": "Белешки за завршување",
+    "completionNotesPlaceholder": "Опишете ја извршената работа...",
+    "photosOptional": "Фотографии (опционално)",
+    "taskCompleted": "Задачата е означена како завршена",
+    "markComplete": "Означи како завршено"
+  },
+  "photoCapture": {
+    "camera": "Камера",
+    "gallery": "Галерија",
+    "uploading": "Се подигнува...",
+    "uploadError": "Фотографијата не можеше да се подигне",
+    "photoCount": "{current} од {max} фотографии",
+    "photoAlt": "Фотографија {index}",
+    "removePhoto": "Отстрани фотографија",
+    "takePhoto": "Сними фотографија",
+    "selectFromGallery": "Избери фотографија од галерија",
+    "uploadProgress": "Напредок на подигнување"
   }
 }

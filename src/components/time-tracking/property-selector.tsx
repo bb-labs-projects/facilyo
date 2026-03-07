@@ -143,7 +143,7 @@ export function PropertySelector({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               leftElement={<Search className="h-4 w-4 text-muted-foreground" />}
-              aria-label="Liegenschaft suchen"
+              aria-label={tProp('searchPlaceholder')}
             />
 
             {/* Property list */}

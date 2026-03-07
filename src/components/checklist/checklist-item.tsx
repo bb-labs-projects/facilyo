@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { Check, Camera, GripVertical, Loader2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 // browser-image-compression is dynamically imported when needed to reduce initial bundle size
 import { Input } from '@/components/ui/input';
 import { cn, hapticFeedback } from '@/lib/utils';
@@ -85,7 +86,7 @@ export function ChecklistItem({
     >
       {dragHandleProps && (
         <button
-          aria-label="Element verschieben"
+          aria-label="Move item"
           className="mt-1 text-muted-foreground hover:text-foreground touch-none min-h-[44px] min-w-[44px] flex items-center justify-center p-3 -m-3"
           {...dragHandleProps}
         >
@@ -161,6 +162,7 @@ interface TextInputProps {
 }
 
 function TextInput({ value, onChange, label, required }: TextInputProps) {
+  const t = useTranslations('checklist');
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium">
@@ -170,7 +172,7 @@ function TextInput({ value, onChange, label, required }: TextInputProps) {
       <Input
         value={value || ''}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Eingeben..."
+        placeholder={t('enterText')}
       />
     </div>
   );
@@ -212,6 +214,8 @@ interface PhotoInputProps {
 
 function PhotoInput({ value, onChange, label, required }: PhotoInputProps) {
   const organizationId = useAuthStore((state) => state.organizationId);
+  const t = useTranslations('checklist');
+  const tCommon = useTranslations('common');
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -268,7 +272,7 @@ function PhotoInput({ value, onChange, label, required }: PhotoInputProps) {
       hapticFeedback('medium');
     } catch (error: any) {
       console.error('Failed to upload photo:', error);
-      toast.error(error?.message || 'Foto konnte nicht hochgeladen werden');
+      toast.error(error?.message || t('photoUploadError'));
       hapticFeedback('heavy');
     } finally {
       setIsUploading(false);
@@ -290,13 +294,13 @@ function PhotoInput({ value, onChange, label, required }: PhotoInputProps) {
       {isUploading ? (
         <div className="w-full h-32 border-2 border-dashed border-primary-300 rounded-lg flex flex-col items-center justify-center gap-2 bg-primary-50">
           <Loader2 className="h-8 w-8 text-primary-500 animate-spin" />
-          <span className="text-sm text-primary-600">Wird hochgeladen...</span>
+          <span className="text-sm text-primary-600">{tCommon('uploading')}</span>
         </div>
       ) : value ? (
         <div className="relative">
           <img
             src={value}
-            alt={`Foto für ${label}`}
+            alt={`${label}`}
             className="w-full h-32 object-cover rounded-lg"
             width={320}
             height={128}
@@ -305,7 +309,7 @@ function PhotoInput({ value, onChange, label, required }: PhotoInputProps) {
           <button
             type="button"
             onClick={handleRemove}
-            aria-label="Foto entfernen"
+            aria-label="Remove photo"
             className="absolute top-2 right-2 min-w-[44px] min-h-[44px] flex items-center justify-center bg-error-500 text-white p-1.5 rounded-full shadow-md hover:bg-error-600 transition-colors"
           >
             <X className="h-4 w-4" />
@@ -318,7 +322,7 @@ function PhotoInput({ value, onChange, label, required }: PhotoInputProps) {
           className="w-full h-32 border-2 border-dashed border-muted-foreground/50 rounded-lg flex flex-col items-center justify-center gap-2 hover:border-primary-500 transition-colors"
         >
           <Camera className="h-8 w-8 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">Foto aufnehmen</span>
+          <span className="text-sm text-muted-foreground">{t('takePhoto')}</span>
         </button>
       )}
 
@@ -329,7 +333,7 @@ function PhotoInput({ value, onChange, label, required }: PhotoInputProps) {
         capture="environment"
         onChange={(e) => handleFileSelect(e.target.files)}
         className="hidden"
-        aria-label="Foto aufnehmen"
+        aria-label={t('takePhoto')}
       />
     </div>
   );

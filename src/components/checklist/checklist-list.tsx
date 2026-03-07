@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { ChecklistItem } from './checklist-item';
 import { cn } from '@/lib/utils';
 import type { ChecklistItem as ChecklistItemType } from '@/types/database';
@@ -17,6 +18,7 @@ export function ChecklistList({
   onChange,
   className,
 }: ChecklistListProps) {
+  const t = useTranslations('checklist');
   // Sort items by order
   const sortedItems = [...items].sort((a, b) => a.order - b.order);
 
@@ -67,7 +69,7 @@ export function ChecklistList({
       <div className="space-y-2">
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">
-            {completedCount} von {sortedItems.length} erledigt
+            {t('completedOf', { completed: completedCount, total: sortedItems.length })}
           </span>
           <span className="font-medium">{progress}%</span>
         </div>
@@ -92,8 +94,8 @@ export function ChecklistList({
             )}
           >
             {allRequiredComplete
-              ? 'Alle Pflichtfelder erledigt'
-              : `${completedRequiredCount}/${requiredCount} Pflichtfelder`}
+              ? t('allRequiredComplete')
+              : t('requiredProgress', { completed: completedRequiredCount, total: requiredCount })}
           </p>
         )}
       </div>
@@ -113,7 +115,7 @@ export function ChecklistList({
       {/* Empty state */}
       {sortedItems.length === 0 && (
         <div className="text-center py-8 text-muted-foreground">
-          Keine Checklistenpunkte vorhanden
+          {t('noChecklistItems')}
         </div>
       )}
     </div>

@@ -341,7 +341,12 @@
     "typeText": "Besedilo",
     "typeNumber": "Število",
     "typePhoto": "Fotografija",
-    "translationFailed": "Samodejni prevod ni uspel – kontrolni seznam bo shranjen brez prevodov"
+    "translationFailed": "Samodejni prevod ni uspel – kontrolni seznam bo shranjen brez prevodov",
+    "allRequiredComplete": "Vsa obvezna polja izpolnjena",
+    "requiredProgress": "{completed}/{total} obveznih polj",
+    "noChecklistItems": "Ni elementov kontrolnega seznama",
+    "shownDuringTimeTracking": "Kontrolni seznami se prikazujejo med sledenjem časa.",
+    "startTimerHint": "Zaženite časovnik na domači strani, da med delom odkljukate elemente kontrolnega seznama."
   },
   "checklistAdmin": {
     "title": "Kontrolni seznami",
@@ -438,7 +443,31 @@
     },
     "noIssues": "Ni težav",
     "filterByStatus": "Filtriraj po stanju",
-    "filterByPriority": "Filtriraj po prioriteti"
+    "filterByPriority": "Filtriraj po prioriteti",
+    "detail": {
+      "title": "Težava",
+      "notFound": "Težava ni najdena",
+      "property": "Nepremičnina",
+      "reportedBy": "Prijavil/a",
+      "assignedTo": "Dodeljeno",
+      "created": "Ustvarjeno",
+      "location": "Lokacija",
+      "showOnMap": "Prikaži na zemljevidu",
+      "resolved": "Rešeno",
+      "photoAlt": "Fotografija {index}",
+      "convertToTask": "Pretvori v nalogo",
+      "deleteIssue": "Izbriši prijavo",
+      "deleteTitle": "Izbriši prijavo",
+      "deleteConfirm": "Ali ste prepričani, da želite izbrisati to prijavo? Tega dejanja ni mogoče razveljaviti.",
+      "deleting": "Brisanje...",
+      "convertTitle": "Pretvori v nalogo",
+      "convertConfirm": "Ali želite pretvoriti to prijavo v nalogo?",
+      "converting": "Pretvarjanje...",
+      "convert": "Pretvori",
+      "deleted": "Prijava je bila izbrisana",
+      "converted": "Prijava je bila pretvorjena v nalogo",
+      "cannotDelete": "Te prijave ni mogoče izbrisati, ker se nanjo sklicujejo naloge."
+    }
   },
   "tasks": {
     "title": "Naloge",
@@ -465,6 +494,33 @@
       "inProgress": "V obdelavi",
       "completed": "Opravljeno",
       "closed": "Zaprto"
+    },
+    "convertIssueHint": "Pretvorite prijavo v nalogo",
+    "detail": {
+      "title": "Naloga",
+      "notFound": "Naloga ni najdena",
+      "property": "Nepremičnina",
+      "created": "Ustvarjeno",
+      "createdBy": "od {name}",
+      "issuePhotos": "Fotografije prijave",
+      "issuePhotoAlt": "Fotografija prijave {index}",
+      "completedAt": "Opravljeno {date}",
+      "completionNotes": "Opombe ob zaključku",
+      "completionNotesPlaceholder": "Opišite opravljeno delo...",
+      "proofPhotos": "Dokazne fotografije",
+      "proofPhotoAlt": "Dokaz {index}",
+      "markComplete": "Označi kot opravljeno",
+      "marking": "Označevanje...",
+      "deleteTask": "Izbriši nalogo",
+      "deleteTitle": "Izbriši nalogo",
+      "deleteConfirm": "Ali ste prepričani, da želite izbrisati to nalogo? Tega dejanja ni mogoče razveljaviti.",
+      "deleting": "Brisanje...",
+      "completeTitle": "Zaključi nalogo",
+      "completeDescription": "Neobvezno: Opišite rešitev in dodajte fotografije.",
+      "photosOptional": "Fotografije (neobvezno)",
+      "updated": "Naloga je bila posodobljena",
+      "markedComplete": "Naloga označena kot opravljena",
+      "deleted": "Naloga je bila izbrisana"
     }
   },
   "vacation": {
@@ -917,5 +973,51 @@
       "sa": "Sob",
       "su": "Ned"
     }
+  },
+  "timeEntryEdit": {
+    "title": "Uredi časovni vnos",
+    "entrySaved": "Vnos je bil shranjen",
+    "saveError": "Napaka pri shranjevanju",
+    "entryDeleted": "Vnos je bil izbrisan",
+    "deleteError": "Napaka pri brisanju",
+    "deleteConfirm": "Izbrisati vnos?",
+    "deleteIrreversible": "Tega dejanja ni mogoče razveljaviti.",
+    "vacationEntry": "Vnos dopusta",
+    "vacationManageNote": "Vnose dopusta je mogoče upravljati samo prek strani za dopust",
+    "activeCannotDelete": "Aktivnih vnosov ni mogoče izbrisati",
+    "selectProperty": "Prosimo, izberite nepremičnino",
+    "enterStartTime": "Prosimo, vnesite začetni čas",
+    "property": "Nepremičnina",
+    "startTime": "Začetni čas",
+    "endTime": "Končni čas",
+    "pauseMinutes": "Odmor v minutah",
+    "duration": "Trajanje",
+    "notes": "Opombe",
+    "notesPlaceholder": "Izbirne opombe...",
+    "timeEntry": "Časovni vnos",
+    "vacationEditError": "Vnose dopusta je mogoče upravljati samo prek strani za dopust",
+    "activeDeleteError": "Aktivnih vnosov ni mogoče izbrisati"
+  },
+  "activeAufgaben": {
+    "titleForProperty": "Naloge za to nepremičnino",
+    "completeTask": "Zaključi nalogo",
+    "completeDescription": "Neobvezno: Opišite rešitev in dodajte fotografije.",
+    "completionNotes": "Opombe ob zaključku",
+    "completionNotesPlaceholder": "Opišite opravljeno delo...",
+    "photosOptional": "Fotografije (neobvezno)",
+    "taskCompleted": "Naloga je bila označena kot zaključena",
+    "markComplete": "Označi kot zaključeno"
+  },
+  "photoCapture": {
+    "camera": "Kamera",
+    "gallery": "Galerija",
+    "uploading": "Nalaganje...",
+    "uploadError": "Fotografije ni bilo mogoče naložiti",
+    "photoCount": "{current} od {max} fotografij",
+    "photoAlt": "Fotografija {index}",
+    "removePhoto": "Odstrani fotografijo",
+    "takePhoto": "Posnemi fotografijo",
+    "selectFromGallery": "Izberi fotografijo iz galerije",
+    "uploadProgress": "Napredek nalaganja"
   }
 }

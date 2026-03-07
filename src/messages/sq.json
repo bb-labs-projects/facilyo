@@ -341,7 +341,12 @@
     "typeText": "Tekst",
     "typeNumber": "Numër",
     "typePhoto": "Foto",
-    "translationFailed": "Përkthimi automatik dështoi - lista kontrolluese do të ruhet pa përkthime"
+    "translationFailed": "Përkthimi automatik dështoi - lista kontrolluese do të ruhet pa përkthime",
+    "allRequiredComplete": "Të gjitha fushat e detyrueshme janë plotësuar",
+    "requiredProgress": "{completed}/{total} fusha të detyrueshme",
+    "noChecklistItems": "Nuk ka pika të listës kontrolluese",
+    "shownDuringTimeTracking": "Listat kontrolluese shfaqen gjatë ndjekjes së kohës.",
+    "startTimerHint": "Filloni një kronometër në faqen kryesore për të shënuar pikat e listës kontrolluese gjatë punës."
   },
   "checklistAdmin": {
     "title": "Listat e kontrollit",
@@ -438,7 +443,31 @@
     },
     "noIssues": "Nuk ka probleme",
     "filterByStatus": "Filtro sipas statusit",
-    "filterByPriority": "Filtro sipas prioritetit"
+    "filterByPriority": "Filtro sipas prioritetit",
+    "detail": {
+      "title": "Problemi",
+      "notFound": "Problemi nuk u gjet",
+      "property": "Prona",
+      "reportedBy": "Raportuar nga",
+      "assignedTo": "Caktuar te",
+      "created": "Krijuar",
+      "location": "Vendndodhja",
+      "showOnMap": "Shfaq në hartë",
+      "resolved": "Zgjidhur",
+      "photoAlt": "Foto {index}",
+      "convertToTask": "Konverto në detyrë",
+      "deleteIssue": "Fshi raportin",
+      "deleteTitle": "Fshi raportin",
+      "deleteConfirm": "A jeni i sigurt që dëshironi ta fshini këtë raport? Ky veprim nuk mund të zhbëhet.",
+      "deleting": "Duke fshirë...",
+      "convertTitle": "Konverto në detyrë",
+      "convertConfirm": "A dëshironi ta konvertoni këtë raport në detyrë?",
+      "converting": "Duke konvertuar...",
+      "convert": "Konverto",
+      "deleted": "Raporti u fshi",
+      "converted": "Raporti u konvertua në detyrë",
+      "cannotDelete": "Ky raport nuk mund të fshihet sepse detyrat i referohen atij."
+    }
   },
   "tasks": {
     "title": "Detyrat",
@@ -465,6 +494,33 @@
       "inProgress": "Në progres",
       "completed": "Përfunduar",
       "closed": "E mbyllur"
+    },
+    "convertIssueHint": "Konvertoni një raport në detyrë",
+    "detail": {
+      "title": "Detyra",
+      "notFound": "Detyra nuk u gjet",
+      "property": "Prona",
+      "created": "Krijuar",
+      "createdBy": "nga {name}",
+      "issuePhotos": "Fotot e raportit",
+      "issuePhotoAlt": "Foto e raportit {index}",
+      "completedAt": "Përfunduar më {date}",
+      "completionNotes": "Shënime përfundimi",
+      "completionNotesPlaceholder": "Përshkruani punën e kryer...",
+      "proofPhotos": "Foto dëshmuese",
+      "proofPhotoAlt": "Dëshmi {index}",
+      "markComplete": "Shëno si të përfunduar",
+      "marking": "Duke shënuar...",
+      "deleteTask": "Fshi detyrën",
+      "deleteTitle": "Fshi detyrën",
+      "deleteConfirm": "A jeni i sigurt që dëshironi ta fshini këtë detyrë? Ky veprim nuk mund të zhbëhet.",
+      "deleting": "Duke fshirë...",
+      "completeTitle": "Përfundo detyrën",
+      "completeDescription": "Opsionale: Përshkruani zgjidhjen dhe shtoni foto.",
+      "photosOptional": "Foto (opsionale)",
+      "updated": "Detyra u përditësua",
+      "markedComplete": "Detyra u shënua si e përfunduar",
+      "deleted": "Detyra u fshi"
     }
   },
   "vacation": {
@@ -917,5 +973,51 @@
       "sa": "Sht",
       "su": "Die"
     }
+  },
+  "timeEntryEdit": {
+    "title": "Modifiko regjistrimin kohor",
+    "entrySaved": "Regjistrimi u ruajt",
+    "saveError": "Gabim gjatë ruajtjes",
+    "entryDeleted": "Regjistrimi u fshi",
+    "deleteError": "Gabim gjatë fshirjes",
+    "deleteConfirm": "Fshij regjistrimin?",
+    "deleteIrreversible": "Ky veprim nuk mund të zhbëhet.",
+    "vacationEntry": "Regjistrim pushimi",
+    "vacationManageNote": "Regjistrimet e pushimit mund të menaxhohen vetëm përmes faqes së pushimeve",
+    "activeCannotDelete": "Regjistrimet aktive nuk mund të fshihen",
+    "selectProperty": "Ju lutem zgjidhni një pronë",
+    "enterStartTime": "Ju lutem vendosni kohën e fillimit",
+    "property": "Prona",
+    "startTime": "Koha e fillimit",
+    "endTime": "Koha e përfundimit",
+    "pauseMinutes": "Pushim në minuta",
+    "duration": "Kohëzgjatja",
+    "notes": "Shënime",
+    "notesPlaceholder": "Shënime opsionale...",
+    "timeEntry": "Regjistrim kohor",
+    "vacationEditError": "Regjistrimet e pushimit mund të menaxhohen vetëm përmes faqes së pushimeve",
+    "activeDeleteError": "Regjistrimet aktive nuk mund të fshihen"
+  },
+  "activeAufgaben": {
+    "titleForProperty": "Detyrat për këtë pronë",
+    "completeTask": "Përfundo detyrën",
+    "completeDescription": "Opsionale: Përshkruani zgjidhjen dhe shtoni foto.",
+    "completionNotes": "Shënime përfundimi",
+    "completionNotesPlaceholder": "Përshkruani punën e kryer...",
+    "photosOptional": "Foto (opsionale)",
+    "taskCompleted": "Detyra u shënua si e përfunduar",
+    "markComplete": "Shëno si të përfunduar"
+  },
+  "photoCapture": {
+    "camera": "Kamera",
+    "gallery": "Galeria",
+    "uploading": "Duke ngarkuar...",
+    "uploadError": "Foto nuk mund të ngarkohej",
+    "photoCount": "{current} nga {max} foto",
+    "photoAlt": "Foto {index}",
+    "removePhoto": "Hiq foton",
+    "takePhoto": "Bëj foto",
+    "selectFromGallery": "Zgjidh foto nga galeria",
+    "uploadProgress": "Progresi i ngarkimit"
   }
 }

@@ -341,7 +341,12 @@
     "typeText": "Tekst",
     "typeNumber": "Broj",
     "typePhoto": "Fotografija",
-    "translationFailed": "Automatski prevod nije uspeo – kontrolna lista biće sačuvana bez prevoda"
+    "translationFailed": "Automatski prevod nije uspeo – kontrolna lista biće sačuvana bez prevoda",
+    "allRequiredComplete": "Sva obavezna polja popunjena",
+    "requiredProgress": "{completed}/{total} obaveznih polja",
+    "noChecklistItems": "Nema stavki kontrolne liste",
+    "shownDuringTimeTracking": "Kontrolne liste se prikazuju tokom praćenja vremena.",
+    "startTimerHint": "Pokrenite tajmer na početnoj stranici da biste označili stavke kontrolne liste tokom rada."
   },
   "checklistAdmin": {
     "title": "Контролне листе",
@@ -438,7 +443,31 @@
     },
     "noIssues": "Nema problema",
     "filterByStatus": "Filtriraj po statusu",
-    "filterByPriority": "Filtriraj po prioritetu"
+    "filterByPriority": "Filtriraj po prioritetu",
+    "detail": {
+      "title": "Problem",
+      "notFound": "Problem nije pronađen",
+      "property": "Nekretnina",
+      "reportedBy": "Prijavio/la",
+      "assignedTo": "Dodeljeno",
+      "created": "Kreirano",
+      "location": "Lokacija",
+      "showOnMap": "Prikaži na mapi",
+      "resolved": "Rešeno",
+      "photoAlt": "Fotografija {index}",
+      "convertToTask": "Pretvori u zadatak",
+      "deleteIssue": "Obriši prijavu",
+      "deleteTitle": "Obriši prijavu",
+      "deleteConfirm": "Da li ste sigurni da želite da obrišete ovu prijavu? Ova radnja se ne može poništiti.",
+      "deleting": "Brisanje...",
+      "convertTitle": "Pretvori u zadatak",
+      "convertConfirm": "Da li želite da pretvorite ovu prijavu u zadatak?",
+      "converting": "Pretvaranje...",
+      "convert": "Pretvori",
+      "deleted": "Prijava je obrisana",
+      "converted": "Prijava je pretvorena u zadatak",
+      "cannotDelete": "Ova prijava se ne može obrisati jer zadaci upućuju na nju."
+    }
   },
   "tasks": {
     "title": "Zadaci",
@@ -465,6 +494,33 @@
       "inProgress": "U toku",
       "completed": "Završeno",
       "closed": "Zatvoreno"
+    },
+    "convertIssueHint": "Pretvorite prijavu u zadatak",
+    "detail": {
+      "title": "Zadatak",
+      "notFound": "Zadatak nije pronađen",
+      "property": "Nekretnina",
+      "created": "Kreirano",
+      "createdBy": "od {name}",
+      "issuePhotos": "Fotografije prijave",
+      "issuePhotoAlt": "Fotografija prijave {index}",
+      "completedAt": "Završeno {date}",
+      "completionNotes": "Beleške o završetku",
+      "completionNotesPlaceholder": "Opišite obavljeni posao...",
+      "proofPhotos": "Dokazne fotografije",
+      "proofPhotoAlt": "Dokaz {index}",
+      "markComplete": "Označi kao završeno",
+      "marking": "Označavanje...",
+      "deleteTask": "Obriši zadatak",
+      "deleteTitle": "Obriši zadatak",
+      "deleteConfirm": "Da li ste sigurni da želite da obrišete ovaj zadatak? Ova radnja se ne može poništiti.",
+      "deleting": "Brisanje...",
+      "completeTitle": "Završi zadatak",
+      "completeDescription": "Opcionalno: Opišite rešenje i dodajte fotografije.",
+      "photosOptional": "Fotografije (opcionalno)",
+      "updated": "Zadatak je ažuriran",
+      "markedComplete": "Zadatak označen kao završen",
+      "deleted": "Zadatak je obrisan"
     }
   },
   "vacation": {
@@ -917,5 +973,51 @@
       "sa": "Sub",
       "su": "Ned"
     }
+  },
+  "timeEntryEdit": {
+    "title": "Uredi vremenski unos",
+    "entrySaved": "Unos je sačuvan",
+    "saveError": "Greška pri čuvanju",
+    "entryDeleted": "Unos je obrisan",
+    "deleteError": "Greška pri brisanju",
+    "deleteConfirm": "Obrisati unos?",
+    "deleteIrreversible": "Ova radnja se ne može poništiti.",
+    "vacationEntry": "Unos godišnjeg odmora",
+    "vacationManageNote": "Unosi godišnjeg odmora mogu se upravljati samo putem stranice za godišnji odmor",
+    "activeCannotDelete": "Aktivni unosi se ne mogu obrisati",
+    "selectProperty": "Molimo izaberite nekretninu",
+    "enterStartTime": "Molimo unesite vreme početka",
+    "property": "Nekretnina",
+    "startTime": "Vreme početka",
+    "endTime": "Vreme završetka",
+    "pauseMinutes": "Pauza u minutima",
+    "duration": "Trajanje",
+    "notes": "Beleške",
+    "notesPlaceholder": "Opcione beleške...",
+    "timeEntry": "Vremenski unos",
+    "vacationEditError": "Unosi godišnjeg odmora mogu se upravljati samo putem stranice za godišnji odmor",
+    "activeDeleteError": "Aktivni unosi se ne mogu obrisati"
+  },
+  "activeAufgaben": {
+    "titleForProperty": "Zadaci za ovu nekretninu",
+    "completeTask": "Završi zadatak",
+    "completeDescription": "Opciono: Opišite rešenje i dodajte fotografije.",
+    "completionNotes": "Beleške o završetku",
+    "completionNotesPlaceholder": "Opišite obavljeni posao...",
+    "photosOptional": "Fotografije (opciono)",
+    "taskCompleted": "Zadatak je označen kao završen",
+    "markComplete": "Označi kao završeno"
+  },
+  "photoCapture": {
+    "camera": "Kamera",
+    "gallery": "Galerija",
+    "uploading": "Otprema se...",
+    "uploadError": "Fotografija nije mogla biti otpremljena",
+    "photoCount": "{current} od {max} fotografija",
+    "photoAlt": "Fotografija {index}",
+    "removePhoto": "Ukloni fotografiju",
+    "takePhoto": "Snimi fotografiju",
+    "selectFromGallery": "Izaberi fotografiju iz galerije",
+    "uploadProgress": "Napredak otpreme"
   }
 }

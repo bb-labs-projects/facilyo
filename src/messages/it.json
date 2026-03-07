@@ -341,7 +341,12 @@
     "typeText": "Testo",
     "typeNumber": "Numero",
     "typePhoto": "Foto",
-    "translationFailed": "Traduzione automatica non riuscita – la checklist verrà salvata senza traduzioni"
+    "translationFailed": "Traduzione automatica non riuscita – la checklist verrà salvata senza traduzioni",
+    "allRequiredComplete": "Tutti i campi obbligatori completati",
+    "requiredProgress": "{completed}/{total} campi obbligatori",
+    "noChecklistItems": "Nessun elemento della checklist disponibile",
+    "shownDuringTimeTracking": "Le checklist vengono visualizzate durante il tracciamento del tempo.",
+    "startTimerHint": "Avvia un timer nella pagina iniziale per spuntare gli elementi della checklist durante il lavoro."
   },
   "checklistAdmin": {
     "title": "Liste di controllo",
@@ -438,7 +443,31 @@
     },
     "noIssues": "Nessun problema presente",
     "filterByStatus": "Filtra per stato",
-    "filterByPriority": "Filtra per priorità"
+    "filterByPriority": "Filtra per priorità",
+    "detail": {
+      "title": "Segnalazione",
+      "notFound": "Segnalazione non trovata",
+      "property": "Immobile",
+      "reportedBy": "Segnalato da",
+      "assignedTo": "Assegnato a",
+      "created": "Creato",
+      "location": "Posizione",
+      "showOnMap": "Mostra sulla mappa",
+      "resolved": "Risolto",
+      "photoAlt": "Foto {index}",
+      "convertToTask": "Converti in attività",
+      "deleteIssue": "Elimina segnalazione",
+      "deleteTitle": "Elimina segnalazione",
+      "deleteConfirm": "Sei sicuro di voler eliminare questa segnalazione? Questa azione non può essere annullata.",
+      "deleting": "Eliminazione...",
+      "convertTitle": "Converti in attività",
+      "convertConfirm": "Vuoi convertire questa segnalazione in un'attività?",
+      "converting": "Conversione...",
+      "convert": "Converti",
+      "deleted": "La segnalazione è stata eliminata",
+      "converted": "La segnalazione è stata convertita in attività",
+      "cannotDelete": "Questa segnalazione non può essere eliminata perché ci sono attività che vi fanno riferimento."
+    }
   },
   "tasks": {
     "title": "Attività",
@@ -465,6 +494,33 @@
       "inProgress": "In lavorazione",
       "completed": "Completato",
       "closed": "Chiuso"
+    },
+    "convertIssueHint": "Converti una segnalazione in un'attività",
+    "detail": {
+      "title": "Attività",
+      "notFound": "Attività non trovata",
+      "property": "Immobile",
+      "created": "Creato",
+      "createdBy": "da {name}",
+      "issuePhotos": "Foto della segnalazione",
+      "issuePhotoAlt": "Foto segnalazione {index}",
+      "completedAt": "Completato il {date}",
+      "completionNotes": "Note di completamento",
+      "completionNotesPlaceholder": "Descrivi il lavoro svolto...",
+      "proofPhotos": "Foto di prova",
+      "proofPhotoAlt": "Prova {index}",
+      "markComplete": "Segna come completato",
+      "marking": "Contrassegno...",
+      "deleteTask": "Elimina attività",
+      "deleteTitle": "Elimina attività",
+      "deleteConfirm": "Sei sicuro di voler eliminare questa attività? Questa azione non può essere annullata.",
+      "deleting": "Eliminazione...",
+      "completeTitle": "Completa attività",
+      "completeDescription": "Facoltativo: Descrivi la soluzione e aggiungi foto.",
+      "photosOptional": "Foto (facoltativo)",
+      "updated": "L'attività è stata aggiornata",
+      "markedComplete": "Attività contrassegnata come completata",
+      "deleted": "L'attività è stata eliminata"
     }
   },
   "vacation": {
@@ -917,5 +973,51 @@
       "sa": "Sab",
       "su": "Dom"
     }
+  },
+  "timeEntryEdit": {
+    "title": "Modifica registrazione oraria",
+    "entrySaved": "La registrazione è stata salvata",
+    "saveError": "Errore durante il salvataggio",
+    "entryDeleted": "La registrazione è stata eliminata",
+    "deleteError": "Errore durante l'eliminazione",
+    "deleteConfirm": "Eliminare la registrazione?",
+    "deleteIrreversible": "Questa azione non può essere annullata.",
+    "vacationEntry": "Registrazione ferie",
+    "vacationManageNote": "Le registrazioni delle ferie possono essere gestite solo tramite la pagina delle ferie",
+    "activeCannotDelete": "Le registrazioni attive non possono essere eliminate",
+    "selectProperty": "Seleziona una proprietà",
+    "enterStartTime": "Inserisci un orario di inizio",
+    "property": "Proprietà",
+    "startTime": "Ora di inizio",
+    "endTime": "Ora di fine",
+    "pauseMinutes": "Pausa in minuti",
+    "duration": "Durata",
+    "notes": "Note",
+    "notesPlaceholder": "Note opzionali...",
+    "timeEntry": "Registrazione oraria",
+    "vacationEditError": "Le registrazioni delle ferie possono essere gestite solo tramite la pagina delle ferie",
+    "activeDeleteError": "Le registrazioni attive non possono essere eliminate"
+  },
+  "activeAufgaben": {
+    "titleForProperty": "Attività per questa proprietà",
+    "completeTask": "Completa attività",
+    "completeDescription": "Facoltativo: Descrivi la soluzione e aggiungi foto.",
+    "completionNotes": "Note di completamento",
+    "completionNotesPlaceholder": "Descrivi il lavoro svolto...",
+    "photosOptional": "Foto (facoltativo)",
+    "taskCompleted": "Attività contrassegnata come completata",
+    "markComplete": "Segna come completato"
+  },
+  "photoCapture": {
+    "camera": "Fotocamera",
+    "gallery": "Galleria",
+    "uploading": "Caricamento...",
+    "uploadError": "Impossibile caricare la foto",
+    "photoCount": "{current} di {max} foto",
+    "photoAlt": "Foto {index}",
+    "removePhoto": "Rimuovi foto",
+    "takePhoto": "Scatta foto",
+    "selectFromGallery": "Seleziona foto dalla galleria",
+    "uploadProgress": "Progresso del caricamento"
   }
 }

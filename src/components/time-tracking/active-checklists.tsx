@@ -667,7 +667,7 @@ function PhotoItem({
           >
             <img
               src={value}
-              alt="Aufgenommen"
+              alt={t('takePhoto')}
               className="w-full h-full object-contain"
             />
           </a>

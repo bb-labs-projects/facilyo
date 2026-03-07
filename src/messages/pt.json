@@ -341,7 +341,12 @@
     "typeText": "Texto",
     "typeNumber": "Número",
     "typePhoto": "Foto",
-    "translationFailed": "A tradução automática falhou - a checklist será salva sem traduções"
+    "translationFailed": "A tradução automática falhou - a checklist será salva sem traduções",
+    "allRequiredComplete": "Todos os campos obrigatórios preenchidos",
+    "requiredProgress": "{completed}/{total} campos obrigatórios",
+    "noChecklistItems": "Nenhum item de checklist disponível",
+    "shownDuringTimeTracking": "As checklists são exibidas durante o rastreamento de tempo.",
+    "startTimerHint": "Inicie um temporizador na página inicial para marcar os itens da checklist durante o trabalho."
   },
   "checklistAdmin": {
     "title": "Listas de verificação",
@@ -438,7 +443,31 @@
     },
     "noIssues": "Nenhum problema disponível",
     "filterByStatus": "Filtrar por status",
-    "filterByPriority": "Filtrar por prioridade"
+    "filterByPriority": "Filtrar por prioridade",
+    "detail": {
+      "title": "Ocorrência",
+      "notFound": "Ocorrência não encontrada",
+      "property": "Propriedade",
+      "reportedBy": "Reportado por",
+      "assignedTo": "Atribuído a",
+      "created": "Criado",
+      "location": "Localização",
+      "showOnMap": "Mostrar no mapa",
+      "resolved": "Resolvido",
+      "photoAlt": "Foto {index}",
+      "convertToTask": "Converter em tarefa",
+      "deleteIssue": "Excluir ocorrência",
+      "deleteTitle": "Excluir ocorrência",
+      "deleteConfirm": "Tem certeza de que deseja excluir esta ocorrência? Esta ação não pode ser desfeita.",
+      "deleting": "Excluindo...",
+      "convertTitle": "Converter em tarefa",
+      "convertConfirm": "Deseja converter esta ocorrência em uma tarefa?",
+      "converting": "Convertendo...",
+      "convert": "Converter",
+      "deleted": "A ocorrência foi excluída",
+      "converted": "A ocorrência foi convertida em tarefa",
+      "cannotDelete": "Esta ocorrência não pode ser excluída porque tarefas fazem referência a ela."
+    }
   },
   "tasks": {
     "title": "Tarefas",
@@ -465,6 +494,33 @@
       "inProgress": "Em andamento",
       "completed": "Concluída",
       "closed": "Fechada"
+    },
+    "convertIssueHint": "Converta uma ocorrência em uma tarefa",
+    "detail": {
+      "title": "Tarefa",
+      "notFound": "Tarefa não encontrada",
+      "property": "Propriedade",
+      "created": "Criado",
+      "createdBy": "por {name}",
+      "issuePhotos": "Fotos da ocorrência",
+      "issuePhotoAlt": "Foto da ocorrência {index}",
+      "completedAt": "Concluído em {date}",
+      "completionNotes": "Notas de conclusão",
+      "completionNotesPlaceholder": "Descreva o trabalho realizado...",
+      "proofPhotos": "Fotos de comprovação",
+      "proofPhotoAlt": "Comprovação {index}",
+      "markComplete": "Marcar como concluída",
+      "marking": "Marcando...",
+      "deleteTask": "Excluir tarefa",
+      "deleteTitle": "Excluir tarefa",
+      "deleteConfirm": "Tem certeza de que deseja excluir esta tarefa? Esta ação não pode ser desfeita.",
+      "deleting": "Excluindo...",
+      "completeTitle": "Concluir tarefa",
+      "completeDescription": "Opcional: Descreva a solução e adicione fotos.",
+      "photosOptional": "Fotos (opcional)",
+      "updated": "A tarefa foi atualizada",
+      "markedComplete": "Tarefa marcada como concluída",
+      "deleted": "A tarefa foi excluída"
     }
   },
   "vacation": {
@@ -917,5 +973,51 @@
       "sa": "Sáb",
       "su": "Dom"
     }
+  },
+  "timeEntryEdit": {
+    "title": "Editar registo de tempo",
+    "entrySaved": "O registo foi guardado",
+    "saveError": "Erro ao guardar",
+    "entryDeleted": "O registo foi eliminado",
+    "deleteError": "Erro ao eliminar",
+    "deleteConfirm": "Eliminar registo?",
+    "deleteIrreversible": "Esta ação não pode ser desfeita.",
+    "vacationEntry": "Registo de férias",
+    "vacationManageNote": "Os registos de férias só podem ser geridos através da página de férias",
+    "activeCannotDelete": "Os registos ativos não podem ser eliminados",
+    "selectProperty": "Por favor selecione uma propriedade",
+    "enterStartTime": "Por favor insira uma hora de início",
+    "property": "Propriedade",
+    "startTime": "Hora de início",
+    "endTime": "Hora de fim",
+    "pauseMinutes": "Pausa em minutos",
+    "duration": "Duração",
+    "notes": "Notas",
+    "notesPlaceholder": "Notas opcionais...",
+    "timeEntry": "Registo de tempo",
+    "vacationEditError": "Os registos de férias só podem ser geridos através da página de férias",
+    "activeDeleteError": "Os registos ativos não podem ser eliminados"
+  },
+  "activeAufgaben": {
+    "titleForProperty": "Tarefas para esta propriedade",
+    "completeTask": "Concluir tarefa",
+    "completeDescription": "Opcional: Descreva a solução e adicione fotos.",
+    "completionNotes": "Notas de conclusão",
+    "completionNotesPlaceholder": "Descreva o trabalho realizado...",
+    "photosOptional": "Fotos (opcional)",
+    "taskCompleted": "Tarefa marcada como concluída",
+    "markComplete": "Marcar como concluída"
+  },
+  "photoCapture": {
+    "camera": "Câmara",
+    "gallery": "Galeria",
+    "uploading": "A carregar...",
+    "uploadError": "Não foi possível carregar a foto",
+    "photoCount": "{current} de {max} fotos",
+    "photoAlt": "Foto {index}",
+    "removePhoto": "Remover foto",
+    "takePhoto": "Tirar foto",
+    "selectFromGallery": "Selecionar foto da galeria",
+    "uploadProgress": "Progresso do carregamento"
   }
 }

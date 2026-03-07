@@ -341,7 +341,12 @@
     "typeText": "Texte",
     "typeNumber": "Nombre",
     "typePhoto": "Photo",
-    "translationFailed": "La traduction automatique a echoue - la checklist sera enregistree sans traductions"
+    "translationFailed": "La traduction automatique a echoue - la checklist sera enregistree sans traductions",
+    "allRequiredComplete": "Tous les champs obligatoires sont remplis",
+    "requiredProgress": "{completed}/{total} champs obligatoires",
+    "noChecklistItems": "Aucun element de checklist disponible",
+    "shownDuringTimeTracking": "Les checklists sont affichees pendant le suivi du temps.",
+    "startTimerHint": "Demarrez un minuteur sur la page d'accueil pour cocher les elements de la checklist pendant le travail."
   },
   "checklistAdmin": {
     "title": "Listes de contrôle",
@@ -438,7 +443,31 @@
     },
     "noIssues": "Aucun probleme signale",
     "filterByStatus": "Filtrer par statut",
-    "filterByPriority": "Filtrer par priorite"
+    "filterByPriority": "Filtrer par priorite",
+    "detail": {
+      "title": "Signalement",
+      "notFound": "Signalement non trouve",
+      "property": "Propriete",
+      "reportedBy": "Signale par",
+      "assignedTo": "Assigne a",
+      "created": "Cree",
+      "location": "Emplacement",
+      "showOnMap": "Afficher sur la carte",
+      "resolved": "Resolu",
+      "photoAlt": "Photo {index}",
+      "convertToTask": "Convertir en tache",
+      "deleteIssue": "Supprimer le signalement",
+      "deleteTitle": "Supprimer le signalement",
+      "deleteConfirm": "Etes-vous sur de vouloir supprimer ce signalement? Cette action est irreversible.",
+      "deleting": "Suppression...",
+      "convertTitle": "Convertir en tache",
+      "convertConfirm": "Souhaitez-vous convertir ce signalement en tache?",
+      "converting": "Conversion...",
+      "convert": "Convertir",
+      "deleted": "Le signalement a ete supprime",
+      "converted": "Le signalement a ete converti en tache",
+      "cannotDelete": "Ce signalement ne peut pas etre supprime car des taches y font reference."
+    }
   },
   "tasks": {
     "title": "Taches",
@@ -465,6 +494,33 @@
       "inProgress": "En cours",
       "completed": "Termine",
       "closed": "Ferme"
+    },
+    "convertIssueHint": "Convertissez un signalement en tache",
+    "detail": {
+      "title": "Tache",
+      "notFound": "Tache non trouvee",
+      "property": "Propriete",
+      "created": "Cree",
+      "createdBy": "par {name}",
+      "issuePhotos": "Photos du signalement",
+      "issuePhotoAlt": "Photo du signalement {index}",
+      "completedAt": "Termine le {date}",
+      "completionNotes": "Notes de cloture",
+      "completionNotesPlaceholder": "Decrivez les travaux effectues...",
+      "proofPhotos": "Photos de preuve",
+      "proofPhotoAlt": "Preuve {index}",
+      "markComplete": "Marquer comme termine",
+      "marking": "Marquage...",
+      "deleteTask": "Supprimer la tache",
+      "deleteTitle": "Supprimer la tache",
+      "deleteConfirm": "Etes-vous sur de vouloir supprimer cette tache? Cette action est irreversible.",
+      "deleting": "Suppression...",
+      "completeTitle": "Terminer la tache",
+      "completeDescription": "Optionnel: Decrivez la solution et ajoutez des photos.",
+      "photosOptional": "Photos (optionnel)",
+      "updated": "La tache a ete mise a jour",
+      "markedComplete": "Tache marquee comme terminee",
+      "deleted": "La tache a ete supprimee"
     }
   },
   "vacation": {
@@ -917,5 +973,51 @@
       "sa": "Sam",
       "su": "Dim"
     }
+  },
+  "timeEntryEdit": {
+    "title": "Modifier l'enregistrement de temps",
+    "entrySaved": "L'enregistrement a été sauvegardé",
+    "saveError": "Erreur lors de la sauvegarde",
+    "entryDeleted": "L'enregistrement a été supprimé",
+    "deleteError": "Erreur lors de la suppression",
+    "deleteConfirm": "Supprimer l'enregistrement ?",
+    "deleteIrreversible": "Cette action ne peut pas être annulée.",
+    "vacationEntry": "Enregistrement de vacances",
+    "vacationManageNote": "Les enregistrements de vacances ne peuvent être gérés que via la page des vacances",
+    "activeCannotDelete": "Les enregistrements actifs ne peuvent pas être supprimés",
+    "selectProperty": "Veuillez sélectionner une propriété",
+    "enterStartTime": "Veuillez saisir une heure de début",
+    "property": "Propriété",
+    "startTime": "Heure de début",
+    "endTime": "Heure de fin",
+    "pauseMinutes": "Pause en minutes",
+    "duration": "Durée",
+    "notes": "Notes",
+    "notesPlaceholder": "Notes optionnelles...",
+    "timeEntry": "Enregistrement de temps",
+    "vacationEditError": "Les enregistrements de vacances ne peuvent être gérés que via la page des vacances",
+    "activeDeleteError": "Les enregistrements actifs ne peuvent pas être supprimés"
+  },
+  "activeAufgaben": {
+    "titleForProperty": "Tâches pour cette propriété",
+    "completeTask": "Terminer la tâche",
+    "completeDescription": "Optionnel : Décrivez la solution et ajoutez des photos.",
+    "completionNotes": "Notes de clôture",
+    "completionNotesPlaceholder": "Décrivez les travaux effectués...",
+    "photosOptional": "Photos (optionnel)",
+    "taskCompleted": "Tâche marquée comme terminée",
+    "markComplete": "Marquer comme terminée"
+  },
+  "photoCapture": {
+    "camera": "Caméra",
+    "gallery": "Galerie",
+    "uploading": "Chargement...",
+    "uploadError": "La photo n'a pas pu être chargée",
+    "photoCount": "{current} sur {max} photos",
+    "photoAlt": "Photo {index}",
+    "removePhoto": "Supprimer la photo",
+    "takePhoto": "Prendre une photo",
+    "selectFromGallery": "Sélectionner une photo de la galerie",
+    "uploadProgress": "Progression du chargement"
   }
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { AlertTriangle, Clock, MapPin, ChevronRight } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent } from '@/components/ui/card';
 import { PhotoPreview } from './photo-capture';
 import { swissFormat } from '@/lib/i18n';
@@ -22,26 +23,28 @@ export function IssueCard({
   organizationName,
   className,
 }: IssueCardProps) {
+  const t = useTranslations('issues');
+
   const priorityConfig = {
-    low: { label: 'Niedrig', class: 'bg-muted text-muted-foreground' },
-    medium: { label: 'Mittel', class: 'badge-info' },
-    high: { label: 'Hoch', class: 'badge-warning' },
-    urgent: { label: 'Dringend', class: 'badge-error' },
+    low: { label: t('priorities.low'), class: 'bg-muted text-muted-foreground' },
+    medium: { label: t('priorities.medium'), class: 'badge-info' },
+    high: { label: t('priorities.high'), class: 'badge-warning' },
+    urgent: { label: t('priorities.urgent'), class: 'badge-error' },
   };
 
   const statusConfig = {
-    open: { label: 'Offen', class: 'badge-error' },
-    in_progress: { label: 'In Bearbeitung', class: 'badge-warning' },
-    resolved: { label: 'Gelöst', class: 'badge-success' },
-    closed: { label: 'Geschlossen', class: 'bg-muted text-muted-foreground' },
+    open: { label: t('statuses.open'), class: 'badge-error' },
+    in_progress: { label: t('statuses.inProgress'), class: 'badge-warning' },
+    resolved: { label: t('statuses.resolved'), class: 'badge-success' },
+    closed: { label: t('statuses.closed'), class: 'bg-muted text-muted-foreground' },
   };
 
   const categoryConfig = {
-    damage: { label: 'Schaden', icon: AlertTriangle },
-    cleaning: { label: 'Reinigung', icon: AlertTriangle },
-    safety: { label: 'Sicherheit', icon: AlertTriangle },
-    maintenance: { label: 'Wartung', icon: AlertTriangle },
-    other: { label: 'Sonstiges', icon: AlertTriangle },
+    damage: { label: t('categories.damage'), icon: AlertTriangle },
+    cleaning: { label: t('categories.cleaning'), icon: AlertTriangle },
+    safety: { label: t('categories.safety'), icon: AlertTriangle },
+    maintenance: { label: t('categories.maintenance'), icon: AlertTriangle },
+    other: { label: t('categories.other'), icon: AlertTriangle },
   };
 
   const priority = priorityConfig[issue.priority];
@@ -155,6 +158,9 @@ export function IssueListItem({
   onClick,
   className,
 }: IssueListItemProps) {
+  const t = useTranslations('issues');
+  const tCommon = useTranslations('common');
+
   const priorityColors = {
     low: 'bg-muted',
     medium: 'bg-primary-500',
@@ -163,10 +169,10 @@ export function IssueListItem({
   };
 
   const priorityLabels = {
-    low: 'Niedrig',
-    medium: 'Mittel',
-    high: 'Hoch',
-    urgent: 'Dringend',
+    low: t('priorities.low'),
+    medium: t('priorities.medium'),
+    high: t('priorities.high'),
+    urgent: t('priorities.urgent'),
   };
 
   return (
@@ -184,7 +190,7 @@ export function IssueListItem({
           'w-2 h-2 rounded-full flex-shrink-0',
           priorityColors[issue.priority]
         )}
-        aria-label={`Priorität: ${priorityLabels[issue.priority]}`}
+        aria-label={`${tCommon('priority')}: ${priorityLabels[issue.priority]}`}
       />
 
       {/* Content */}
@@ -213,13 +219,15 @@ export function IssueList({
   issues,
   onIssueClick,
   showProperty = false,
-  emptyMessage = 'Keine Probleme vorhanden',
+  emptyMessage,
   className,
 }: IssueListProps) {
+  const t = useTranslations('issues');
+  const resolvedEmptyMessage = emptyMessage ?? t('noIssues');
   if (issues.length === 0) {
     return (
       <div className={cn('text-center py-8 text-muted-foreground', className)}>
-        {emptyMessage}
+        {resolvedEmptyMessage}
       </div>
     );
   }

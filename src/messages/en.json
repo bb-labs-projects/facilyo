@@ -341,7 +341,12 @@
     "typeText": "Text",
     "typeNumber": "Number",
     "typePhoto": "Photo",
-    "translationFailed": "Automatic translation failed - checklist will be saved without translations"
+    "translationFailed": "Automatic translation failed - checklist will be saved without translations",
+    "allRequiredComplete": "All required fields completed",
+    "requiredProgress": "{completed}/{total} required fields",
+    "noChecklistItems": "No checklist items available",
+    "shownDuringTimeTracking": "Checklists are shown during time tracking.",
+    "startTimerHint": "Start a timer on the home page to check off checklist items while working."
   },
   "checklistAdmin": {
     "title": "Checklists",
@@ -438,7 +443,31 @@
     },
     "noIssues": "No issues available",
     "filterByStatus": "Filter by status",
-    "filterByPriority": "Filter by priority"
+    "filterByPriority": "Filter by priority",
+    "detail": {
+      "title": "Issue",
+      "notFound": "Issue not found",
+      "property": "Property",
+      "reportedBy": "Reported by",
+      "assignedTo": "Assigned to",
+      "created": "Created",
+      "location": "Location",
+      "showOnMap": "Show on map",
+      "resolved": "Resolved",
+      "photoAlt": "Photo {index}",
+      "convertToTask": "Convert to task",
+      "deleteIssue": "Delete issue",
+      "deleteTitle": "Delete issue",
+      "deleteConfirm": "Are you sure you want to delete this issue? This action cannot be undone.",
+      "deleting": "Deleting...",
+      "convertTitle": "Convert to task",
+      "convertConfirm": "Do you want to convert this issue into a task?",
+      "converting": "Converting...",
+      "convert": "Convert",
+      "deleted": "Issue has been deleted",
+      "converted": "Issue has been converted to a task",
+      "cannotDelete": "This issue cannot be deleted because tasks reference it."
+    }
   },
   "tasks": {
     "title": "Tasks",
@@ -465,6 +494,33 @@
       "inProgress": "In Progress",
       "completed": "Completed",
       "closed": "Closed"
+    },
+    "convertIssueHint": "Convert an issue into a task",
+    "detail": {
+      "title": "Task",
+      "notFound": "Task not found",
+      "property": "Property",
+      "created": "Created",
+      "createdBy": "by {name}",
+      "issuePhotos": "Issue photos",
+      "issuePhotoAlt": "Issue photo {index}",
+      "completedAt": "Completed on {date}",
+      "completionNotes": "Completion notes",
+      "completionNotesPlaceholder": "Describe the work performed...",
+      "proofPhotos": "Proof photos",
+      "proofPhotoAlt": "Proof {index}",
+      "markComplete": "Mark as complete",
+      "marking": "Marking...",
+      "deleteTask": "Delete task",
+      "deleteTitle": "Delete task",
+      "deleteConfirm": "Are you sure you want to delete this task? This action cannot be undone.",
+      "deleting": "Deleting...",
+      "completeTitle": "Complete task",
+      "completeDescription": "Optional: Describe the solution and add photos.",
+      "photosOptional": "Photos (optional)",
+      "updated": "Task has been updated",
+      "markedComplete": "Task marked as complete",
+      "deleted": "Task has been deleted"
     }
   },
   "vacation": {
@@ -917,5 +973,51 @@
       "sa": "Sat",
       "su": "Sun"
     }
+  },
+  "timeEntryEdit": {
+    "title": "Edit time entry",
+    "entrySaved": "Entry has been saved",
+    "saveError": "Error saving",
+    "entryDeleted": "Entry has been deleted",
+    "deleteError": "Error deleting",
+    "deleteConfirm": "Delete entry?",
+    "deleteIrreversible": "This action cannot be undone.",
+    "vacationEntry": "Vacation entry",
+    "vacationManageNote": "Vacation entries can only be managed via the vacation page",
+    "activeCannotDelete": "Active entries cannot be deleted",
+    "selectProperty": "Please select a property",
+    "enterStartTime": "Please enter a start time",
+    "property": "Property",
+    "startTime": "Start time",
+    "endTime": "End time",
+    "pauseMinutes": "Break in minutes",
+    "duration": "Duration",
+    "notes": "Notes",
+    "notesPlaceholder": "Optional notes...",
+    "timeEntry": "Time entry",
+    "vacationEditError": "Vacation entries can only be managed via the vacation page",
+    "activeDeleteError": "Active entries cannot be deleted"
+  },
+  "activeAufgaben": {
+    "titleForProperty": "Tasks for this property",
+    "completeTask": "Complete task",
+    "completeDescription": "Optional: Describe the solution and add photos.",
+    "completionNotes": "Completion notes",
+    "completionNotesPlaceholder": "Describe the work done...",
+    "photosOptional": "Photos (optional)",
+    "taskCompleted": "Task has been marked as completed",
+    "markComplete": "Mark as complete"
+  },
+  "photoCapture": {
+    "camera": "Camera",
+    "gallery": "Gallery",
+    "uploading": "Uploading...",
+    "uploadError": "Photo could not be uploaded",
+    "photoCount": "{current} of {max} photos",
+    "photoAlt": "Photo {index}",
+    "removePhoto": "Remove photo",
+    "takePhoto": "Take photo",
+    "selectFromGallery": "Select photo from gallery",
+    "uploadProgress": "Upload progress"
   }
 }

@@ -212,7 +212,7 @@ export default function TasksPage() {
           <p>{t('noTasks')}</p>
           {permissions.canManageAufgaben && (
             <p className="text-sm mt-1">
-              Wandeln Sie eine Meldung in eine Aufgabe um
+              {t('convertIssueHint')}
             </p>
           )}
         </div>
@@ -280,7 +280,7 @@ export default function TasksPage() {
           <ClipboardList className="h-12 w-12 mx-auto mb-4 opacity-50" />
           <p>{tChecklist('noChecklists')}</p>
           <p className="text-sm mt-1">
-            Checklisten werden beim Zeiterfassen angezeigt.
+            {tChecklist('shownDuringTimeTracking')}
           </p>
         </div>
       ) : (
@@ -330,8 +330,7 @@ export default function TasksPage() {
             {tChecklist('editChecklist')}
           </h3>
           <p className="text-sm text-primary-700">
-            Starten Sie einen Timer auf der Startseite, um die Checklisten-Punkte
-            während der Arbeit abzuhaken.
+            {tChecklist('startTimerHint')}
           </p>
         </CardContent>
       </Card>

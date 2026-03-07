@@ -341,7 +341,12 @@
     "typeText": "Texto",
     "typeNumber": "Número",
     "typePhoto": "Foto",
-    "translationFailed": "La traducción automática falló - la lista de control se guardará sin traducciones"
+    "translationFailed": "La traducción automática falló - la lista de control se guardará sin traducciones",
+    "allRequiredComplete": "Todos los campos obligatorios completados",
+    "requiredProgress": "{completed}/{total} campos obligatorios",
+    "noChecklistItems": "No hay elementos de lista de control",
+    "shownDuringTimeTracking": "Las listas de control se muestran durante el seguimiento del tiempo.",
+    "startTimerHint": "Inicie un temporizador en la página de inicio para marcar los elementos de la lista de control mientras trabaja."
   },
   "checklistAdmin": {
     "title": "Listas de control",
@@ -438,7 +443,31 @@
     },
     "noIssues": "No hay problemas disponibles",
     "filterByStatus": "Filtrar por estado",
-    "filterByPriority": "Filtrar por prioridad"
+    "filterByPriority": "Filtrar por prioridad",
+    "detail": {
+      "title": "Incidencia",
+      "notFound": "Incidencia no encontrada",
+      "property": "Propiedad",
+      "reportedBy": "Reportado por",
+      "assignedTo": "Asignado a",
+      "created": "Creado",
+      "location": "Ubicación",
+      "showOnMap": "Mostrar en el mapa",
+      "resolved": "Resuelto",
+      "photoAlt": "Foto {index}",
+      "convertToTask": "Convertir en tarea",
+      "deleteIssue": "Eliminar incidencia",
+      "deleteTitle": "Eliminar incidencia",
+      "deleteConfirm": "¿Está seguro de que desea eliminar esta incidencia? Esta acción no se puede deshacer.",
+      "deleting": "Eliminando...",
+      "convertTitle": "Convertir en tarea",
+      "convertConfirm": "¿Desea convertir esta incidencia en una tarea?",
+      "converting": "Convirtiendo...",
+      "convert": "Convertir",
+      "deleted": "La incidencia ha sido eliminada",
+      "converted": "La incidencia ha sido convertida en tarea",
+      "cannotDelete": "Esta incidencia no se puede eliminar porque hay tareas que hacen referencia a ella."
+    }
   },
   "tasks": {
     "title": "Tareas",
@@ -465,6 +494,33 @@
       "inProgress": "En progreso",
       "completed": "Completada",
       "closed": "Cerrada"
+    },
+    "convertIssueHint": "Convierta una incidencia en una tarea",
+    "detail": {
+      "title": "Tarea",
+      "notFound": "Tarea no encontrada",
+      "property": "Propiedad",
+      "created": "Creado",
+      "createdBy": "por {name}",
+      "issuePhotos": "Fotos de la incidencia",
+      "issuePhotoAlt": "Foto de incidencia {index}",
+      "completedAt": "Completado el {date}",
+      "completionNotes": "Notas de finalización",
+      "completionNotesPlaceholder": "Describa el trabajo realizado...",
+      "proofPhotos": "Fotos de prueba",
+      "proofPhotoAlt": "Prueba {index}",
+      "markComplete": "Marcar como completada",
+      "marking": "Marcando...",
+      "deleteTask": "Eliminar tarea",
+      "deleteTitle": "Eliminar tarea",
+      "deleteConfirm": "¿Está seguro de que desea eliminar esta tarea? Esta acción no se puede deshacer.",
+      "deleting": "Eliminando...",
+      "completeTitle": "Completar tarea",
+      "completeDescription": "Opcional: Describa la solución y añada fotos.",
+      "photosOptional": "Fotos (opcional)",
+      "updated": "La tarea ha sido actualizada",
+      "markedComplete": "Tarea marcada como completada",
+      "deleted": "La tarea ha sido eliminada"
     }
   },
   "vacation": {
@@ -917,5 +973,51 @@
       "sa": "Sáb",
       "su": "Dom"
     }
+  },
+  "timeEntryEdit": {
+    "title": "Editar registro de tiempo",
+    "entrySaved": "El registro ha sido guardado",
+    "saveError": "Error al guardar",
+    "entryDeleted": "El registro ha sido eliminado",
+    "deleteError": "Error al eliminar",
+    "deleteConfirm": "¿Eliminar registro?",
+    "deleteIrreversible": "Esta acción no se puede deshacer.",
+    "vacationEntry": "Registro de vacaciones",
+    "vacationManageNote": "Los registros de vacaciones solo se pueden gestionar a través de la página de vacaciones",
+    "activeCannotDelete": "Los registros activos no se pueden eliminar",
+    "selectProperty": "Por favor seleccione una propiedad",
+    "enterStartTime": "Por favor ingrese una hora de inicio",
+    "property": "Propiedad",
+    "startTime": "Hora de inicio",
+    "endTime": "Hora de fin",
+    "pauseMinutes": "Pausa en minutos",
+    "duration": "Duración",
+    "notes": "Notas",
+    "notesPlaceholder": "Notas opcionales...",
+    "timeEntry": "Registro de tiempo",
+    "vacationEditError": "Los registros de vacaciones solo se pueden gestionar a través de la página de vacaciones",
+    "activeDeleteError": "Los registros activos no se pueden eliminar"
+  },
+  "activeAufgaben": {
+    "titleForProperty": "Tareas para esta propiedad",
+    "completeTask": "Completar tarea",
+    "completeDescription": "Opcional: Describa la solución y añada fotos.",
+    "completionNotes": "Notas de finalización",
+    "completionNotesPlaceholder": "Describa el trabajo realizado...",
+    "photosOptional": "Fotos (opcional)",
+    "taskCompleted": "Tarea marcada como completada",
+    "markComplete": "Marcar como completada"
+  },
+  "photoCapture": {
+    "camera": "Cámara",
+    "gallery": "Galería",
+    "uploading": "Subiendo...",
+    "uploadError": "No se pudo subir la foto",
+    "photoCount": "{current} de {max} fotos",
+    "photoAlt": "Foto {index}",
+    "removePhoto": "Eliminar foto",
+    "takePhoto": "Tomar foto",
+    "selectFromGallery": "Seleccionar foto de la galería",
+    "uploadProgress": "Progreso de subida"
   }
 }

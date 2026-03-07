@@ -114,7 +114,7 @@ export function RefreshButton({ onRefresh, className }: RefreshButtonProps) {
         'disabled:opacity-50 disabled:pointer-events-none',
         className
       )}
-      aria-label="Aktualisieren"
+      aria-label="Refresh"
     >
       <Loader2
         className={cn(

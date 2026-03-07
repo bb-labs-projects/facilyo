@@ -6,6 +6,7 @@ import { ListTodo, ChevronRight, Check, Calendar, AlertTriangle, CheckCircle } f
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,18 +25,18 @@ import { swissFormat } from '@/lib/i18n';
 import { cn, hapticFeedback } from '@/lib/utils';
 import type { Aufgabe, AufgabeWithRelations } from '@/types/database';
 
-const priorityConfig = {
-  low: { label: 'Niedrig', class: 'bg-muted text-muted-foreground' },
-  medium: { label: 'Mittel', class: 'badge-info' },
-  high: { label: 'Hoch', class: 'badge-warning' },
-  urgent: { label: 'Dringend', class: 'badge-error' },
+const priorityClasses = {
+  low: 'bg-muted text-muted-foreground',
+  medium: 'badge-info',
+  high: 'badge-warning',
+  urgent: 'badge-error',
 };
 
-const statusConfig = {
-  open: { label: 'Offen', class: 'badge-error' },
-  in_progress: { label: 'In Bearbeitung', class: 'badge-warning' },
-  resolved: { label: 'Erledigt', class: 'badge-success' },
-  closed: { label: 'Geschlossen', class: 'bg-muted text-muted-foreground' },
+const statusClasses = {
+  open: 'badge-error',
+  in_progress: 'badge-warning',
+  resolved: 'badge-success',
+  closed: 'bg-muted text-muted-foreground',
 };
 
 interface ActiveAufgabenProps {
@@ -47,6 +48,9 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const profile = useAuthStore((state) => state.profile);
+  const t = useTranslations('activeAufgaben');
+  const tTasks = useTranslations('tasks');
+  const tCommon = useTranslations('common');
   const [completingAufgabe, setCompletingAufgabe] = useState<AufgabeWithRelations | null>(null);
   const [completionPhotos, setCompletionPhotos] = useState<string[]>([]);
   const [completionNotes, setCompletionNotes] = useState('');
@@ -96,7 +100,7 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
     },
     onSuccess: async () => {
       hapticFeedback('medium');
-      toast.success('Aufgabe wurde als erledigt markiert');
+      toast.success(t('taskCompleted'));
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['property-aufgaben', propertyId] }),
         queryClient.invalidateQueries({ queryKey: ['aufgaben'] })
@@ -106,7 +110,7 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
       setCompletionNotes('');
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`${tCommon('error')}: ${error.message}`);
     },
   });
 
@@ -118,7 +122,7 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
     <div className={cn('space-y-3', className)}>
       <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
         <ListTodo className="h-4 w-4" />
-        Aufgaben für diese Liegenschaft
+        {t('titleForProperty')}
         <span className="bg-primary-100 text-primary-700 px-1.5 py-0.5 rounded-full text-xs">
           {aufgaben.length}
         </span>
@@ -143,7 +147,7 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
                     setCompletingAufgabe(aufgabe);
                   }}
                   className="flex-shrink-0 w-6 h-6 mt-0.5 rounded-md border-2 border-muted-foreground/50 hover:border-primary-500 hover:bg-primary-50 transition-colors flex items-center justify-center"
-                  title="Als erledigt markieren"
+                  title={t('markComplete')}
                 >
                   <Check className="h-4 w-4 text-transparent hover:text-primary-500" />
                 </button>
@@ -163,11 +167,11 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
 
                   {/* Meta */}
                   <div className="flex flex-wrap items-center gap-2 mt-2">
-                    <span className={cn('badge text-xs', statusConfig[aufgabe.status].class)}>
-                      {statusConfig[aufgabe.status].label}
+                    <span className={cn('badge text-xs', statusClasses[aufgabe.status])}>
+                      {tTasks(`statuses.${aufgabe.status === 'in_progress' ? 'inProgress' : aufgabe.status === 'resolved' ? 'completed' : aufgabe.status}`)}
                     </span>
-                    <span className={cn('badge text-xs', priorityConfig[aufgabe.priority].class)}>
-                      {priorityConfig[aufgabe.priority].label}
+                    <span className={cn('badge text-xs', priorityClasses[aufgabe.priority])}>
+                      {tTasks(`priorities.${aufgabe.priority}`)}
                     </span>
                     {aufgabe.due_date && (
                       <span className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -199,9 +203,9 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
       }}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" onInteractOutside={(e) => e.preventDefault()}>
           <DialogHeader>
-            <DialogTitle>Aufgabe abschliessen</DialogTitle>
+            <DialogTitle>{t('completeTask')}</DialogTitle>
             <DialogDescription>
-              Optional: Beschreiben Sie die Lösung und fügen Sie Fotos hinzu.
+              {t('completeDescription')}
             </DialogDescription>
           </DialogHeader>
 
@@ -217,9 +221,9 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Abschluss-Notizen</label>
+                <label className="text-sm font-medium">{t('completionNotes')}</label>
                 <Textarea
-                  placeholder="Beschreiben Sie die durchgeführten Arbeiten..."
+                  placeholder={t('completionNotesPlaceholder')}
                   value={completionNotes}
                   onChange={(e) => setCompletionNotes(e.target.value)}
                   rows={3}
@@ -227,7 +231,7 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Fotos (optional)</label>
+                <label className="text-sm font-medium">{t('photosOptional')}</label>
                 <PhotoCapture
                   photos={completionPhotos}
                   onPhotosChange={setCompletionPhotos}
@@ -247,7 +251,7 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
               }}
               className="w-full sm:w-auto"
             >
-              Abbrechen
+              {tCommon('cancel')}
             </Button>
             <Button
               onClick={() => completingAufgabe && completeMutation.mutate({
@@ -259,7 +263,7 @@ export function ActiveAufgaben({ propertyId, className }: ActiveAufgabenProps) {
               className="w-full sm:w-auto"
               leftIcon={<CheckCircle className="h-4 w-4" />}
             >
-              {completeMutation.isPending ? 'Wird gespeichert...' : 'Als erledigt markieren'}
+              {completeMutation.isPending ? tCommon('saving') : t('markComplete')}
             </Button>
           </DialogFooter>
         </DialogContent>

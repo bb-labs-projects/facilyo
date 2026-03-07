@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { format, parseISO, eachDayOfInterval, isWeekend, isBefore, startOfDay } from 'date-fns';
-import { de } from 'date-fns/locale';
+import { useLocale } from '@/hooks/use-locale';
+import { getDateFnsLocale } from '@/lib/i18n';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -32,6 +33,8 @@ export default function NewVacationRequestPage() {
   const router = useRouter();
   const t = useTranslations('vacation');
   const tCommon = useTranslations('common');
+  const { locale } = useLocale();
+  const dateFnsLocale = getDateFnsLocale(locale);
   const queryClient = useQueryClient();
   const profile = useAuthStore((state) => state.profile);
   const organizationId = useAuthStore((state) => state.organizationId);
@@ -122,7 +125,7 @@ export default function NewVacationRequestPage() {
       if (overlapping && overlapping.length > 0) {
         const existing = overlapping[0];
         throw new Error(
-          `Überschneidung mit bestehendem Antrag (${format(parseISO(existing.start_date), 'dd.MM.yyyy', { locale: de })} - ${format(parseISO(existing.end_date), 'dd.MM.yyyy', { locale: de })})`
+          t('overlap', { dates: `${format(parseISO(existing.start_date), 'dd.MM.yyyy', { locale: dateFnsLocale })} - ${format(parseISO(existing.end_date), 'dd.MM.yyyy', { locale: dateFnsLocale })}` })
         );
       }
 
