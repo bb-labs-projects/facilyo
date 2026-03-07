@@ -1,0 +1,191 @@
+{
+  "common": {
+    "appName": "FacilityTrack",
+    "loading": "Učitavanje...",
+    "error": "Greška",
+    "success": "Uspjeh",
+    "cancel": "Otkaži",
+    "save": "Sačuvaj",
+    "delete": "Obriši",
+    "edit": "Uredi",
+    "back": "Nazad",
+    "next": "Dalje",
+    "confirm": "Potvrdi",
+    "close": "Zatvori",
+    "search": "Pretraži",
+    "filter": "Filter",
+    "noData": "Nema dostupnih podataka",
+    "refresh": "Osvježi",
+    "retry": "Pokušaj ponovo"
+  },
+  "nav": {
+    "start": "Početna",
+    "time": "Vremena",
+    "tasks": "Zadaci",
+    "issues": "Problemi",
+    "vacation": "Odmor",
+    "profile": "Profil"
+  },
+  "admin": {
+    "users": "Korisnici",
+    "properties": "Nekretnine",
+    "clients": "Klijenti",
+    "checklists": "Kontrolne liste",
+    "activity": "Aktivnosti",
+    "timeOverview": "Pregled vremena",
+    "calendar": "Kalendar korisnika",
+    "roles": "Uloge",
+    "invoices": "Računi"
+  },
+  "auth": {
+    "login": "Prijava",
+    "logout": "Odjava",
+    "email": "E-pošta",
+    "password": "Lozinka",
+    "rememberMe": "Ostani prijavljen",
+    "forgotPassword": "Zaboravljena lozinka?",
+    "loginError": "Prijava nije uspjela. Molimo provjerite svoje podatke.",
+    "invalidCredentials": "Nevažeća e-pošta ili lozinka.",
+    "sessionExpired": "Vaša sesija je istekla. Molimo prijavite se ponovo."
+  },
+  "workDay": {
+    "title": "Radni dan",
+    "start": "Započni radni dan",
+    "end": "Završi radni dan",
+    "active": "Radni dan aktivan",
+    "notStarted": "Još nije započeto",
+    "totalTime": "Ukupno vrijeme danas",
+    "confirmEnd": "Da li zaista želite završiti radni dan?",
+    "started": "Radni dan je započet",
+    "ended": "Radni dan je završen"
+  },
+  "timeTracking": {
+    "title": "Evidencija vremena",
+    "start": "Započni",
+    "pause": "Pauza",
+    "resume": "Nastavi",
+    "stop": "Završi",
+    "active": "Aktivno",
+    "paused": "Pauzirano",
+    "completed": "Završeno",
+    "selectProperty": "Odaberi nekretninu",
+    "nearbyProperties": "Nekretnine u blizini",
+    "currentProperty": "Trenutna nekretnina",
+    "duration": "Trajanje",
+    "breakTime": "Vrijeme pauze",
+    "workTime": "Radno vrijeme",
+    "notes": "Bilješke",
+    "addNotes": "Dodaj bilješke...",
+    "noActiveTimer": "Nema aktivnog mjerača vremena",
+    "timerStarted": "Mjerač vremena je pokrenut",
+    "timerPaused": "Mjerač vremena je pauziran",
+    "timerResumed": "Mjerač vremena je nastavljen",
+    "timerStopped": "Vrijeme je evidentirano",
+    "locationRequired": "Lokacija je obavezna",
+    "locationDenied": "Pristup lokaciji je odbijen",
+    "entries": "Vremenski unosi",
+    "todayEntries": "Današnji unosi",
+    "noEntries": "Nema unosa"
+  },
+  "properties": {
+    "title": "Nekretnine",
+    "name": "Naziv",
+    "address": "Adresa",
+    "city": "Mjesto",
+    "type": "Tip",
+    "selectProperty": "Odaberi nekretninu",
+    "noProperties": "Nema dodijeljenih nekretnina"
+  },
+  "checklist": {
+    "title": "Kontrolna lista",
+    "progress": "Napredak",
+    "complete": "Završeno",
+    "incomplete": "Otvoreno",
+    "markComplete": "Označi kao završeno",
+    "required": "Obavezno",
+    "optional": "Opcionalno",
+    "itemCompleted": "Zadatak završen",
+    "allCompleted": "Svi zadaci su završeni!"
+  },
+  "issues": {
+    "title": "Problemi",
+    "new": "Novi problem",
+    "create": "Prijavi problem",
+    "edit": "Uredi problem",
+    "category": "Kategorija",
+    "priority": "Prioritet",
+    "status": "Status",
+    "description": "Opis",
+    "location": "Lokacija",
+    "photos": "Fotografije",
+    "addPhoto": "Dodaj fotografiju",
+    "takePhoto": "Snimi fotografiju",
+    "selectPhoto": "Odaberi fotografiju",
+    "maxPhotos": "Dozvoljeno najviše {count} fotografija",
+    "created": "Problem je prijavljen",
+    "updated": "Problem je ažuriran",
+    "categories": {
+      "damage": "Oštećenje",
+      "cleaning": "Čišćenje",
+      "safety": "Sigurnost",
+      "maintenance": "Održavanje",
+      "other": "Ostalo"
+    },
+    "priorities": {
+      "low": "Nizak",
+      "medium": "Srednji",
+      "high": "Visok",
+      "urgent": "Hitno"
+    },
+    "statuses": {
+      "open": "Otvoreno",
+      "inProgress": "U toku",
+      "resolved": "Riješeno",
+      "closed": "Zatvoreno"
+    },
+    "noIssues": "Nema problema",
+    "filterByStatus": "Filtriraj po statusu",
+    "filterByPriority": "Filtriraj po prioritetu"
+  },
+  "profile": {
+    "title": "Profil",
+    "personalInfo": "Lični podaci",
+    "firstName": "Ime",
+    "lastName": "Prezime",
+    "email": "E-pošta",
+    "phone": "Telefon",
+    "role": "Uloga",
+    "settings": "Postavke",
+    "notifications": "Obavještenja",
+    "language": "Jezik",
+    "darkMode": "Tamni režim",
+    "about": "O aplikaciji",
+    "version": "Verzija",
+    "roles": {
+      "admin": "Administrator",
+      "manager": "Menadžer",
+      "worker": "Zaposlenik"
+    }
+  },
+  "validation": {
+    "required": "Ovo polje je obavezno",
+    "email": "Molimo unesite važeću adresu e-pošte",
+    "minLength": "Potrebno je najmanje {min} znakova",
+    "maxLength": "Dozvoljeno je najviše {max} znakova",
+    "invalidFormat": "Nevažeći format"
+  },
+  "errors": {
+    "generic": "Došlo je do greške. Molimo pokušajte ponovo.",
+    "network": "Mrežna greška. Molimo provjerite svoju internetsku vezu.",
+    "unauthorized": "Nemate ovlaštenje da izvršite ovu radnju.",
+    "notFound": "Traženi resurs nije pronađen.",
+    "serverError": "Greška servera. Molimo pokušajte ponovo kasnije."
+  },
+  "offline": {
+    "title": "Van mreže",
+    "message": "Niste povezani na mrežu. Neke funkcije su ograničene.",
+    "pendingSync": "Promjene čekaju sinhronizaciju",
+    "syncing": "Sinhronizacija u toku...",
+    "syncComplete": "Sinhronizacija završena"
+  }
+}

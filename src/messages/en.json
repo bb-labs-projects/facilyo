@@ -1,0 +1,191 @@
+{
+  "common": {
+    "appName": "FacilityTrack",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "confirm": "Confirm",
+    "close": "Close",
+    "search": "Search",
+    "filter": "Filter",
+    "noData": "No data available",
+    "refresh": "Refresh",
+    "retry": "Try again"
+  },
+  "nav": {
+    "start": "Home",
+    "time": "Time",
+    "tasks": "Tasks",
+    "issues": "Issues",
+    "vacation": "Vacation",
+    "profile": "Profile"
+  },
+  "admin": {
+    "users": "Users",
+    "properties": "Properties",
+    "clients": "Clients",
+    "checklists": "Checklists",
+    "activity": "Activity",
+    "timeOverview": "Time Overview",
+    "calendar": "User Calendar",
+    "roles": "Roles",
+    "invoices": "Invoices"
+  },
+  "auth": {
+    "login": "Log in",
+    "logout": "Log out",
+    "email": "Email",
+    "password": "Password",
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot password?",
+    "loginError": "Login failed. Please check your credentials.",
+    "invalidCredentials": "Invalid email or password.",
+    "sessionExpired": "Your session has expired. Please log in again."
+  },
+  "workDay": {
+    "title": "Work Day",
+    "start": "Start work day",
+    "end": "End work day",
+    "active": "Work day active",
+    "notStarted": "Not started yet",
+    "totalTime": "Total time today",
+    "confirmEnd": "Do you really want to end the work day?",
+    "started": "Work day has been started",
+    "ended": "Work day has been ended"
+  },
+  "timeTracking": {
+    "title": "Time Tracking",
+    "start": "Start",
+    "pause": "Pause",
+    "resume": "Resume",
+    "stop": "Stop",
+    "active": "Active",
+    "paused": "Paused",
+    "completed": "Completed",
+    "selectProperty": "Select property",
+    "nearbyProperties": "Nearby properties",
+    "currentProperty": "Current property",
+    "duration": "Duration",
+    "breakTime": "Break time",
+    "workTime": "Work time",
+    "notes": "Notes",
+    "addNotes": "Add notes...",
+    "noActiveTimer": "No active timer",
+    "timerStarted": "Timer has been started",
+    "timerPaused": "Timer has been paused",
+    "timerResumed": "Timer has been resumed",
+    "timerStopped": "Time has been recorded",
+    "locationRequired": "Location required",
+    "locationDenied": "Location access denied",
+    "entries": "Time entries",
+    "todayEntries": "Today's entries",
+    "noEntries": "No entries available"
+  },
+  "properties": {
+    "title": "Properties",
+    "name": "Name",
+    "address": "Address",
+    "city": "City",
+    "type": "Type",
+    "selectProperty": "Select property",
+    "noProperties": "No properties assigned"
+  },
+  "checklist": {
+    "title": "Checklist",
+    "progress": "Progress",
+    "complete": "Complete",
+    "incomplete": "Incomplete",
+    "markComplete": "Mark as complete",
+    "required": "Required",
+    "optional": "Optional",
+    "itemCompleted": "Task completed",
+    "allCompleted": "All tasks completed!"
+  },
+  "issues": {
+    "title": "Issues",
+    "new": "New issue",
+    "create": "Report issue",
+    "edit": "Edit issue",
+    "category": "Category",
+    "priority": "Priority",
+    "status": "Status",
+    "description": "Description",
+    "location": "Location",
+    "photos": "Photos",
+    "addPhoto": "Add photo",
+    "takePhoto": "Take photo",
+    "selectPhoto": "Select photo",
+    "maxPhotos": "Maximum {count} photos allowed",
+    "created": "Issue has been reported",
+    "updated": "Issue has been updated",
+    "categories": {
+      "damage": "Damage",
+      "cleaning": "Cleaning",
+      "safety": "Safety",
+      "maintenance": "Maintenance",
+      "other": "Other"
+    },
+    "priorities": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "urgent": "Urgent"
+    },
+    "statuses": {
+      "open": "Open",
+      "inProgress": "In Progress",
+      "resolved": "Resolved",
+      "closed": "Closed"
+    },
+    "noIssues": "No issues available",
+    "filterByStatus": "Filter by status",
+    "filterByPriority": "Filter by priority"
+  },
+  "profile": {
+    "title": "Profile",
+    "personalInfo": "Personal Information",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email",
+    "phone": "Phone",
+    "role": "Role",
+    "settings": "Settings",
+    "notifications": "Notifications",
+    "language": "Language",
+    "darkMode": "Dark mode",
+    "about": "About the app",
+    "version": "Version",
+    "roles": {
+      "admin": "Administrator",
+      "manager": "Manager",
+      "worker": "Employee"
+    }
+  },
+  "validation": {
+    "required": "This field is required",
+    "email": "Please enter a valid email address",
+    "minLength": "At least {min} characters required",
+    "maxLength": "Maximum {max} characters allowed",
+    "invalidFormat": "Invalid format"
+  },
+  "errors": {
+    "generic": "An error occurred. Please try again.",
+    "network": "Network error. Please check your internet connection.",
+    "unauthorized": "You are not authorized to perform this action.",
+    "notFound": "The requested resource was not found.",
+    "serverError": "Server error. Please try again later."
+  },
+  "offline": {
+    "title": "Offline",
+    "message": "You are offline. Some features are limited.",
+    "pendingSync": "Changes waiting to be synchronized",
+    "syncing": "Synchronizing...",
+    "syncComplete": "Synchronization complete"
+  }
+}

@@ -1,0 +1,191 @@
+{
+  "common": {
+    "appName": "FacilityTrack",
+    "loading": "Carregando...",
+    "error": "Erro",
+    "success": "Sucesso",
+    "cancel": "Cancelar",
+    "save": "Salvar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "back": "Voltar",
+    "next": "Próximo",
+    "confirm": "Confirmar",
+    "close": "Fechar",
+    "search": "Buscar",
+    "filter": "Filtro",
+    "noData": "Nenhum dado disponível",
+    "refresh": "Atualizar",
+    "retry": "Tentar novamente"
+  },
+  "nav": {
+    "start": "Início",
+    "time": "Tempos",
+    "tasks": "Tarefas",
+    "issues": "Problemas",
+    "vacation": "Férias",
+    "profile": "Perfil"
+  },
+  "admin": {
+    "users": "Usuários",
+    "properties": "Propriedades",
+    "clients": "Clientes",
+    "checklists": "Checklists",
+    "activity": "Atividades",
+    "timeOverview": "Visão geral de tempo",
+    "calendar": "Calendário de usuários",
+    "roles": "Funções",
+    "invoices": "Faturas"
+  },
+  "auth": {
+    "login": "Entrar",
+    "logout": "Sair",
+    "email": "E-mail",
+    "password": "Senha",
+    "rememberMe": "Manter conectado",
+    "forgotPassword": "Esqueceu sua senha?",
+    "loginError": "Falha ao entrar. Por favor, verifique seus dados.",
+    "invalidCredentials": "E-mail ou senha inválidos.",
+    "sessionExpired": "Sua sessão expirou. Por favor, entre novamente."
+  },
+  "workDay": {
+    "title": "Jornada de trabalho",
+    "start": "Iniciar jornada de trabalho",
+    "end": "Encerrar jornada de trabalho",
+    "active": "Jornada de trabalho ativa",
+    "notStarted": "Ainda não iniciada",
+    "totalTime": "Tempo total hoje",
+    "confirmEnd": "Tem certeza de que deseja encerrar a jornada de trabalho?",
+    "started": "A jornada de trabalho foi iniciada",
+    "ended": "A jornada de trabalho foi encerrada"
+  },
+  "timeTracking": {
+    "title": "Registro de tempo",
+    "start": "Iniciar",
+    "pause": "Pausar",
+    "resume": "Retomar",
+    "stop": "Encerrar",
+    "active": "Ativo",
+    "paused": "Pausado",
+    "completed": "Concluído",
+    "selectProperty": "Selecionar propriedade",
+    "nearbyProperties": "Propriedades próximas",
+    "currentProperty": "Propriedade atual",
+    "duration": "Duração",
+    "breakTime": "Tempo de pausa",
+    "workTime": "Tempo de trabalho",
+    "notes": "Notas",
+    "addNotes": "Adicionar notas...",
+    "noActiveTimer": "Nenhum temporizador ativo",
+    "timerStarted": "O temporizador foi iniciado",
+    "timerPaused": "O temporizador foi pausado",
+    "timerResumed": "O temporizador foi retomado",
+    "timerStopped": "O tempo foi registrado",
+    "locationRequired": "Localização necessária",
+    "locationDenied": "Acesso à localização negado",
+    "entries": "Registros de tempo",
+    "todayEntries": "Registros de hoje",
+    "noEntries": "Nenhum registro disponível"
+  },
+  "properties": {
+    "title": "Propriedades",
+    "name": "Nome",
+    "address": "Endereço",
+    "city": "Cidade",
+    "type": "Tipo",
+    "selectProperty": "Selecionar propriedade",
+    "noProperties": "Nenhuma propriedade atribuída"
+  },
+  "checklist": {
+    "title": "Lista de verificação",
+    "progress": "Progresso",
+    "complete": "Concluído",
+    "incomplete": "Pendente",
+    "markComplete": "Marcar como concluído",
+    "required": "Obrigatório",
+    "optional": "Opcional",
+    "itemCompleted": "Tarefa concluída",
+    "allCompleted": "Todas as tarefas concluídas!"
+  },
+  "issues": {
+    "title": "Problemas",
+    "new": "Novo problema",
+    "create": "Reportar problema",
+    "edit": "Editar problema",
+    "category": "Categoria",
+    "priority": "Prioridade",
+    "status": "Status",
+    "description": "Descrição",
+    "location": "Localização",
+    "photos": "Fotos",
+    "addPhoto": "Adicionar foto",
+    "takePhoto": "Tirar foto",
+    "selectPhoto": "Selecionar foto",
+    "maxPhotos": "Máximo de {count} fotos permitidas",
+    "created": "O problema foi reportado",
+    "updated": "O problema foi atualizado",
+    "categories": {
+      "damage": "Dano",
+      "cleaning": "Limpeza",
+      "safety": "Segurança",
+      "maintenance": "Manutenção",
+      "other": "Outro"
+    },
+    "priorities": {
+      "low": "Baixa",
+      "medium": "Média",
+      "high": "Alta",
+      "urgent": "Urgente"
+    },
+    "statuses": {
+      "open": "Aberto",
+      "inProgress": "Em andamento",
+      "resolved": "Resolvido",
+      "closed": "Fechado"
+    },
+    "noIssues": "Nenhum problema disponível",
+    "filterByStatus": "Filtrar por status",
+    "filterByPriority": "Filtrar por prioridade"
+  },
+  "profile": {
+    "title": "Perfil",
+    "personalInfo": "Informações pessoais",
+    "firstName": "Nome",
+    "lastName": "Sobrenome",
+    "email": "E-mail",
+    "phone": "Telefone",
+    "role": "Função",
+    "settings": "Configurações",
+    "notifications": "Notificações",
+    "language": "Idioma",
+    "darkMode": "Modo escuro",
+    "about": "Sobre o aplicativo",
+    "version": "Versão",
+    "roles": {
+      "admin": "Administrador",
+      "manager": "Gerente",
+      "worker": "Funcionário"
+    }
+  },
+  "validation": {
+    "required": "Este campo é obrigatório",
+    "email": "Por favor, insira um endereço de e-mail válido",
+    "minLength": "São necessários pelo menos {min} caracteres",
+    "maxLength": "São permitidos no máximo {max} caracteres",
+    "invalidFormat": "Formato inválido"
+  },
+  "errors": {
+    "generic": "Ocorreu um erro. Por favor, tente novamente.",
+    "network": "Erro de rede. Por favor, verifique sua conexão com a internet.",
+    "unauthorized": "Você não tem autorização para realizar esta ação.",
+    "notFound": "O recurso solicitado não foi encontrado.",
+    "serverError": "Erro no servidor. Por favor, tente novamente mais tarde."
+  },
+  "offline": {
+    "title": "Offline",
+    "message": "Você está offline. Algumas funções estão limitadas.",
+    "pendingSync": "Alterações aguardando sincronização",
+    "syncing": "Sincronizando...",
+    "syncComplete": "Sincronização concluída"
+  }
+}

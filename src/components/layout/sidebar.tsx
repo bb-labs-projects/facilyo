@@ -20,6 +20,7 @@ import {
   Crown,
   FileText,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useAuthStore } from '@/stores/auth-store';
@@ -30,7 +31,7 @@ import { useCompletedTasksNotificationCount } from '@/hooks/use-completed-tasks-
 
 interface NavItem {
   href: string;
-  label: string;
+  labelKey: string;
   icon: React.ComponentType<{ className?: string }>;
   requireAdmin?: boolean;
   requireOwner?: boolean;
@@ -40,27 +41,28 @@ interface NavItem {
 }
 
 const mainNavItems: NavItem[] = [
-  { href: '/', label: 'Start', icon: Home },
-  { href: '/time', label: 'Zeiten', icon: Clock },
-  { href: '/tasks', label: 'Aufgaben', icon: ClipboardList },
-  { href: '/issues', label: 'Meldungen', icon: AlertTriangle },
-  { href: '/vacation', label: 'Ferien', icon: Palmtree },
+  { href: '/', labelKey: 'start', icon: Home },
+  { href: '/time', labelKey: 'time', icon: Clock },
+  { href: '/tasks', labelKey: 'tasks', icon: ClipboardList },
+  { href: '/issues', labelKey: 'issues', icon: AlertTriangle },
+  { href: '/vacation', labelKey: 'vacation', icon: Palmtree },
 ];
 
 const adminNavItems: NavItem[] = [
-  { href: '/admin/users', label: 'Benutzer', icon: Users, requireAdmin: true, requireOwner: true },
-  { href: '/admin/properties', label: 'Liegenschaften', icon: Building2, requireAdmin: true },
-  { href: '/admin/clients', label: 'Kunden', icon: Briefcase, requireAdmin: true },
-  { href: '/admin/checklists', label: 'Checklisten', icon: ClipboardList, requireAdmin: true },
-  { href: '/admin/activity', label: 'Aktivitäten', icon: Activity, requireAdmin: true },
-  { href: '/admin/time-overview', label: 'Zeitübersicht', icon: Clock, requireAdmin: true },
-  { href: '/admin/calendar', label: 'Benutzerkalender', icon: CalendarDays, requireAdmin: true, requireUserCalendar: true },
-  { href: '/admin/roles', label: 'Rollen', icon: Shield, requireAdmin: true, requireRolePermissions: true },
-  { href: '/admin/invoices', label: 'Rechnungen', icon: FileText, requireAdmin: true, requireInvoices: true },
+  { href: '/admin/users', labelKey: 'admin.users', icon: Users, requireAdmin: true, requireOwner: true },
+  { href: '/admin/properties', labelKey: 'admin.properties', icon: Building2, requireAdmin: true },
+  { href: '/admin/clients', labelKey: 'admin.clients', icon: Briefcase, requireAdmin: true },
+  { href: '/admin/checklists', labelKey: 'admin.checklists', icon: ClipboardList, requireAdmin: true },
+  { href: '/admin/activity', labelKey: 'admin.activity', icon: Activity, requireAdmin: true },
+  { href: '/admin/time-overview', labelKey: 'admin.timeOverview', icon: Clock, requireAdmin: true },
+  { href: '/admin/calendar', labelKey: 'admin.calendar', icon: CalendarDays, requireAdmin: true, requireUserCalendar: true },
+  { href: '/admin/roles', labelKey: 'admin.roles', icon: Shield, requireAdmin: true, requireRolePermissions: true },
+  { href: '/admin/invoices', labelKey: 'admin.invoices', icon: FileText, requireAdmin: true, requireInvoices: true },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const t = useTranslations();
   const permissions = usePermissions();
   const { user, profile } = useAuthStore();
   const openIssuesCount = useOpenIssuesCount();
@@ -140,7 +142,7 @@ export function Sidebar() {
                     </span>
                   )}
                 </span>
-                <span>{item.label}</span>
+                <span>{t(item.labelKey)}</span>
                 {item.href === '/tasks' && newTasksCount > 0 && (
                   <span className="sr-only">, {newTasksCount} neue</span>
                 )}
@@ -186,7 +188,7 @@ export function Sidebar() {
                         </span>
                       )}
                     </span>
-                    <span>{item.label}</span>
+                    <span>{t(item.labelKey)}</span>
                     {item.href === '/admin/activity' && completedTasksCount > 0 && (
                       <span className="sr-only">, {completedTasksCount} erledigt</span>
                     )}

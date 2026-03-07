@@ -1,25 +1,75 @@
 import { getRequestConfig } from 'next-intl/server';
 import { format, formatDistance, formatRelative, parseISO } from 'date-fns';
-import { de } from 'date-fns/locale';
+import { de, enUS, es, pt, sl, sq, mk, hr, bs, sr } from 'date-fns/locale';
+import { cookies } from 'next/headers';
 
 // Default locale
 export const defaultLocale = 'de-CH';
-export const locales = ['de-CH', 'de-DE'] as const;
+export const locales = [
+  'de-CH',
+  'de-DE',
+  'en',
+  'hr',
+  'sr',
+  'bs',
+  'sl',
+  'mk',
+  'sq',
+  'es',
+  'pt',
+] as const;
 export type Locale = (typeof locales)[number];
 
-// date-fns uses 'de' for German (works for Swiss German formatting)
-const dateFnsLocale = de;
+export const localeNames: Record<Locale, string> = {
+  'de-CH': 'Deutsch (Schweiz)',
+  'de-DE': 'Deutsch (Deutschland)',
+  'en': 'English',
+  'hr': 'Hrvatski',
+  'sr': 'Srpski',
+  'bs': 'Bosanski',
+  'sl': 'Slovenščina',
+  'mk': 'Македонски',
+  'sq': 'Shqip',
+  'es': 'Español',
+  'pt': 'Português',
+};
 
-export function getDateFnsLocale(_locale: Locale = defaultLocale) {
-  return dateFnsLocale;
+// Map locales to date-fns locales
+const dateFnsLocales: Record<string, any> = {
+  'de-CH': de,
+  'de-DE': de,
+  'en': enUS,
+  'hr': hr,
+  'sr': sr,
+  'bs': bs,
+  'sl': sl,
+  'mk': mk,
+  'sq': sq,
+  'es': es,
+  'pt': pt,
+};
+
+export function getDateFnsLocale(locale: Locale = defaultLocale) {
+  return dateFnsLocales[locale] || de;
+}
+
+// Map locale codes to message file names
+function getMessageFile(locale: Locale): string {
+  return locale;
 }
 
 // next-intl config
 export default getRequestConfig(async () => {
-  const locale = defaultLocale;
+  const cookieStore = cookies();
+  const localeCookie = cookieStore.get('facilyo-locale')?.value;
+  const locale = (locales as readonly string[]).includes(localeCookie || '')
+    ? (localeCookie as Locale)
+    : defaultLocale;
+  const messageFile = getMessageFile(locale);
+
   return {
     locale,
-    messages: (await import(`../messages/${locale}.json`)).default,
+    messages: (await import(`../messages/${messageFile}.json`)).default,
   };
 });
 

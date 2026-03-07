@@ -23,7 +23,19 @@
     "time": "Zeiten",
     "tasks": "Aufgaben",
     "issues": "Probleme",
+    "vacation": "Urlaub",
     "profile": "Profil"
+  },
+  "admin": {
+    "users": "Benutzer",
+    "properties": "Liegenschaften",
+    "clients": "Kunden",
+    "checklists": "Checklisten",
+    "activity": "Aktivitäten",
+    "timeOverview": "Zeitübersicht",
+    "calendar": "Benutzerkalender",
+    "roles": "Rollen",
+    "invoices": "Rechnungen"
   },
   "auth": {
     "login": "Anmelden",

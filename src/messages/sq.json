@@ -1,0 +1,191 @@
+{
+  "common": {
+    "appName": "FacilityTrack",
+    "loading": "Duke u ngarkuar...",
+    "error": "Gabim",
+    "success": "Sukses",
+    "cancel": "Anulo",
+    "save": "Ruaj",
+    "delete": "Fshi",
+    "edit": "Redakto",
+    "back": "Kthehu",
+    "next": "Tjetër",
+    "confirm": "Konfirmo",
+    "close": "Mbyll",
+    "search": "Kërko",
+    "filter": "Filtro",
+    "noData": "Nuk ka të dhëna të disponueshme",
+    "refresh": "Rifresko",
+    "retry": "Provo përsëri"
+  },
+  "nav": {
+    "start": "Fillimi",
+    "time": "Kohët",
+    "tasks": "Detyrat",
+    "issues": "Problemet",
+    "vacation": "Pushim",
+    "profile": "Profili"
+  },
+  "admin": {
+    "users": "Përdoruesit",
+    "properties": "Pronat",
+    "clients": "Klientët",
+    "checklists": "Listat e kontrollit",
+    "activity": "Aktivitetet",
+    "timeOverview": "Pasqyra e kohës",
+    "calendar": "Kalendari i përdoruesve",
+    "roles": "Rolet",
+    "invoices": "Faturat"
+  },
+  "auth": {
+    "login": "Hyr",
+    "logout": "Dil",
+    "email": "E-mail",
+    "password": "Fjalëkalimi",
+    "rememberMe": "Më mbaj të kyçur",
+    "forgotPassword": "Keni harruar fjalëkalimin?",
+    "loginError": "Hyrja dështoi. Ju lutem kontrolloni të dhënat tuaja.",
+    "invalidCredentials": "E-mail ose fjalëkalim i pavlefshëm.",
+    "sessionExpired": "Sesioni juaj ka skaduar. Ju lutem hyni përsëri."
+  },
+  "workDay": {
+    "title": "Dita e punës",
+    "start": "Fillo ditën e punës",
+    "end": "Përfundo ditën e punës",
+    "active": "Dita e punës aktive",
+    "notStarted": "Ende nuk ka filluar",
+    "totalTime": "Koha totale sot",
+    "confirmEnd": "A dëshironi vërtet të përfundoni ditën e punës?",
+    "started": "Dita e punës ka filluar",
+    "ended": "Dita e punës ka përfunduar"
+  },
+  "timeTracking": {
+    "title": "Regjistrimi i kohës",
+    "start": "Fillo",
+    "pause": "Pushim",
+    "resume": "Vazhdo",
+    "stop": "Përfundo",
+    "active": "Aktiv",
+    "paused": "Në pushim",
+    "completed": "Përfunduar",
+    "selectProperty": "Zgjidhni pronën",
+    "nearbyProperties": "Pronat në afërsi",
+    "currentProperty": "Prona aktuale",
+    "duration": "Kohëzgjatja",
+    "breakTime": "Koha e pushimit",
+    "workTime": "Koha e punës",
+    "notes": "Shënime",
+    "addNotes": "Shto shënime...",
+    "noActiveTimer": "Nuk ka kohëmatës aktiv",
+    "timerStarted": "Kohëmatësi u nis",
+    "timerPaused": "Kohëmatësi u ndal",
+    "timerResumed": "Kohëmatësi u vazhdua",
+    "timerStopped": "Koha u regjistrua",
+    "locationRequired": "Vendndodhja është e detyrueshme",
+    "locationDenied": "Qasja në vendndodhje u refuzua",
+    "entries": "Regjistrime kohore",
+    "todayEntries": "Regjistrimet e sotme",
+    "noEntries": "Nuk ka regjistrime"
+  },
+  "properties": {
+    "title": "Pronat",
+    "name": "Emri",
+    "address": "Adresa",
+    "city": "Qyteti",
+    "type": "Lloji",
+    "selectProperty": "Zgjidhni pronën",
+    "noProperties": "Nuk ka prona të caktuara"
+  },
+  "checklist": {
+    "title": "Lista kontrolluese",
+    "progress": "Progresi",
+    "complete": "Përfunduar",
+    "incomplete": "E hapur",
+    "markComplete": "Shëno si të përfunduar",
+    "required": "E detyrueshme",
+    "optional": "Opsionale",
+    "itemCompleted": "Detyra u përfundua",
+    "allCompleted": "Të gjitha detyrat u përfunduan!"
+  },
+  "issues": {
+    "title": "Problemet",
+    "new": "Problem i ri",
+    "create": "Raporto problem",
+    "edit": "Redakto problemin",
+    "category": "Kategoria",
+    "priority": "Prioriteti",
+    "status": "Statusi",
+    "description": "Përshkrimi",
+    "location": "Vendndodhja",
+    "photos": "Fotot",
+    "addPhoto": "Shto foto",
+    "takePhoto": "Bëj foto",
+    "selectPhoto": "Zgjidh foto",
+    "maxPhotos": "Lejohen maksimumi {count} foto",
+    "created": "Problemi u raportua",
+    "updated": "Problemi u përditësua",
+    "categories": {
+      "damage": "Dëmtim",
+      "cleaning": "Pastrim",
+      "safety": "Siguri",
+      "maintenance": "Mirëmbajtje",
+      "other": "Tjetër"
+    },
+    "priorities": {
+      "low": "I ulët",
+      "medium": "Mesatar",
+      "high": "I lartë",
+      "urgent": "Urgjent"
+    },
+    "statuses": {
+      "open": "E hapur",
+      "inProgress": "Në progres",
+      "resolved": "E zgjidhur",
+      "closed": "E mbyllur"
+    },
+    "noIssues": "Nuk ka probleme",
+    "filterByStatus": "Filtro sipas statusit",
+    "filterByPriority": "Filtro sipas prioritetit"
+  },
+  "profile": {
+    "title": "Profili",
+    "personalInfo": "Informacionet personale",
+    "firstName": "Emri",
+    "lastName": "Mbiemri",
+    "email": "E-mail",
+    "phone": "Telefoni",
+    "role": "Roli",
+    "settings": "Cilësimet",
+    "notifications": "Njoftimet",
+    "language": "Gjuha",
+    "darkMode": "Modaliteti i errët",
+    "about": "Rreth aplikacionit",
+    "version": "Versioni",
+    "roles": {
+      "admin": "Administrator",
+      "manager": "Menaxher",
+      "worker": "Punonjës"
+    }
+  },
+  "validation": {
+    "required": "Kjo fushë është e detyrueshme",
+    "email": "Ju lutem vendosni një adresë e-mail të vlefshme",
+    "minLength": "Nevojiten të paktën {min} karaktere",
+    "maxLength": "Lejohen maksimumi {max} karaktere",
+    "invalidFormat": "Format i pavlefshëm"
+  },
+  "errors": {
+    "generic": "Ndodhi një gabim. Ju lutem provoni përsëri.",
+    "network": "Gabim rrjeti. Ju lutem kontrolloni lidhjen tuaj të internetit.",
+    "unauthorized": "Nuk jeni i autorizuar të kryeni këtë veprim.",
+    "notFound": "Burimi i kërkuar nuk u gjet.",
+    "serverError": "Gabim serveri. Ju lutem provoni përsëri më vonë."
+  },
+  "offline": {
+    "title": "Jashtë linje",
+    "message": "Jeni jashtë linje. Disa funksione janë të kufizuara.",
+    "pendingSync": "Ndryshimet presin sinkronizimin",
+    "syncing": "Duke u sinkronizuar...",
+    "syncComplete": "Sinkronizimi u përfundua"
+  }
+}

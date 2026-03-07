@@ -13,11 +13,14 @@ import {
   Bell,
   Info,
   Settings,
+  Globe,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { LanguageSwitcher } from '@/components/language-switcher';
 import { useAuthStore } from '@/stores/auth-store';
 import { usePermissions } from '@/hooks/use-permissions';
 import { getClient } from '@/lib/supabase/client';
@@ -29,6 +32,10 @@ export default function ProfilePage() {
   const router = useRouter();
   const { profile, logout } = useAuthStore();
   const permissions = usePermissions();
+  const t = useTranslations('profile');
+  const tc = useTranslations('common');
+  const tp = useTranslations('properties');
+  const ta = useTranslations('auth');
 
   // Fetch assigned properties
   const { data: properties = [] } = useQuery({
@@ -58,7 +65,7 @@ export default function ProfilePage() {
 
   if (!profile) {
     return (
-      <PageContainer header={<Header title="Profil" />}>
+      <PageContainer header={<Header title={t('title')} />}>
         <div className="text-center py-12 space-y-4">
           <p className="text-muted-foreground">Profil konnte nicht geladen werden</p>
           <Button
@@ -68,14 +75,14 @@ export default function ProfilePage() {
               await refreshProfile();
             }}
           >
-            Erneut versuchen
+            {tc('retry')}
           </Button>
           <Button
             variant="ghost"
             className="text-error-600"
             onClick={handleLogout}
           >
-            Abmelden
+            {ta('logout')}
           </Button>
         </div>
       </PageContainer>
@@ -88,7 +95,7 @@ export default function ProfilePage() {
     .join(' ');
 
   return (
-    <PageContainer header={<Header title="Profil" />}>
+    <PageContainer header={<Header title={t('title')} />}>
       {/* Profile header */}
       <div className="flex flex-col items-center mb-6">
         {profile.avatar_url ? (
@@ -117,14 +124,14 @@ export default function ProfilePage() {
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <User className="h-4 w-4" />
-            Persönliche Informationen
+            {t('personalInfo')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-center gap-3">
             <Mail className="h-5 w-5 text-muted-foreground" />
             <div>
-              <p className="text-sm text-muted-foreground">E-Mail</p>
+              <p className="text-sm text-muted-foreground">{t('email')}</p>
               <p>{profile.email}</p>
             </div>
           </div>
@@ -133,7 +140,7 @@ export default function ProfilePage() {
             <div className="flex items-center gap-3">
               <Phone className="h-5 w-5 text-muted-foreground" />
               <div>
-                <p className="text-sm text-muted-foreground">Telefon</p>
+                <p className="text-sm text-muted-foreground">{t('phone')}</p>
                 <p>{profile.phone}</p>
               </div>
             </div>
@@ -142,7 +149,7 @@ export default function ProfilePage() {
           <div className="flex items-center gap-3">
             <Shield className="h-5 w-5 text-muted-foreground" />
             <div>
-              <p className="text-sm text-muted-foreground">Rolle</p>
+              <p className="text-sm text-muted-foreground">{t('role')}</p>
               <p>{roleLabels[profile.role]}</p>
             </div>
           </div>
@@ -154,13 +161,13 @@ export default function ProfilePage() {
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
             <Building2 className="h-4 w-4" />
-            Zugewiesene Liegenschaften ({properties.length})
+            {tp('title')} ({properties.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
           {properties.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Keine Liegenschaften zugewiesen
+              {tp('noProperties')}
             </p>
           ) : (
             <div className="space-y-2">
@@ -193,7 +200,7 @@ export default function ProfilePage() {
             >
               <div className="flex items-center gap-3">
                 <Settings className="h-5 w-5 text-primary-600" />
-                <span className="font-medium text-primary-600">Verwaltung</span>
+                <span className="font-medium text-primary-600">{t('settings')}</span>
               </div>
               <ChevronRight className="h-5 w-5 text-primary-600" />
             </button>
@@ -201,13 +208,26 @@ export default function ProfilePage() {
         </Card>
       )}
 
+      {/* Language */}
+      <Card className="mb-4">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Globe className="h-4 w-4" />
+            {t('language')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <LanguageSwitcher />
+        </CardContent>
+      </Card>
+
       {/* Settings */}
       <Card className="mb-4">
         <CardContent className="p-0">
           <button disabled className="w-full flex items-center justify-between p-4 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
             <div className="flex items-center gap-3">
               <Bell className="h-5 w-5 text-muted-foreground" />
-              <span>Benachrichtigungen</span>
+              <span>{t('notifications')}</span>
             </div>
             <ChevronRight className="h-5 w-5 text-muted-foreground" />
           </button>
@@ -217,7 +237,7 @@ export default function ProfilePage() {
           <button disabled className="w-full flex items-center justify-between p-4 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
             <div className="flex items-center gap-3">
               <Info className="h-5 w-5 text-muted-foreground" />
-              <span>Über die App</span>
+              <span>{t('about')}</span>
             </div>
             <ChevronRight className="h-5 w-5 text-muted-foreground" />
           </button>
@@ -232,7 +252,7 @@ export default function ProfilePage() {
         onClick={handleLogout}
         leftIcon={<LogOut className="h-5 w-5" />}
       >
-        Abmelden
+        {ta('logout')}
       </Button>
 
       {/* Version */}

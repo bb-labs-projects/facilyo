@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   Palmtree,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { cn, hapticFeedback } from '@/lib/utils';
 import { useOpenIssuesCount } from '@/hooks/use-open-issues-count';
 import { useVacationNotificationCount } from '@/hooks/use-vacation-notification-count';
@@ -15,22 +16,23 @@ import { useNewTasksNotificationCount } from '@/hooks/use-new-tasks-notification
 
 interface NavItem {
   href: string;
-  label: string;
+  labelKey: string;
   icon: React.ComponentType<{ className?: string }>;
 }
 
 // Mobile bottom nav only shows 5 core items
 // Admin items are accessible via sidebar on desktop or mobile menu
 const navItems: NavItem[] = [
-  { href: '/', label: 'Start', icon: Home },
-  { href: '/time', label: 'Zeiten', icon: Clock },
-  { href: '/tasks', label: 'Aufgaben', icon: ClipboardList },
-  { href: '/issues', label: 'Meldungen', icon: AlertTriangle },
-  { href: '/vacation', label: 'Ferien', icon: Palmtree },
+  { href: '/', labelKey: 'start', icon: Home },
+  { href: '/time', labelKey: 'time', icon: Clock },
+  { href: '/tasks', labelKey: 'tasks', icon: ClipboardList },
+  { href: '/issues', labelKey: 'issues', icon: AlertTriangle },
+  { href: '/vacation', labelKey: 'vacation', icon: Palmtree },
 ];
 
 export function BottomNav() {
   const pathname = usePathname();
+  const t = useTranslations('nav');
   const openIssuesCount = useOpenIssuesCount();
   const { count: vacationCount } = useVacationNotificationCount();
   const { count: newTasksCount } = useNewTasksNotificationCount();
@@ -102,7 +104,7 @@ export function BottomNav() {
                   active ? 'text-primary-600 font-medium' : 'text-muted-foreground'
                 )}
               >
-                {item.label}
+                {t(item.labelKey)}
               </span>
             </a>
           );

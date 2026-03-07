@@ -129,14 +129,37 @@ export default function AdminChecklistsPage() {
     },
   });
 
+  // Auto-translate checklist item labels
+  const translateItems = async (items: ChecklistItem[]): Promise<ChecklistItem[]> => {
+    if (items.length === 0) return items;
+    try {
+      const response = await fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: items.map(i => ({ id: i.id, label: i.label })) }),
+      });
+      if (!response.ok) throw new Error('Translation failed');
+      const { translations } = await response.json();
+      return items.map(item => ({
+        ...item,
+        translations: translations[item.id] || item.translations || {},
+      }));
+    } catch (error) {
+      console.error('Auto-translation failed:', error);
+      toast.error('Automatische Übersetzung fehlgeschlagen – Checkliste wird ohne Übersetzungen gespeichert');
+      return items;
+    }
+  };
+
   // Create mutation
   const createMutation = useMutation({
     mutationFn: async (data: { name: string; property_id: string; items: ChecklistItem[]; is_active: boolean; image_url: string | null }) => {
+      const translatedItems = await translateItems(data.items);
       const supabase = getClient();
       const insertData = {
         name: data.name,
         property_id: data.property_id,
-        items: data.items,
+        items: translatedItems,
         is_active: data.is_active,
         image_url: data.image_url,
         organization_id: organizationId,
@@ -163,11 +186,12 @@ export default function AdminChecklistsPage() {
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: { name: string; property_id: string; items: ChecklistItem[]; is_active: boolean; image_url: string | null } }) => {
+      const translatedItems = await translateItems(data.items);
       const supabase = getClient();
       const updateData = {
         name: data.name,
         property_id: data.property_id,
-        items: data.items,
+        items: translatedItems,
         is_active: data.is_active,
         image_url: data.image_url,
       };

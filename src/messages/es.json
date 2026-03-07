@@ -1,0 +1,191 @@
+{
+  "common": {
+    "appName": "FacilityTrack",
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "confirm": "Confirmar",
+    "close": "Cerrar",
+    "search": "Buscar",
+    "filter": "Filtro",
+    "noData": "No hay datos disponibles",
+    "refresh": "Actualizar",
+    "retry": "Reintentar"
+  },
+  "nav": {
+    "start": "Inicio",
+    "time": "Tiempos",
+    "tasks": "Tareas",
+    "issues": "Problemas",
+    "vacation": "Vacaciones",
+    "profile": "Perfil"
+  },
+  "admin": {
+    "users": "Usuarios",
+    "properties": "Propiedades",
+    "clients": "Clientes",
+    "checklists": "Listas de control",
+    "activity": "Actividades",
+    "timeOverview": "Resumen de tiempos",
+    "calendar": "Calendario de usuarios",
+    "roles": "Roles",
+    "invoices": "Facturas"
+  },
+  "auth": {
+    "login": "Iniciar sesión",
+    "logout": "Cerrar sesión",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "rememberMe": "Mantener sesión iniciada",
+    "forgotPassword": "¿Olvidó su contraseña?",
+    "loginError": "Error al iniciar sesión. Por favor, verifique sus datos.",
+    "invalidCredentials": "Correo electrónico o contraseña no válidos.",
+    "sessionExpired": "Su sesión ha expirado. Por favor, inicie sesión nuevamente."
+  },
+  "workDay": {
+    "title": "Jornada laboral",
+    "start": "Iniciar jornada laboral",
+    "end": "Finalizar jornada laboral",
+    "active": "Jornada laboral activa",
+    "notStarted": "Aún no iniciada",
+    "totalTime": "Tiempo total hoy",
+    "confirmEnd": "¿Está seguro de que desea finalizar la jornada laboral?",
+    "started": "La jornada laboral ha sido iniciada",
+    "ended": "La jornada laboral ha sido finalizada"
+  },
+  "timeTracking": {
+    "title": "Registro de tiempo",
+    "start": "Iniciar",
+    "pause": "Pausa",
+    "resume": "Reanudar",
+    "stop": "Finalizar",
+    "active": "Activo",
+    "paused": "En pausa",
+    "completed": "Completado",
+    "selectProperty": "Seleccionar propiedad",
+    "nearbyProperties": "Propiedades cercanas",
+    "currentProperty": "Propiedad actual",
+    "duration": "Duración",
+    "breakTime": "Tiempo de descanso",
+    "workTime": "Tiempo de trabajo",
+    "notes": "Notas",
+    "addNotes": "Agregar notas...",
+    "noActiveTimer": "No hay temporizador activo",
+    "timerStarted": "El temporizador ha sido iniciado",
+    "timerPaused": "El temporizador ha sido pausado",
+    "timerResumed": "El temporizador ha sido reanudado",
+    "timerStopped": "El tiempo ha sido registrado",
+    "locationRequired": "Ubicación requerida",
+    "locationDenied": "Acceso a la ubicación denegado",
+    "entries": "Registros de tiempo",
+    "todayEntries": "Registros de hoy",
+    "noEntries": "No hay registros disponibles"
+  },
+  "properties": {
+    "title": "Propiedades",
+    "name": "Nombre",
+    "address": "Dirección",
+    "city": "Ciudad",
+    "type": "Tipo",
+    "selectProperty": "Seleccionar propiedad",
+    "noProperties": "No hay propiedades asignadas"
+  },
+  "checklist": {
+    "title": "Lista de verificación",
+    "progress": "Progreso",
+    "complete": "Completado",
+    "incomplete": "Pendiente",
+    "markComplete": "Marcar como completado",
+    "required": "Obligatorio",
+    "optional": "Opcional",
+    "itemCompleted": "Tarea completada",
+    "allCompleted": "¡Todas las tareas completadas!"
+  },
+  "issues": {
+    "title": "Problemas",
+    "new": "Nuevo problema",
+    "create": "Reportar problema",
+    "edit": "Editar problema",
+    "category": "Categoría",
+    "priority": "Prioridad",
+    "status": "Estado",
+    "description": "Descripción",
+    "location": "Ubicación",
+    "photos": "Fotos",
+    "addPhoto": "Agregar foto",
+    "takePhoto": "Tomar foto",
+    "selectPhoto": "Seleccionar foto",
+    "maxPhotos": "Máximo {count} fotos permitidas",
+    "created": "El problema ha sido reportado",
+    "updated": "El problema ha sido actualizado",
+    "categories": {
+      "damage": "Daño",
+      "cleaning": "Limpieza",
+      "safety": "Seguridad",
+      "maintenance": "Mantenimiento",
+      "other": "Otro"
+    },
+    "priorities": {
+      "low": "Baja",
+      "medium": "Media",
+      "high": "Alta",
+      "urgent": "Urgente"
+    },
+    "statuses": {
+      "open": "Abierto",
+      "inProgress": "En progreso",
+      "resolved": "Resuelto",
+      "closed": "Cerrado"
+    },
+    "noIssues": "No hay problemas disponibles",
+    "filterByStatus": "Filtrar por estado",
+    "filterByPriority": "Filtrar por prioridad"
+  },
+  "profile": {
+    "title": "Perfil",
+    "personalInfo": "Información personal",
+    "firstName": "Nombre",
+    "lastName": "Apellido",
+    "email": "Correo electrónico",
+    "phone": "Teléfono",
+    "role": "Rol",
+    "settings": "Configuración",
+    "notifications": "Notificaciones",
+    "language": "Idioma",
+    "darkMode": "Modo oscuro",
+    "about": "Acerca de la aplicación",
+    "version": "Versión",
+    "roles": {
+      "admin": "Administrador",
+      "manager": "Gerente",
+      "worker": "Empleado"
+    }
+  },
+  "validation": {
+    "required": "Este campo es obligatorio",
+    "email": "Por favor, introduzca una dirección de correo electrónico válida",
+    "minLength": "Se requieren al menos {min} caracteres",
+    "maxLength": "Se permiten como máximo {max} caracteres",
+    "invalidFormat": "Formato no válido"
+  },
+  "errors": {
+    "generic": "Ha ocurrido un error. Por favor, inténtelo de nuevo.",
+    "network": "Error de red. Por favor, compruebe su conexión a internet.",
+    "unauthorized": "No tiene autorización para realizar esta acción.",
+    "notFound": "El recurso solicitado no fue encontrado.",
+    "serverError": "Error del servidor. Por favor, inténtelo de nuevo más tarde."
+  },
+  "offline": {
+    "title": "Sin conexión",
+    "message": "Está sin conexión. Algunas funciones están limitadas.",
+    "pendingSync": "Los cambios están pendientes de sincronización",
+    "syncing": "Sincronizando...",
+    "syncComplete": "Sincronización completada"
+  }
+}

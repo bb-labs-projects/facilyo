@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslations } from 'next-intl';
 import { ClipboardList, ChevronDown, ChevronUp, Check, Camera, Save, Loader2, X, ImageIcon, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -11,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { getClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
+import { useLocale, getChecklistItemLabel } from '@/hooks/use-locale';
 import { cn, hapticFeedback } from '@/lib/utils';
 import type { ChecklistTemplate, ChecklistItem, Property } from '@/types/database';
 
@@ -36,6 +38,9 @@ interface ActiveChecklistsProps {
 export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveChecklistsProps) {
   const queryClient = useQueryClient();
   const organizationId = useAuthStore((state) => state.organizationId);
+  const { locale } = useLocale();
+  const t = useTranslations('checklist');
+  const tc = useTranslations('common');
   const [expandedChecklist, setExpandedChecklist] = useState<string | null>(null);
   // Local state for unsaved changes per checklist
   const [localChanges, setLocalChanges] = useState<Record<string, Record<string, unknown>>>({});
@@ -352,6 +357,7 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
                       <ChecklistItemInput
                         key={item.id}
                         item={item}
+                        locale={locale}
                         value={localItems[item.id]}
                         onChange={(value) => handleItemChange(checklist.id, item.id, value)}
                       />
@@ -400,16 +406,19 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
 
 interface ChecklistItemInputProps {
   item: ChecklistItem;
+  locale: string;
   value: unknown;
   onChange: (value: unknown) => void;
 }
 
-function ChecklistItemInput({ item, value, onChange }: ChecklistItemInputProps) {
+function ChecklistItemInput({ item, locale, value, onChange }: ChecklistItemInputProps) {
+  const label = getChecklistItemLabel(item, locale);
+
   switch (item.type) {
     case 'checkbox':
       return (
         <CheckboxItem
-          label={item.label}
+          label={label}
           checked={value as boolean}
           onChange={onChange}
           required={item.required}
@@ -418,7 +427,7 @@ function ChecklistItemInput({ item, value, onChange }: ChecklistItemInputProps) 
     case 'text':
       return (
         <TextItem
-          label={item.label}
+          label={label}
           value={value as string}
           onChange={onChange}
           required={item.required}
@@ -427,7 +436,7 @@ function ChecklistItemInput({ item, value, onChange }: ChecklistItemInputProps) 
     case 'number':
       return (
         <NumberItem
-          label={item.label}
+          label={label}
           value={value as number}
           onChange={onChange}
           required={item.required}
@@ -436,7 +445,7 @@ function ChecklistItemInput({ item, value, onChange }: ChecklistItemInputProps) 
     case 'photo':
       return (
         <PhotoItem
-          label={item.label}
+          label={label}
           value={value as string}
           onChange={onChange}
           required={item.required}

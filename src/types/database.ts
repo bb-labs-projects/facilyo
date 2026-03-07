@@ -1149,6 +1149,7 @@ export interface ChecklistItem {
   label: string;
   required: boolean;
   order: number;
+  translations?: Record<string, string>;
 }
 
 // Extended types with relations
