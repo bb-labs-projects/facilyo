@@ -19,6 +19,7 @@ import {
   Loader2,
   X,
   Filter,
+  Languages,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Header, PageContainer } from '@/components/layout/header';
@@ -81,6 +82,7 @@ export default function AdminChecklistsPage() {
   const [deletingTemplate, setDeletingTemplate] = useState<ChecklistTemplateWithProperty | null>(null);
   const [filterPropertyId, setFilterPropertyId] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
+  const [isTranslatingAll, setIsTranslatingAll] = useState(false);
 
   // Form state
   const [name, setName] = useState('');
@@ -152,6 +154,33 @@ export default function AdminChecklistsPage() {
       console.error('Auto-translation failed:', error);
       toast.error(tCheck('translationFailed'));
       return items;
+    }
+  };
+
+  // Re-translate all checklists
+  const translateAllChecklists = async () => {
+    if (isTranslatingAll || templates.length === 0) return;
+    setIsTranslatingAll(true);
+    let successCount = 0;
+    try {
+      const supabase = getClient();
+      for (const template of templates) {
+        const items = (template.items as unknown as ChecklistItem[]) || [];
+        if (items.length === 0) continue;
+        const translatedItems = await translateItems(items);
+        const { error } = await (supabase as any)
+          .from('checklist_templates')
+          .update({ items: translatedItems })
+          .eq('id', template.id);
+        if (!error) successCount++;
+      }
+      queryClient.invalidateQueries({ queryKey: ['admin-checklists'] });
+      toast.success(tCheck('allTranslated', { count: successCount }));
+    } catch (error) {
+      console.error('Translate all failed:', error);
+      toast.error(tCheck('translationFailed'));
+    } finally {
+      setIsTranslatingAll(false);
     }
   };
 
@@ -427,6 +456,14 @@ export default function AdminChecklistsPage() {
           title={tCheck('title')}
           rightElement={
             <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={translateAllChecklists}
+                disabled={isTranslatingAll}
+              >
+                {isTranslatingAll ? <Loader2 className="h-5 w-5 animate-spin" /> : <Languages className="h-5 w-5" />}
+              </Button>
               <Button
                 variant="ghost"
                 size="icon"

@@ -342,6 +342,7 @@
     "typeNumber": "Broj",
     "typePhoto": "Fotografija",
     "translationFailed": "Automatski prijevod nije uspio – kontrolna lista bit će sačuvana bez prijevoda",
+    "allTranslated": "{count} kontrolnih lista prevedeno",
     "allRequiredComplete": "Sva obavezna polja popunjena",
     "requiredProgress": "{completed}/{total} obaveznih polja",
     "noChecklistItems": "Nema stavki kontrolne liste",

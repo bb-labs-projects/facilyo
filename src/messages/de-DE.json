@@ -342,6 +342,7 @@
     "typeNumber": "Zahl",
     "typePhoto": "Foto",
     "translationFailed": "Automatische Übersetzung fehlgeschlagen – Checkliste wird ohne Übersetzungen gespeichert",
+    "allTranslated": "{count} Checklisten übersetzt",
     "allRequiredComplete": "Alle Pflichtfelder erledigt",
     "requiredProgress": "{completed}/{total} Pflichtfelder",
     "noChecklistItems": "Keine Checklistenpunkte vorhanden",

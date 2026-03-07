@@ -342,6 +342,7 @@
     "typeNumber": "Število",
     "typePhoto": "Fotografija",
     "translationFailed": "Samodejni prevod ni uspel – kontrolni seznam bo shranjen brez prevodov",
+    "allTranslated": "{count} kontrolnih seznamov prevedenih",
     "allRequiredComplete": "Vsa obvezna polja izpolnjena",
     "requiredProgress": "{completed}/{total} obveznih polj",
     "noChecklistItems": "Ni elementov kontrolnega seznama",

@@ -342,6 +342,7 @@
     "typeNumber": "Numër",
     "typePhoto": "Foto",
     "translationFailed": "Përkthimi automatik dështoi - lista kontrolluese do të ruhet pa përkthime",
+    "allTranslated": "{count} lista kontrolli të përkthyera",
     "allRequiredComplete": "Të gjitha fushat e detyrueshme janë plotësuar",
     "requiredProgress": "{completed}/{total} fusha të detyrueshme",
     "noChecklistItems": "Nuk ka pika të listës kontrolluese",

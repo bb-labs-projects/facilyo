@@ -342,6 +342,7 @@
     "typeNumber": "Número",
     "typePhoto": "Foto",
     "translationFailed": "La traducción automática falló - la lista de control se guardará sin traducciones",
+    "allTranslated": "{count} listas de verificación traducidas",
     "allRequiredComplete": "Todos los campos obligatorios completados",
     "requiredProgress": "{completed}/{total} campos obligatorios",
     "noChecklistItems": "No hay elementos de lista de control",

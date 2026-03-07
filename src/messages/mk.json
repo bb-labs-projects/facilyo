@@ -342,6 +342,7 @@
     "typeNumber": "Број",
     "typePhoto": "Фотографија",
     "translationFailed": "Автоматскиот превод не успеа – контролната листа ќе биде зачувана без преводи",
+    "allTranslated": "{count} контролни листи преведени",
     "allRequiredComplete": "Сите задолжителни полиња се пополнети",
     "requiredProgress": "{completed}/{total} задолжителни полиња",
     "noChecklistItems": "Нема ставки од контролна листа",
