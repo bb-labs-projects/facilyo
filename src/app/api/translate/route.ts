@@ -34,7 +34,7 @@ async function translateBatch(labels: { id: string; label: string }[], targetLan
       'Authorization': `Bearer ${NEAR_AI_KEY}`,
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: 'openai/gpt-oss-120b',
       messages: [
         {
           role: 'system',
