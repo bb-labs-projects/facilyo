@@ -26,19 +26,11 @@ import {
 import { usePermissions } from '@/hooks/use-permissions';
 import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { ErrorBoundary } from '@/components/error-boundary';
 import type { Property, PropertyInsert, PropertyUpdate, PropertyType, Profile, Client, ClientInsert } from '@/types/database';
 import { getInitials } from '@/lib/utils';
-
-const propertyTypeLabels: Record<PropertyType, string> = {
-  residential: 'Wohngebäude',
-  commercial: 'Gewerbe',
-  industrial: 'Industrie',
-  mixed: 'Gemischt',
-  office: 'Büro',
-  private_maintenance: 'Privatunterhalt',
-};
 
 export default function AdminPropertiesPage() {
   return (
@@ -54,6 +46,17 @@ function AdminPropertiesPageContent() {
   const permissions = usePermissions();
   const organizationId = useAuthStore((state) => state.organizationId);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
+  const t = useTranslations();
+  const tProp = useTranslations('propertiesAdmin');
+
+  const propertyTypeLabels: Record<PropertyType, string> = {
+    residential: tProp('propertyTypes.residential'),
+    commercial: tProp('propertyTypes.commercial'),
+    industrial: tProp('propertyTypes.industrial'),
+    mixed: tProp('propertyTypes.mixed'),
+    office: tProp('propertyTypes.office'),
+    private_maintenance: tProp('propertyTypes.privateMaintenance'),
+  };
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showInactiveProperties, setShowInactiveProperties] = useState(false);
@@ -182,7 +185,7 @@ function AdminPropertiesPageContent() {
         // Try to refresh the session
         const { error: refreshError } = await supabase.auth.refreshSession();
         if (refreshError) {
-          throw new Error('Sitzung abgelaufen. Bitte melden Sie sich erneut an.');
+          throw new Error(tProp('sessionExpired'));
         }
       }
       lastSessionCheck.current = now;
@@ -224,12 +227,12 @@ function AdminPropertiesPageContent() {
       return result as Property;
     },
     onSuccess: () => {
-      toast.success('Liegenschaft wurde erstellt');
+      toast.success(tProp('propertyCreated'));
       queryClient.invalidateQueries({ queryKey: ['admin-properties'] });
       resetForm();
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`${t('common.error')}: ${error.message}`);
     },
   });
 
@@ -267,12 +270,12 @@ function AdminPropertiesPageContent() {
       return result as Property;
     },
     onSuccess: () => {
-      toast.success('Liegenschaft wurde aktualisiert');
+      toast.success(tProp('propertyUpdated'));
       queryClient.invalidateQueries({ queryKey: ['admin-properties'] });
       resetForm();
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`${t('common.error')}: ${error.message}`);
     },
   });
 
@@ -308,13 +311,13 @@ function AdminPropertiesPageContent() {
       return { propertyId, isActive };
     },
     onSuccess: (_, { isActive }) => {
-      toast.success(isActive ? 'Liegenschaft aktiviert' : 'Liegenschaft deaktiviert');
+      toast.success(isActive ? tProp('propertyActivated') : tProp('propertyDeactivated'));
       queryClient.invalidateQueries({ queryKey: ['admin-properties'] });
       setShowDeactivateDialog(false);
       setDeactivatingProperty(null);
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`${t('common.error')}: ${error.message}`);
     },
   });
 
@@ -340,11 +343,11 @@ function AdminPropertiesPageContent() {
       return { propertyId, userId, assign };
     },
     onSuccess: () => {
-      toast.success('Zuweisung aktualisiert');
+      toast.success(tProp('assignmentUpdated'));
       queryClient.invalidateQueries({ queryKey: ['property-assignments', assigningProperty?.id] });
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`${t('common.error')}: ${error.message}`);
     },
   });
 
@@ -374,11 +377,11 @@ function AdminPropertiesPageContent() {
       return { propertyId, assign };
     },
     onSuccess: (_, { assign }) => {
-      toast.success(assign ? 'Allen Mitarbeitern zugewiesen' : 'Alle Zuweisungen entfernt');
+      toast.success(assign ? tProp('allAssigned') : tProp('allRemoved'));
       queryClient.invalidateQueries({ queryKey: ['property-assignments', assigningProperty?.id] });
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`${t('common.error')}: ${error.message}`);
     },
   });
 
@@ -449,9 +452,9 @@ function AdminPropertiesPageContent() {
     }
     const num = parseFloat(trimmed);
     if (isNaN(num)) {
-      setLatitudeError('Ungültige Zahl');
+      setLatitudeError(tProp('invalidNumber'));
     } else if (num < -90 || num > 90) {
-      setLatitudeError('Muss zwischen -90 und 90 liegen');
+      setLatitudeError(tProp('latitudeRange'));
     } else {
       setLatitudeError(null);
     }
@@ -466,9 +469,9 @@ function AdminPropertiesPageContent() {
     }
     const num = parseFloat(trimmed);
     if (isNaN(num)) {
-      setLongitudeError('Ungültige Zahl');
+      setLongitudeError(tProp('invalidNumber'));
     } else if (num < -180 || num > 180) {
-      setLongitudeError('Muss zwischen -180 und 180 liegen');
+      setLongitudeError(tProp('longitudeRange'));
     } else {
       setLongitudeError(null);
     }
@@ -506,7 +509,7 @@ function AdminPropertiesPageContent() {
 
     // Validate: if one coordinate is set, both must be set
     if ((parsedLatitude !== null) !== (parsedLongitude !== null)) {
-      toast.error('Bitte geben Sie sowohl Breitengrad als auch Längengrad an, oder lassen Sie beide leer.');
+      toast.error(tProp('bothCoordsRequired'));
       return;
     }
 
@@ -520,9 +523,9 @@ function AdminPropertiesPageContent() {
           parsedLongitude = result.lng;
           setLatitude(result.lat.toString());
           setLongitude(result.lng.toString());
-          toast.success('Koordinaten wurden automatisch ermittelt');
+          toast.success(tProp('coordsAutoDetected'));
         } else {
-          toast.warning('Adresse konnte nicht geocodiert werden – Liegenschaft wird ohne Koordinaten gespeichert.');
+          toast.warning(tProp('geocodeFailed'));
         }
       } finally {
         setIsGeocoding(false);
@@ -557,7 +560,7 @@ function AdminPropertiesPageContent() {
         queryClient.invalidateQueries({ queryKey: ['active-clients'] });
         queryClient.invalidateQueries({ queryKey: ['admin-clients'] });
       } catch (err: any) {
-        toast.error(`Fehler beim Erstellen des Kunden: ${err.message}`);
+        toast.error(`${tProp('clientCreateError')}: ${err.message}`);
         return;
       }
     }
@@ -605,7 +608,7 @@ function AdminPropertiesPageContent() {
     <PageContainer
       header={
         <Header
-          title="Liegenschaften"
+          title={tProp('title')}
           rightElement={
             <Button size="icon" onClick={() => setShowForm(true)}>
               <Plus className="h-5 w-5" />
@@ -619,7 +622,7 @@ function AdminPropertiesPageContent() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Liegenschaft suchen..."
+            placeholder={tProp('searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -632,19 +635,19 @@ function AdminPropertiesPageContent() {
             onChange={(e) => setShowInactiveProperties(e.target.checked)}
             className="rounded border-gray-300"
           />
-          <span className="text-muted-foreground">Inaktive Liegenschaften anzeigen</span>
+          <span className="text-muted-foreground">{tProp('showInactive')}</span>
         </label>
       </div>
 
       {/* Properties list */}
       {isLoading ? (
         <div className="text-center py-12 text-muted-foreground">
-          Wird geladen...
+          {t('common.loading')}
         </div>
       ) : filteredProperties.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <Building2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p>Keine Liegenschaften gefunden</p>
+          <p>{tProp('noProperties')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -673,7 +676,7 @@ function AdminPropertiesPageContent() {
                         </span>
                         {inactive && (
                           <span className="badge bg-gray-100 text-gray-700 text-xs">
-                            Inaktiv
+                            {tProp('inactive')}
                           </span>
                         )}
                       </div>
@@ -692,7 +695,7 @@ function AdminPropertiesPageContent() {
                             setShowDeactivateDialog(true);
                           }
                         }}
-                        title={inactive ? 'Liegenschaft aktivieren' : 'Liegenschaft deaktivieren'}
+                        title={inactive ? tProp('activate') : tProp('deactivate')}
                         disabled={toggleActiveMutation.isPending}
                       >
                         <Power className={cn('h-4 w-4', inactive ? 'text-green-500' : 'text-gray-400')} />
@@ -704,7 +707,7 @@ function AdminPropertiesPageContent() {
                           setAssigningProperty(property);
                           setShowUsersSheet(true);
                         }}
-                        title="Mitarbeiter zuweisen"
+                        title={tProp('assignEmployees')}
                       >
                         <Users className="h-4 w-4" />
                       </Button>
@@ -712,7 +715,7 @@ function AdminPropertiesPageContent() {
                         variant="ghost"
                         size="icon"
                         onClick={() => openEditForm(property)}
-                        title="Bearbeiten"
+                        title={tProp('edit')}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -723,7 +726,7 @@ function AdminPropertiesPageContent() {
                           setDeactivatingProperty(property);
                           setShowDeactivateDialog(true);
                         }}
-                        title="Deaktivieren"
+                        title={tProp('deactivate')}
                       >
                         <Trash2 className="h-4 w-4 text-error-600" />
                       </Button>
@@ -746,31 +749,31 @@ function AdminPropertiesPageContent() {
         <SheetContent side="bottom" className="h-[85vh]">
           <SheetHeader>
             <SheetTitle>
-              {editingProperty ? 'Liegenschaft bearbeiten' : 'Neue Liegenschaft'}
+              {editingProperty ? tProp('editProperty') : tProp('newProperty')}
             </SheetTitle>
           </SheetHeader>
 
           <form onSubmit={handleSubmit} className="mt-4 space-y-4 overflow-y-auto max-h-[calc(85vh-120px)]">
             <div className="space-y-2">
               <label className="text-sm font-medium">
-                Name <span className="text-error-500">*</span>
+                {tProp('name')} <span className="text-error-500">*</span>
               </label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Liegenschaftsname"
+                placeholder={tProp('namePlaceholder')}
                 required
               />
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium">
-                Adresse <span className="text-error-500">*</span>
+                {tProp('address')} <span className="text-error-500">*</span>
               </label>
               <Input
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                placeholder="Strasse und Hausnummer"
+                placeholder={tProp('addressPlaceholder')}
                 required
               />
             </div>
@@ -778,7 +781,7 @@ function AdminPropertiesPageContent() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <label className="text-sm font-medium">
-                  PLZ <span className="text-error-500">*</span>
+                  {tProp('postalCode')} <span className="text-error-500">*</span>
                 </label>
                 <Input
                   value={postalCode}
@@ -789,7 +792,7 @@ function AdminPropertiesPageContent() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">
-                  Ort <span className="text-error-500">*</span>
+                  {tProp('city')} <span className="text-error-500">*</span>
                 </label>
                 <Input
                   value={city}
@@ -801,21 +804,21 @@ function AdminPropertiesPageContent() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Typ</label>
+              <label className="text-sm font-medium">{tProp('type')}</label>
               <div className="flex flex-wrap gap-2">
-                {(Object.keys(propertyTypeLabels) as PropertyType[]).map((t) => (
+                {(Object.keys(propertyTypeLabels) as PropertyType[]).map((pt) => (
                   <button
-                    key={t}
+                    key={pt}
                     type="button"
-                    onClick={() => setType(t)}
+                    onClick={() => setType(pt)}
                     className={cn(
                       'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
-                      type === t
+                      type === pt
                         ? 'bg-primary-600 text-white'
                         : 'bg-muted text-muted-foreground hover:bg-muted/80'
                     )}
                   >
-                    {propertyTypeLabels[t]}
+                    {propertyTypeLabels[pt]}
                   </button>
                 ))}
               </div>
@@ -823,7 +826,7 @@ function AdminPropertiesPageContent() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Breitengrad</label>
+                <label className="text-sm font-medium">{tProp('latitude')}</label>
                 <Input
                   type="number"
                   inputMode="decimal"
@@ -842,7 +845,7 @@ function AdminPropertiesPageContent() {
                 )}
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Längengrad</label>
+                <label className="text-sm font-medium">{tProp('longitude')}</label>
                 <Input
                   type="number"
                   inputMode="decimal"
@@ -863,7 +866,7 @@ function AdminPropertiesPageContent() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Geofence-Radius (Meter)</label>
+              <label className="text-sm font-medium">{tProp('geofenceRadius')}</label>
               <Input
                 type="number"
                 inputMode="decimal"
@@ -875,7 +878,7 @@ function AdminPropertiesPageContent() {
 
             {/* Client selector */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Kunde</label>
+              <label className="text-sm font-medium">{tProp('client')}</label>
               <select
                 value={creatingNewClient ? '__new__' : selectedClientId}
                 onChange={(e) => {
@@ -889,42 +892,42 @@ function AdminPropertiesPageContent() {
                 }}
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               >
-                <option value="">Kein Kunde</option>
+                <option value="">{tProp('noClient')}</option>
                 {activeClients.map((client) => (
                   <option key={client.id} value={client.id}>
                     {client.name}
                   </option>
                 ))}
-                <option value="__new__">+ Neuen Kunden erstellen</option>
+                <option value="__new__">{tProp('createNewClient')}</option>
               </select>
             </div>
 
             {/* Inline new client fields */}
             {creatingNewClient && (
               <div className="space-y-3 rounded-lg border border-dashed border-primary-300 bg-primary-50/50 p-4">
-                <p className="text-sm font-medium text-primary-700">Neuer Kunde</p>
+                <p className="text-sm font-medium text-primary-700">{tProp('newClient')}</p>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">
-                    Name <span className="text-error-500">*</span>
+                    {tProp('name')} <span className="text-error-500">*</span>
                   </label>
                   <Input
                     value={newClientName}
                     onChange={(e) => setNewClientName(e.target.value)}
-                    placeholder="Firmenname oder Person"
+                    placeholder={tProp('clientNamePlaceholder')}
                     required={creatingNewClient}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Kontaktperson</label>
+                  <label className="text-sm font-medium">{tProp('contactPerson')}</label>
                   <Input
                     value={newClientContactPerson}
                     onChange={(e) => setNewClientContactPerson(e.target.value)}
-                    placeholder="Ansprechpartner"
+                    placeholder={tProp('contactPersonPlaceholder')}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">E-Mail</label>
+                    <label className="text-sm font-medium">{tProp('email')}</label>
                     <Input
                       type="email"
                       value={newClientEmail}
@@ -933,7 +936,7 @@ function AdminPropertiesPageContent() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Telefon</label>
+                    <label className="text-sm font-medium">{tProp('phone')}</label>
                     <Input
                       value={newClientPhone}
                       onChange={(e) => setNewClientPhone(e.target.value)}
@@ -942,16 +945,16 @@ function AdminPropertiesPageContent() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Adresse</label>
+                  <label className="text-sm font-medium">{tProp('address')}</label>
                   <Input
                     value={newClientAddress}
                     onChange={(e) => setNewClientAddress(e.target.value)}
-                    placeholder="Strasse und Hausnummer"
+                    placeholder={tProp('addressPlaceholder')}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">PLZ</label>
+                    <label className="text-sm font-medium">{tProp('postalCode')}</label>
                     <Input
                       value={newClientPostalCode}
                       onChange={(e) => setNewClientPostalCode(e.target.value)}
@@ -959,7 +962,7 @@ function AdminPropertiesPageContent() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Ort</label>
+                    <label className="text-sm font-medium">{tProp('city')}</label>
                     <Input
                       value={newClientCity}
                       onChange={(e) => setNewClientCity(e.target.value)}
@@ -977,7 +980,7 @@ function AdminPropertiesPageContent() {
                 className="flex-1"
                 onClick={resetForm}
               >
-                Abbrechen
+                {t('common.cancel')}
               </Button>
               <Button
                 type="submit"
@@ -985,12 +988,12 @@ function AdminPropertiesPageContent() {
                 disabled={isSubmitting || !name.trim() || !address.trim() || !city.trim() || !postalCode.trim() || !!latitudeError || !!longitudeError || (creatingNewClient && !newClientName.trim())}
               >
                 {isGeocoding
-                  ? 'Koordinaten werden ermittelt...'
+                  ? tProp('detectingCoords')
                   : isSubmitting
-                  ? 'Wird gespeichert...'
+                  ? tProp('saving')
                   : editingProperty
-                  ? 'Speichern'
-                  : 'Erstellen'}
+                  ? t('common.save')
+                  : tProp('create')}
               </Button>
             </div>
           </form>
@@ -1003,23 +1006,21 @@ function AdminPropertiesPageContent() {
       <Dialog open={showDeactivateDialog} onOpenChange={setShowDeactivateDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Liegenschaft deaktivieren</DialogTitle>
+            <DialogTitle>{tProp('deactivateProperty')}</DialogTitle>
             <DialogDescription>
-              Sind Sie sicher, dass Sie &quot;{deactivatingProperty?.name}&quot; deaktivieren möchten?
-              Mitarbeiter werden diese Liegenschaft nicht mehr sehen und keine Checklisten oder Aufgaben
-              dafür bearbeiten können.
+              {tProp('confirmDeactivate', { name: deactivatingProperty?.name || '' })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDeactivateDialog(false)}>
-              Abbrechen
+              {t('common.cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={() => deactivatingProperty && toggleActiveMutation.mutate({ propertyId: deactivatingProperty.id, isActive: false })}
               disabled={toggleActiveMutation.isPending}
             >
-              {toggleActiveMutation.isPending ? 'Wird deaktiviert...' : 'Deaktivieren'}
+              {toggleActiveMutation.isPending ? tProp('deactivating') : tProp('deactivate')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1033,7 +1034,7 @@ function AdminPropertiesPageContent() {
         <SheetContent side="bottom" className="h-[70vh]">
           <SheetHeader>
             <SheetTitle>
-              Mitarbeiter für {assigningProperty?.name}
+              {tProp('employeesFor', { name: assigningProperty?.name || '' })}
             </SheetTitle>
           </SheetHeader>
 
@@ -1045,7 +1046,7 @@ function AdminPropertiesPageContent() {
               onClick={() => assigningProperty && toggleAllUsersMutation.mutate({ propertyId: assigningProperty.id, assign: true })}
               disabled={toggleAllUsersMutation.isPending || !assigningProperty || propertyAssignments.length === allUsers.length}
             >
-              Allen zuweisen
+              {tProp('assignAll')}
             </Button>
             <Button
               variant="outline"
@@ -1053,14 +1054,14 @@ function AdminPropertiesPageContent() {
               onClick={() => assigningProperty && toggleAllUsersMutation.mutate({ propertyId: assigningProperty.id, assign: false })}
               disabled={toggleAllUsersMutation.isPending || !assigningProperty || propertyAssignments.length === 0}
             >
-              Alle entfernen
+              {tProp('removeAll')}
             </Button>
           </div>
 
           <div className="mt-4 space-y-2 overflow-y-auto max-h-[calc(70vh-160px)]">
             {allUsers.map((user) => {
               const isAssigned = propertyAssignments.includes(user.id);
-              const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') || 'Kein Name';
+              const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') || tProp('noName');
               const initials = getInitials(user.first_name, user.last_name);
 
               return (

@@ -162,7 +162,7 @@ export function Sidebar() {
           <>
             <div className="my-4 border-t border-primary-800" />
             <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Administration
+              {t('admin.administration')}
             </p>
             <div className="space-y-1">
               {filteredAdminItems.map((item) => {
@@ -239,7 +239,7 @@ export function Sidebar() {
           </div>
           <div className="flex flex-col overflow-hidden">
             <span className="truncate text-sm font-medium">
-              {profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Benutzer' : 'Benutzer'}
+              {profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || t('common.user') : t('common.user')}
             </span>
             <span className="truncate text-xs text-slate-400">
               {user?.email || ''}

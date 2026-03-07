@@ -5,18 +5,23 @@ import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/ui/logo';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { LogIn, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { LogIn, Eye, EyeOff, AlertCircle, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/stores/auth-store';
+import { useLocale } from '@/hooks/use-locale';
+import { locales, localeNames } from '@/lib/i18n';
 import { loginSchema, type LoginFormData } from '@/lib/validations';
 
 export default function LoginPage() {
   const router = useRouter();
   const login = useAuthStore((state) => state.login);
+  const t = useTranslations('auth');
+  const { locale, setLocale } = useLocale();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -39,7 +44,7 @@ export default function LoginPage() {
     setLoginError(null);
     try {
       const result = await login(data.username, data.password);
-      toast.success('Erfolgreich angemeldet');
+      toast.success(t('loginSuccess'));
 
       // Redirect to change-password if required
       if (result.mustChangePassword) {
@@ -48,9 +53,9 @@ export default function LoginPage() {
         router.push('/');
       }
     } catch (error: any) {
-      const message = error.message || 'Bitte überprüfen Sie Ihre Eingaben.';
+      const message = error.message || t('checkCredentials');
       setLoginError(message);
-      toast.error('Anmeldung fehlgeschlagen', {
+      toast.error(t('loginError'), {
         description: message,
       });
     } finally {
@@ -68,9 +73,9 @@ export default function LoginPage() {
       {/* Login card */}
       <Card>
         <CardHeader className="text-center">
-          <CardTitle>Anmelden</CardTitle>
+          <CardTitle>{t('login')}</CardTitle>
           <CardDescription>
-            Melden Sie sich mit Ihrem Benutzernamen an
+            {t('loginDescription')}
           </CardDescription>
         </CardHeader>
 
@@ -84,7 +89,7 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <Input
-              label="Benutzername"
+              label={t('username')}
               type="text"
               placeholder="benutzername"
               autoComplete="username"
@@ -95,7 +100,7 @@ export default function LoginPage() {
             />
 
             <Input
-              label="Passwort"
+              label={t('password')}
               type={showPassword ? 'text' : 'password'}
               placeholder="••••••••"
               autoComplete="current-password"
@@ -130,7 +135,7 @@ export default function LoginPage() {
                 />
               </span>
               <span className="text-sm text-muted-foreground">
-                Angemeldet bleiben
+                {t('rememberMe')}
               </span>
             </label>
 
@@ -139,24 +144,46 @@ export default function LoginPage() {
               size="touch"
               className="w-full"
               isLoading={isLoading}
-              loadingText="Wird angemeldet..."
+              loadingText={t('loggingIn')}
               leftIcon={<LogIn className="h-5 w-5" />}
             >
-              Anmelden
+              {t('login')}
             </Button>
           </form>
 
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Noch kein Konto?{' '}
+            {t('forgotPasswordNote')}
+          </p>
+
+          <p className="mt-3 text-center text-sm text-muted-foreground">
+            {t('noAccount')}{' '}
             <Link href="/register" className="text-primary-600 hover:underline font-medium">
-              Jetzt registrieren
+              {t('registerNow')}
             </Link>
           </p>
         </CardContent>
       </Card>
 
+      {/* Language Selector */}
+      <div className="mt-6 flex items-center justify-center">
+        <div className="flex items-center gap-2">
+          <Globe className="h-4 w-4 text-muted-foreground" />
+          <select
+            value={locale}
+            onChange={(e) => setLocale(e.target.value as any)}
+            className="text-sm bg-transparent border-none text-muted-foreground cursor-pointer focus:outline-none focus:ring-0"
+          >
+            {locales.map((loc) => (
+              <option key={loc} value={loc}>
+                {localeNames[loc]}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {/* Footer */}
-      <p className="mt-8 text-center text-xs text-muted-foreground">
+      <p className="mt-4 text-center text-xs text-muted-foreground">
         Version 1.0.0
       </p>
     </>

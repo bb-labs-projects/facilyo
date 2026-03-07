@@ -16,6 +16,7 @@ import {
   clearPermissionsCache,
   canEditRolePermissions,
 } from '@/lib/permissions';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import type { UserRole, PermissionName, RolePermission } from '@/types/database';
 
@@ -25,6 +26,8 @@ export default function AdminRolesPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const permissions = usePermissions();
+  const t = useTranslations();
+  const tRoles = useTranslations('roles');
 
   // Filter roles based on what the current user can edit
   const editableRoles = permissions.role
@@ -85,13 +88,13 @@ export default function AdminRolesPage() {
       return { role, permission, enabled };
     },
     onSuccess: () => {
-      toast.success('Berechtigung aktualisiert');
+      toast.success(tRoles('permissionUpdated'));
       clearPermissionsCache();
       queryClient.invalidateQueries({ queryKey: ['admin-role-permissions'] });
       queryClient.invalidateQueries({ queryKey: ['role-permissions'] });
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`${t('common.error')}: ${error.message}`);
     },
   });
 
@@ -118,7 +121,7 @@ export default function AdminRolesPage() {
 
   return (
     <PageContainer
-      header={<Header title="Rollen & Berechtigungen" />}
+      header={<Header title={tRoles('title')} />}
     >
       {/* Role Tabs */}
       <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
@@ -141,11 +144,11 @@ export default function AdminRolesPage() {
       {/* Permissions List */}
       {isLoading ? (
         <div className="text-center py-12 text-muted-foreground">
-          Wird geladen...
+          {t('common.loading')}
         </div>
       ) : !selectedRole ? (
         <div className="text-center py-12 text-muted-foreground">
-          Keine bearbeitbaren Rollen verfügbar.
+          {tRoles('noEditableRoles')}
         </div>
       ) : (
         <>
@@ -192,7 +195,7 @@ export default function AdminRolesPage() {
 
           {selectedRole === 'admin' && (
             <p className="mt-3 text-sm text-muted-foreground">
-              Der Administrator hat immer alle Berechtigungen. Diese können nicht entfernt werden.
+              {tRoles('adminNote')}
             </p>
           )}
         </>
@@ -201,8 +204,7 @@ export default function AdminRolesPage() {
       {/* Info Note */}
       <div className="mt-6 p-4 rounded-lg bg-blue-50 border border-blue-200">
         <p className="text-sm text-blue-700">
-          <strong>Hinweis:</strong> Änderungen an Berechtigungen werden sofort wirksam.
-          Benutzer müssen sich möglicherweise neu anmelden, damit alle Änderungen sichtbar werden.
+          <strong>{tRoles('noteTitle')}</strong> {tRoles('note')}
         </p>
       </div>
     </PageContainer>

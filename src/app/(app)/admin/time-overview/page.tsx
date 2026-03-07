@@ -47,7 +47,9 @@ import {
   differenceInSeconds,
   parseISO,
 } from 'date-fns';
-import { de } from 'date-fns/locale';
+import { useTranslations } from 'next-intl';
+import { useLocale as useAppLocale } from '@/hooks/use-locale';
+import { getDateFnsLocale } from '@/lib/i18n';
 import { ErrorBoundary } from '@/components/error-boundary';
 import type { Profile, TimeEntry, WorkDay, Property, ActivityType, TimeEntryType } from '@/types/database';
 // xlsx is dynamically imported in handleExportXLSX to avoid loading ~90KB upfront
@@ -106,6 +108,11 @@ export default function TimeOverviewPage() {
 function TimeOverviewPageContent() {
   const router = useRouter();
   const permissions = usePermissions();
+  const t = useTranslations();
+  const tTime = useTranslations('timeTracking');
+  const tAct = useTranslations('activities');
+  const { locale } = useAppLocale();
+  const dateFnsLocale = getDateFnsLocale(locale);
   const [viewMode, setViewMode] = useState<ViewMode>('weekly');
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -137,13 +144,13 @@ function TimeOverviewPageContent() {
 
   const dateRangeLabel = useMemo(() => {
     if (viewMode === 'daily') {
-      return format(dateRange.start, 'EEEE, dd. MMMM yyyy', { locale: de });
+      return format(dateRange.start, 'EEEE, dd. MMMM yyyy', { locale: dateFnsLocale });
     } else if (viewMode === 'weekly') {
-      const start = format(dateRange.start, 'dd.MM.', { locale: de });
-      const end = format(dateRange.end, 'dd.MM.yyyy', { locale: de });
-      return `KW ${format(dateRange.start, 'w', { locale: de })} (${start} - ${end})`;
+      const start = format(dateRange.start, 'dd.MM.', { locale: dateFnsLocale });
+      const end = format(dateRange.end, 'dd.MM.yyyy', { locale: dateFnsLocale });
+      return `KW ${format(dateRange.start, 'w', { locale: dateFnsLocale })} (${start} - ${end})`;
     } else {
-      return format(dateRange.start, 'MMMM yyyy', { locale: de });
+      return format(dateRange.start, 'MMMM yyyy', { locale: dateFnsLocale });
     }
   }, [viewMode, dateRange]);
 
@@ -330,7 +337,7 @@ function TimeOverviewPageContent() {
     filteredEntries.forEach((entry) => {
       if (entry.entry_type !== 'property' || !entry.property_id) return;
 
-      const propertyName = entry.property?.name || 'Unbekannt';
+      const propertyName = entry.property?.name || tTime('unknownProperty');
 
       if (!stats.has(entry.property_id)) {
         stats.set(entry.property_id, { name: propertyName, totalTime: 0, activities: new Map() });
@@ -499,8 +506,8 @@ function TimeOverviewPageContent() {
 
       sortedDays.forEach(([date, stats]) => {
         const parsedDate = parseISO(date);
-        const dayOfWeek = format(parsedDate, 'EEEE', { locale: de });
-        const formattedDate = format(parsedDate, 'dd.MM.yyyy', { locale: de });
+        const dayOfWeek = format(parsedDate, 'EEEE', { locale: dateFnsLocale });
+        const formattedDate = format(parsedDate, 'dd.MM.yyyy', { locale: dateFnsLocale });
 
         // Calculate day total (activities + travel)
         let dayPropertyTotal = 0;
@@ -641,7 +648,7 @@ function TimeOverviewPageContent() {
     } else if (viewMode === 'weekly') {
       filename = `Zeitübersicht_KW${format(dateRange.start, 'w')}_${format(dateRange.start, 'yyyy')}${filterSuffix}.xlsx`;
     } else {
-      filename = `Zeitübersicht_${format(dateRange.start, 'MMMM_yyyy', { locale: de })}${filterSuffix}.xlsx`;
+      filename = `Zeitübersicht_${format(dateRange.start, 'MMMM_yyyy', { locale: dateFnsLocale })}${filterSuffix}.xlsx`;
     }
 
     XLSX.writeFile(wb, filename);
@@ -657,7 +664,7 @@ function TimeOverviewPageContent() {
     <PageContainer
       header={
         <Header
-          title="Zeitübersicht"
+          title={tTime('overviewTitle')}
           rightElement={
             <div className="flex items-center gap-2">
               <Button
@@ -698,7 +705,7 @@ function TimeOverviewPageContent() {
               {activeFilterCount > 0 && (
                 <Button variant="ghost" size="sm" onClick={clearFilters} className="h-7 text-xs">
                   <X className="h-3 w-3 mr-1" />
-                  Zurücksetzen
+                  {tTime('reset')}
                 </Button>
               )}
             </div>
@@ -706,13 +713,13 @@ function TimeOverviewPageContent() {
           <CardContent className="space-y-3">
             {/* Employee Filter */}
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Mitarbeiter</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">{tTime('employee')}</label>
               <select
                 value={selectedEmployeeId || ''}
                 onChange={(e) => setSelectedEmployeeId(e.target.value || null)}
                 className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
               >
-                <option value="">Alle Mitarbeiter</option>
+                <option value="">{tTime('allEmployees')}</option>
                 {employees.map((emp) => (
                   <option key={emp.id} value={emp.id}>
                     {`${emp.first_name || ''} ${emp.last_name || ''}`.trim() || emp.email}
@@ -723,13 +730,13 @@ function TimeOverviewPageContent() {
 
             {/* Property Filter */}
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Liegenschaft</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">{tTime('property')}</label>
               <select
                 value={selectedPropertyId || ''}
                 onChange={(e) => setSelectedPropertyId(e.target.value || null)}
                 className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
               >
-                <option value="">Alle Liegenschaften</option>
+                <option value="">{tTime('allProperties')}</option>
                 {properties.map((prop) => (
                   <option key={prop.id} value={prop.id}>{prop.name}</option>
                 ))}
@@ -738,32 +745,32 @@ function TimeOverviewPageContent() {
 
             {/* Activity Type Filter */}
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Aktivität</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">{tTime('activityLabel')}</label>
               <select
                 value={selectedActivityType || ''}
                 onChange={(e) => setSelectedActivityType((e.target.value as ActivityType) || null)}
                 className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
               >
-                <option value="">Alle Aktivitäten</option>
+                <option value="">{tTime('allActivities')}</option>
                 {Object.entries(ACTIVITY_CONFIG).map(([key, config]) => (
-                  <option key={key} value={key}>{config.label}</option>
+                  <option key={key} value={key}>{tAct(key)}</option>
                 ))}
               </select>
             </div>
 
             {/* Entry Type Filter */}
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Eintragstyp</label>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">{tTime('entryType')}</label>
               <select
                 value={selectedEntryType || ''}
                 onChange={(e) => setSelectedEntryType((e.target.value as TimeEntryType) || null)}
                 className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
               >
-                <option value="">Alle Typen</option>
-                <option value="property">Liegenschaft</option>
-                <option value="travel">Fahrzeit</option>
-                <option value="break">Pause</option>
-                <option value="vacation">Ferien</option>
+                <option value="">{tTime('allTypes')}</option>
+                <option value="property">{tTime('propertyType')}</option>
+                <option value="travel">{tTime('travelType')}</option>
+                <option value="break">{tTime('breakType')}</option>
+                <option value="vacation">{tTime('vacationType')}</option>
               </select>
             </div>
           </CardContent>
@@ -781,7 +788,7 @@ function TimeOverviewPageContent() {
               : 'bg-muted text-muted-foreground hover:bg-muted/80'
           )}
         >
-          Täglich
+          {tTime('daily')}
         </button>
         <button
           onClick={() => setViewMode('weekly')}
@@ -792,7 +799,7 @@ function TimeOverviewPageContent() {
               : 'bg-muted text-muted-foreground hover:bg-muted/80'
           )}
         >
-          Wöchentlich
+          {tTime('weekly')}
         </button>
         <button
           onClick={() => setViewMode('monthly')}
@@ -803,7 +810,7 @@ function TimeOverviewPageContent() {
               : 'bg-muted text-muted-foreground hover:bg-muted/80'
           )}
         >
-          Monatlich
+          {tTime('monthly')}
         </button>
       </div>
 
@@ -836,7 +843,7 @@ function TimeOverviewPageContent() {
           <CardContent className="p-3">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <Building2 className="h-4 w-4" />
-              <span className="text-xs">Arbeitszeit</span>
+              <span className="text-xs">{tTime('workTimeLabel')}</span>
             </div>
             <p className="text-lg font-semibold">{formatDuration(totals.propertyTime)}</p>
           </CardContent>
@@ -851,7 +858,7 @@ function TimeOverviewPageContent() {
           <CardContent className="p-3">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <Car className="h-4 w-4" />
-              <span className="text-xs">Fahrtzeit</span>
+              <span className="text-xs">{tTime('travelTimeLabel')}</span>
             </div>
             <p className="text-lg font-semibold">{formatDuration(totals.travelTime)}</p>
           </CardContent>
@@ -866,7 +873,7 @@ function TimeOverviewPageContent() {
           <CardContent className="p-3">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <Coffee className="h-4 w-4" />
-              <span className="text-xs">Pausen</span>
+              <span className="text-xs">{tTime('breaksLabel')}</span>
             </div>
             <p className="text-lg font-semibold">{formatDuration(totals.breakTime)}</p>
           </CardContent>
@@ -881,7 +888,7 @@ function TimeOverviewPageContent() {
           <CardContent className="p-3">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <Palmtree className="h-4 w-4" />
-              <span className="text-xs">Ferien</span>
+              <span className="text-xs">{tTime('vacationLabel')}</span>
             </div>
             <p className="text-lg font-semibold">{formatDuration(totals.vacationTime)}</p>
           </CardContent>
@@ -890,7 +897,7 @@ function TimeOverviewPageContent() {
           <CardContent className="p-3">
             <div className="flex items-center gap-2 text-muted-foreground mb-1">
               <Clock className="h-4 w-4" />
-              <span className="text-xs">Gesamt</span>
+              <span className="text-xs">{tTime('totalLabel')}</span>
             </div>
             <p className="text-lg font-semibold text-primary-600">{formatDuration(totals.workTime)}</p>
           </CardContent>
@@ -899,15 +906,15 @@ function TimeOverviewPageContent() {
 
       {isLoading ? (
         <div className="text-center py-12 text-muted-foreground">
-          Wird geladen...
+          {t('common.loading')}
         </div>
       ) : filteredEntries.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p>Keine Zeiteinträge im ausgewählten Zeitraum</p>
+          <p>{tTime('noEntriesInPeriod')}</p>
           {activeFilterCount > 0 && (
             <Button variant="ghost" onClick={clearFilters} className="mt-2">
-              Filter zurücksetzen
+              {t('common.resetFilters')}
             </Button>
           )}
         </div>
@@ -919,7 +926,7 @@ function TimeOverviewPageContent() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
                   <BarChart3 className="h-4 w-4" />
-                  Nach Aktivität
+                  {tTime('byActivity')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -942,7 +949,7 @@ function TimeOverviewPageContent() {
                         <Icon className={cn('h-4 w-4 flex-shrink-0', stat.color)} />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between text-sm mb-1">
-                            <span className="truncate">{stat.label}</span>
+                            <span className="truncate">{tAct(stat.type)}</span>
                             <span className="font-medium">{formatDuration(stat.time)}</span>
                           </div>
                           <div className="h-1.5 bg-muted rounded-full overflow-hidden">
@@ -966,7 +973,7 @@ function TimeOverviewPageContent() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2">
                   <Building2 className="h-4 w-4" />
-                  Nach Liegenschaft
+                  {tTime('byProperty')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -1014,7 +1021,7 @@ function TimeOverviewPageContent() {
                   })}
                   {propertyStats.length > 10 && (
                     <p className="text-xs text-muted-foreground text-center">
-                      +{propertyStats.length - 10} weitere Liegenschaften
+                      {tTime('moreProperties', { count: propertyStats.length - 10 })}
                     </p>
                   )}
                 </div>
@@ -1027,7 +1034,7 @@ function TimeOverviewPageContent() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                Nach Mitarbeiter
+                {tTime('byEmployee')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -1056,7 +1063,7 @@ function TimeOverviewPageContent() {
                           </span>
                         </div>
                         <p className="text-xs text-muted-foreground mb-2">
-                          {stat.workDays} Arbeitstage
+                          {stat.workDays} {tTime('workDays')}
                         </p>
                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
                           <span className="flex items-center gap-1">

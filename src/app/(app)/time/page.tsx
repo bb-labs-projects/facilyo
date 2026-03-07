@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Calendar, ChevronLeft, ChevronRight, Car, Coffee, Building2, Palmtree } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
 import { PropertyTimeSummary } from '@/components/time-tracking/property-time-summary';
@@ -11,21 +12,26 @@ import { DailyCalendar } from '@/components/time-tracking/daily-calendar';
 import { PullToRefresh } from '@/components/layout/pull-to-refresh';
 import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
-import { swissFormat } from '@/lib/i18n';
+import { swissFormat, getDateFnsLocale } from '@/lib/i18n';
 import { addDays, subDays, startOfWeek, endOfWeek, format, isSameDay } from 'date-fns';
-import { de } from 'date-fns/locale';
+import { useLocale as useAppLocale } from '@/hooks/use-locale';
 import { cn } from '@/lib/utils';
 import type { WorkDayWithEntries, TimeEntryType } from '@/types/database';
 
 // Entry type display config
-const ENTRY_TYPE_CONFIG: Record<TimeEntryType, { label: string; icon: typeof Car; color: string }> = {
-  property: { label: 'Liegenschaft', icon: Building2, color: 'text-primary-900' },
-  travel: { label: 'Fahrzeit', icon: Car, color: 'text-amber-600' },
-  break: { label: 'Pause', icon: Coffee, color: 'text-orange-600' },
-  vacation: { label: 'Ferien', icon: Palmtree, color: 'text-green-600' },
+const ENTRY_TYPE_CONFIG: Record<TimeEntryType, { icon: typeof Car; color: string }> = {
+  property: { icon: Building2, color: 'text-primary-900' },
+  travel: { icon: Car, color: 'text-amber-600' },
+  break: { icon: Coffee, color: 'text-orange-600' },
+  vacation: { icon: Palmtree, color: 'text-green-600' },
 };
 
 export default function TimePage() {
+  const t = useTranslations();
+  const tTime = useTranslations('timeTracking');
+  const tEntry = useTranslations('entryTypes');
+  const { locale } = useAppLocale();
+  const dateFnsLocale = getDateFnsLocale(locale);
   const profile = useAuthStore((state) => state.profile);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'day' | 'week'>('day');
@@ -40,8 +46,8 @@ export default function TimePage() {
       let endDate: string;
 
       if (viewMode === 'week') {
-        const weekStart = startOfWeek(selectedDate, { locale: de });
-        const weekEnd = endOfWeek(selectedDate, { locale: de });
+        const weekStart = startOfWeek(selectedDate, { locale: dateFnsLocale });
+        const weekEnd = endOfWeek(selectedDate, { locale: dateFnsLocale });
         startDate = format(weekStart, 'yyyy-MM-dd');
         endDate = format(weekEnd, 'yyyy-MM-dd');
       } else {
@@ -138,8 +144,8 @@ export default function TimePage() {
 
   const formatDateHeader = () => {
     if (viewMode === 'week') {
-      const weekStart = startOfWeek(selectedDate, { locale: de });
-      const weekEnd = endOfWeek(selectedDate, { locale: de });
+      const weekStart = startOfWeek(selectedDate, { locale: dateFnsLocale });
+      const weekEnd = endOfWeek(selectedDate, { locale: dateFnsLocale });
       return `${format(weekStart, 'dd.MM.')} - ${format(weekEnd, 'dd.MM.yyyy')}`;
     }
     return swissFormat.date(selectedDate, 'EEEE, dd. MMMM yyyy');
@@ -149,7 +155,7 @@ export default function TimePage() {
     <PageContainer
       header={
         <Header
-          title="Zeiterfassung"
+          title={tTime('title')}
           rightElement={
             <div className="flex gap-1">
               <Button
@@ -157,14 +163,14 @@ export default function TimePage() {
                 size="sm"
                 onClick={() => setViewMode('day')}
               >
-                Tag
+                {tTime('day')}
               </Button>
               <Button
                 variant={viewMode === 'week' ? 'primary' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('week')}
               >
-                Woche
+                {tTime('week')}
               </Button>
             </div>
           }
@@ -185,7 +191,7 @@ export default function TimePage() {
                 onClick={handleToday}
                 className="text-xs text-primary-600 hover:underline"
               >
-                Heute
+                {tTime('today')}
               </button>
             )}
           </div>
@@ -198,7 +204,7 @@ export default function TimePage() {
         {/* Summary */}
         <div className="bg-primary-50 rounded-lg p-4 mb-4">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm text-primary-700">Gesamtzeit</span>
+            <span className="text-sm text-primary-700">{tTime('totalTime')}</span>
             <span className="text-lg font-semibold text-primary-900">
               {swissFormat.durationHuman(totalSeconds)}
             </span>
@@ -217,7 +223,7 @@ export default function TimePage() {
                   className="flex items-center gap-1.5 bg-white/50 rounded px-2 py-1"
                 >
                   <Icon className={cn('h-3 w-3', config.color)} />
-                  <span className="text-gray-600 truncate">{config.label}</span>
+                  <span className="text-gray-600 truncate">{tEntry(type)}</span>
                   <span className="font-medium ml-auto">
                     {swissFormat.durationHuman(seconds)}
                   </span>
@@ -233,7 +239,7 @@ export default function TimePage() {
           allEntries.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Keine Einträge für diese Woche</p>
+              <p>{tTime('noEntriesWeek')}</p>
             </div>
           ) : (
             <WeeklyCalendar
@@ -248,7 +254,7 @@ export default function TimePage() {
           allEntries.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Keine Einträge für diesen Tag</p>
+              <p>{tTime('noEntriesDay')}</p>
             </div>
           ) : (
             <div className="space-y-4">

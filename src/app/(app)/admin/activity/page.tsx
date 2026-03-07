@@ -42,6 +42,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { useCompletedTasksNotificationCount } from '@/hooks/use-completed-tasks-notification-count';
 import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import type {
   Property,
@@ -100,17 +101,17 @@ interface ChecklistInstanceWithRelations {
   };
 }
 
-const itemTypeConfig: Record<ChecklistItemType, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
-  checkbox: { label: 'Checkbox', icon: Check },
-  text: { label: 'Text', icon: Type },
-  number: { label: 'Zahl', icon: Hash },
-  photo: { label: 'Foto', icon: Camera },
+const itemTypeConfig: Record<ChecklistItemType, { icon: React.ComponentType<{ className?: string }> }> = {
+  checkbox: { icon: Check },
+  text: { icon: Type },
+  number: { icon: Hash },
+  photo: { icon: Camera },
 };
 
-const statusConfig: Record<string, { label: string; badgeClass: string; iconBg: string; iconColor: string }> = {
-  open: { label: 'Offen', badgeClass: 'badge-warning', iconBg: 'bg-warning-100', iconColor: 'text-warning-600' },
-  in_progress: { label: 'In Bearbeitung', badgeClass: 'badge-info', iconBg: 'bg-primary-100', iconColor: 'text-primary-600' },
-  resolved: { label: 'Erledigt', badgeClass: 'badge-success', iconBg: 'bg-success-100', iconColor: 'text-success-600' },
+const statusConfig: Record<string, { badgeClass: string; iconBg: string; iconColor: string }> = {
+  open: { badgeClass: 'badge-warning', iconBg: 'bg-warning-100', iconColor: 'text-warning-600' },
+  in_progress: { badgeClass: 'badge-info', iconBg: 'bg-primary-100', iconColor: 'text-primary-600' },
+  resolved: { badgeClass: 'badge-success', iconBg: 'bg-success-100', iconColor: 'text-success-600' },
 };
 
 function formatDateTime(dateString: string): string {
@@ -124,8 +125,8 @@ function formatDateTime(dateString: string): string {
   });
 }
 
-function formatName(profile: Profile | null): string {
-  if (!profile) return 'Unbekannt';
+function formatName(profile: Profile | null, fallback: string): string {
+  if (!profile) return fallback;
   const parts = [profile.first_name, profile.last_name].filter(Boolean);
   return parts.length > 0 ? parts.join(' ') : profile.email;
 }
@@ -136,6 +137,17 @@ export default function AdminActivityPage() {
   const permissions = usePermissions();
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
   const { markAsSeen } = useCompletedTasksNotificationCount();
+  const t = useTranslations();
+  const tAct = useTranslations('activity');
+
+  const getStatusLabel = (status: string): string => {
+    switch (status) {
+      case 'open': return tAct('statusOpen');
+      case 'in_progress': return tAct('statusInProgress');
+      case 'resolved': return tAct('statusResolved');
+      default: return tAct('unknown');
+    }
+  };
 
   // Mark completed task notifications as seen when visiting this page
   useEffect(() => {
@@ -298,13 +310,13 @@ export default function AdminActivityPage() {
       }
     },
     onSuccess: () => {
-      toast.success('Aufgabe wurde gelöscht');
+      toast.success(tAct('taskDeleted'));
       queryClient.invalidateQueries({ queryKey: ['admin-all-aufgaben'] });
       setDeleteAufgabeId(null);
       setSelectedAufgabe(null);
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`${t('common.error')}: ${error.message}`);
     },
   });
 
@@ -357,13 +369,13 @@ export default function AdminActivityPage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('Checkliste wurde gelöscht');
+      toast.success(tAct('checklistDeleted'));
       queryClient.invalidateQueries({ queryKey: ['admin-checklist-instances'] });
       setDeleteChecklistId(null);
       setSelectedChecklist(null);
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`${t('common.error')}: ${error.message}`);
     },
   });
 
@@ -395,7 +407,7 @@ export default function AdminActivityPage() {
     <PageContainer
       header={
         <Header
-          title="Aktivitäten"
+          title={tAct('title')}
           rightElement={
             <Button
               variant="ghost"
@@ -413,13 +425,13 @@ export default function AdminActivityPage() {
       {showFilters && (
         <Card className="mb-4">
           <CardContent className="p-4">
-            <label className="text-sm font-medium block mb-2">Liegenschaft</label>
+            <label className="text-sm font-medium block mb-2">{tAct('filterProperty')}</label>
             <select
               value={selectedPropertyId}
               onChange={(e) => setSelectedPropertyId(e.target.value)}
               className="flex h-11 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
             >
-              <option value="">Alle Liegenschaften</option>
+              <option value="">{tAct('allProperties')}</option>
               {properties.map((property) => (
                 <option key={property.id} value={property.id}>
                   {property.name}
@@ -442,7 +454,7 @@ export default function AdminActivityPage() {
           )}
         >
           <CheckCircle2 className="h-4 w-4 inline-block mr-2" />
-          Aufgaben
+          {tAct('tasks')}
         </button>
         <button
           onClick={() => setActiveTab('checklists')}
@@ -454,21 +466,21 @@ export default function AdminActivityPage() {
           )}
         >
           <ClipboardList className="h-4 w-4 inline-block mr-2" />
-          Checklisten
+          {tAct('checklistsTab')}
         </button>
       </div>
 
       {/* Content */}
       {isLoading ? (
         <div className="text-center py-12 text-muted-foreground">
-          Wird geladen...
+          {t('common.loading')}
         </div>
       ) : activeTab === 'aufgaben' ? (
         // Aufgaben Tab
         aufgaben.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <CheckCircle2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Keine Aufgaben vorhanden</p>
+            <p>{tAct('noTasks')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -478,7 +490,7 @@ export default function AdminActivityPage() {
               const status = statusConfig[aufgabe.status] || statusConfig.open;
               const StatusIcon = aufgabe.status === 'resolved' ? CheckCircle2 : aufgabe.status === 'in_progress' ? Clock : AlertCircle;
               const displayPerson = aufgabe.status === 'resolved' ? aufgabe.completer : aufgabe.assignee;
-              const personLabel = aufgabe.status === 'resolved' ? formatName(aufgabe.completer) : (aufgabe.assignee ? formatName(aufgabe.assignee) : 'Nicht zugewiesen');
+              const personLabel = aufgabe.status === 'resolved' ? formatName(aufgabe.completer, tAct('unknown')) : (aufgabe.assignee ? formatName(aufgabe.assignee, tAct('unknown')) : tAct('notAssigned'));
 
               return (
                 <Card
@@ -522,7 +534,7 @@ export default function AdminActivityPage() {
                       <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground pl-13">
                         <div className="flex items-center gap-1.5">
                           <Building2 className="h-3.5 w-3.5" />
-                          <span>{aufgabe.property?.name || 'Unbekannt'}</span>
+                          <span>{aufgabe.property?.name || tAct('unknown')}</span>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <User className="h-3.5 w-3.5" />
@@ -542,7 +554,7 @@ export default function AdminActivityPage() {
                       </div>
 
                       <div className="pl-13 flex flex-wrap items-center gap-2">
-                        <span className={cn('badge text-xs', status.badgeClass)}>{status.label}</span>
+                        <span className={cn('badge text-xs', status.badgeClass)}>{getStatusLabel(aufgabe.status)}</span>
                         {isSuperAdmin && aufgabe.organizations?.name && (
                           <span className="badge bg-purple-100 text-purple-700 text-xs">
                             {aufgabe.organizations.name}
@@ -551,13 +563,13 @@ export default function AdminActivityPage() {
                         {hasPhotos && (
                           <span className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Camera className="h-3 w-3" />
-                            Fotos
+                            {tAct('photos')}
                           </span>
                         )}
                         {hasNotes && (
                           <span className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Type className="h-3 w-3" />
-                            Notizen
+                            {tAct('notes')}
                           </span>
                         )}
                       </div>
@@ -573,14 +585,14 @@ export default function AdminActivityPage() {
         checklistInstances.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
             <ClipboardList className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Keine Checklisten-Erledigungen vorhanden</p>
+            <p>{tAct('noChecklistCompletions')}</p>
           </div>
         ) : (
           <div className="space-y-3">
             {checklistInstances.map((instance) => {
               const progress = getCompletedItemsCount(instance);
-              const propertyName = instance.template?.property?.name || instance.time_entry?.property?.name || 'Unbekannt';
-              const userName = formatName(instance.time_entry?.user);
+              const propertyName = instance.template?.property?.name || instance.time_entry?.property?.name || tAct('unknown');
+              const userName = formatName(instance.time_entry?.user, tAct('unknown'));
 
               return (
                 <Card
@@ -596,7 +608,7 @@ export default function AdminActivityPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium truncate">
-                          {instance.template?.name || 'Unbekannte Checkliste'}
+                          {instance.template?.name || tAct('unknownChecklist')}
                         </h3>
                         <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-sm text-muted-foreground mt-0.5">
                           <div className="flex items-center gap-1.5">
@@ -614,7 +626,7 @@ export default function AdminActivityPage() {
                         </div>
                         <div className="flex flex-wrap items-center gap-2 mt-1">
                           <p className="text-xs text-muted-foreground">
-                            {progress.completed}/{progress.total} Punkte erledigt
+                            {tAct('pointsCompleted', { completed: progress.completed, total: progress.total })}
                           </p>
                           {isSuperAdmin && instance.organizations?.name && (
                             <span className="badge bg-purple-100 text-purple-700 text-xs">
@@ -654,9 +666,9 @@ export default function AdminActivityPage() {
           {selectedChecklist && (
             <>
               <SheetHeader>
-                <SheetTitle>{selectedChecklist.template?.name || 'Checkliste'}</SheetTitle>
+                <SheetTitle>{selectedChecklist.template?.name || tAct('checklistsTab')}</SheetTitle>
                 <p className="text-sm text-muted-foreground">
-                  {formatName(selectedChecklist.time_entry?.user)} • {formatDateTime(selectedChecklist.updated_at)}
+                  {formatName(selectedChecklist.time_entry?.user, tAct('unknown'))} • {formatDateTime(selectedChecklist.updated_at)}
                 </p>
               </SheetHeader>
 
@@ -701,7 +713,7 @@ export default function AdminActivityPage() {
                           {hasValue && (
                             <div className="mt-2">
                               {item.type === 'checkbox' && (
-                                <span className="text-sm text-success-700">Ja</span>
+                                <span className="text-sm text-success-700">{tAct('yes')}</span>
                               )}
                               {item.type === 'text' && (
                                 <p className="text-sm text-muted-foreground bg-white p-2 rounded border">
@@ -724,7 +736,7 @@ export default function AdminActivityPage() {
                           )}
 
                           {!hasValue && (
-                            <span className="text-sm text-muted-foreground">Nicht ausgefüllt</span>
+                            <span className="text-sm text-muted-foreground">{tAct('notFilled')}</span>
                           )}
                         </div>
                       </div>
@@ -734,7 +746,7 @@ export default function AdminActivityPage() {
 
                 {(!selectedChecklist.template?.items || (selectedChecklist.template.items as unknown as ChecklistItem[]).length === 0) && (
                   <p className="text-center text-muted-foreground py-4">
-                    Keine Checklistenpunkte vorhanden
+                    {tAct('noChecklistItems')}
                   </p>
                 )}
 
@@ -747,7 +759,7 @@ export default function AdminActivityPage() {
                       onClick={() => setDeleteChecklistId(selectedChecklist.id)}
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
-                      Checkliste löschen
+                      {tAct('deleteChecklist')}
                     </Button>
                   </div>
                 )}
@@ -766,8 +778,8 @@ export default function AdminActivityPage() {
                 <SheetTitle>{selectedAufgabe.title}</SheetTitle>
                 <p className="text-sm text-muted-foreground">
                   {selectedAufgabe.status === 'resolved'
-                    ? `${formatName(selectedAufgabe.completer)} • ${selectedAufgabe.completed_at && formatDateTime(selectedAufgabe.completed_at)}`
-                    : `Erstellt am ${formatDateTime(selectedAufgabe.created_at)}`
+                    ? `${formatName(selectedAufgabe.completer, tAct('unknown'))} • ${selectedAufgabe.completed_at && formatDateTime(selectedAufgabe.completed_at)}`
+                    : tAct('createdOn', { date: formatDateTime(selectedAufgabe.created_at) })
                   }
                 </p>
               </SheetHeader>
@@ -778,10 +790,10 @@ export default function AdminActivityPage() {
                   const status = statusConfig[selectedAufgabe.status] || statusConfig.open;
                   return (
                     <div className="flex flex-wrap gap-2">
-                      <span className={cn('badge text-xs', status.badgeClass)}>{status.label}</span>
+                      <span className={cn('badge text-xs', status.badgeClass)}>{getStatusLabel(selectedAufgabe.status)}</span>
                       {selectedAufgabe.assignee && selectedAufgabe.status !== 'resolved' && (
                         <span className="badge bg-muted text-muted-foreground text-xs">
-                          Zugewiesen: {formatName(selectedAufgabe.assignee)}
+                          {tAct('assigned', { name: formatName(selectedAufgabe.assignee, tAct('unknown')) })}
                         </span>
                       )}
                     </div>
@@ -791,7 +803,7 @@ export default function AdminActivityPage() {
                 {/* Task Description */}
                 {selectedAufgabe.description && (
                   <div className="space-y-2">
-                    <h4 className="font-medium text-sm">Aufgabenbeschreibung</h4>
+                    <h4 className="font-medium text-sm">{tAct('taskDescription')}</h4>
                     <p className="text-sm text-muted-foreground bg-muted p-3 rounded-lg whitespace-pre-wrap">
                       {selectedAufgabe.description}
                     </p>
@@ -801,7 +813,7 @@ export default function AdminActivityPage() {
                 {/* Source Issue (Problem) */}
                 {selectedAufgabe.source_meldung && (
                   <div className="space-y-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                    <h4 className="font-medium text-sm text-amber-800">Ursprüngliche Meldung</h4>
+                    <h4 className="font-medium text-sm text-amber-800">{tAct('originalReport')}</h4>
                     <p className="text-sm font-medium text-amber-900">{selectedAufgabe.source_meldung.title}</p>
                     {selectedAufgabe.source_meldung.description && (
                       <p className="text-sm text-amber-800 whitespace-pre-wrap">
@@ -812,7 +824,7 @@ export default function AdminActivityPage() {
                       <div className="space-y-2">
                         <p className="text-sm text-amber-700 flex items-center gap-1">
                           <Camera className="h-4 w-4" />
-                          Fotos der Meldung
+                          {tAct('reportPhotos')}
                         </p>
                         <div className="grid grid-cols-3 gap-2">
                           {selectedAufgabe.source_meldung.photo_urls.map((url, index) => (
@@ -825,7 +837,7 @@ export default function AdminActivityPage() {
                             >
                               <img
                                 src={url}
-                                alt={`Meldung Foto ${index + 1}`}
+                                alt={`${tAct('reportPhotos')} ${index + 1}`}
                                 className="w-full h-full object-cover"
                               />
                             </a>
@@ -840,12 +852,12 @@ export default function AdminActivityPage() {
                 <div className="space-y-3 p-4 bg-success-50 border border-success-200 rounded-lg">
                   <div className="flex items-center gap-2 text-success-700">
                     <CheckCircle2 className="h-5 w-5" />
-                    <h4 className="font-medium text-sm">Abschluss-Dokumentation</h4>
+                    <h4 className="font-medium text-sm">{tAct('completionDoc')}</h4>
                   </div>
 
                   {selectedAufgabe.completion_notes && (
                     <div className="space-y-1">
-                      <p className="text-sm text-success-700 font-medium">Abschluss-Notizen</p>
+                      <p className="text-sm text-success-700 font-medium">{tAct('completionNotes')}</p>
                       <p className="text-sm text-success-800 whitespace-pre-wrap bg-white p-3 rounded-lg border border-success-200">
                         {selectedAufgabe.completion_notes}
                       </p>
@@ -856,7 +868,7 @@ export default function AdminActivityPage() {
                     <div className="space-y-2">
                       <p className="text-sm text-success-700 flex items-center gap-1 font-medium">
                         <Camera className="h-4 w-4" />
-                        Nachweisfotos
+                        {tAct('proofPhotos')}
                       </p>
                       <div className="grid grid-cols-3 gap-2">
                         {selectedAufgabe.completion_photo_urls.map((url, index) => (
@@ -869,7 +881,7 @@ export default function AdminActivityPage() {
                           >
                             <img
                               src={url}
-                              alt={`Nachweis ${index + 1}`}
+                              alt={`${tAct('proofPhotos')} ${index + 1}`}
                               className="w-full h-full object-cover"
                             />
                           </a>
@@ -879,7 +891,7 @@ export default function AdminActivityPage() {
                   )}
 
                   {!selectedAufgabe.completion_notes && (!selectedAufgabe.completion_photo_urls || selectedAufgabe.completion_photo_urls.length === 0) && (
-                    <p className="text-sm text-success-600">Keine Abschluss-Dokumentation vorhanden</p>
+                    <p className="text-sm text-success-600">{tAct('noCompletionDoc')}</p>
                   )}
                 </div>
 
@@ -903,7 +915,7 @@ export default function AdminActivityPage() {
                       onClick={() => setDeleteAufgabeId(selectedAufgabe.id)}
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
-                      Aufgabe löschen
+                      {tAct('deleteTask')}
                     </Button>
                   </div>
                 )}
@@ -917,9 +929,9 @@ export default function AdminActivityPage() {
       <Dialog open={!!deleteAufgabeId} onOpenChange={() => setDeleteAufgabeId(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Aufgabe löschen</DialogTitle>
+            <DialogTitle>{tAct('deleteTask')}</DialogTitle>
             <DialogDescription>
-              Möchten Sie diese Aufgabe wirklich löschen?
+              {tAct('confirmDeleteTask')}
               {aufgabeToDelete && (
                 <>
                   <br />
@@ -929,27 +941,27 @@ export default function AdminActivityPage() {
                   <br />
                   <span className="text-xs">
                     {aufgabeToDelete.status === 'resolved'
-                      ? `Erledigt von ${formatName(aufgabeToDelete.completer)}${aufgabeToDelete.completed_at ? ` am ${formatDateTime(aufgabeToDelete.completed_at)}` : ''}`
-                      : `Status: ${(statusConfig[aufgabeToDelete.status] || statusConfig.open).label}`
+                      ? tAct('completedBy', { name: formatName(aufgabeToDelete.completer, tAct('unknown')), date: aufgabeToDelete.completed_at ? formatDateTime(aufgabeToDelete.completed_at) : '' })
+                      : `${tAct('statusLabel')}: ${getStatusLabel(aufgabeToDelete.status)}`
                     }
                   </span>
                 </>
               )}
               <br />
               <br />
-              Diese Aktion kann nicht rückgängig gemacht werden.
+              {tAct('cannotBeUndone')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setDeleteAufgabeId(null)}>
-              Abbrechen
+              {t('common.cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={() => deleteAufgabeId && deleteAufgabeMutation.mutate(deleteAufgabeId)}
               disabled={deleteAufgabeMutation.isPending}
             >
-              {deleteAufgabeMutation.isPending ? 'Wird gelöscht...' : 'Löschen'}
+              {deleteAufgabeMutation.isPending ? tAct('deleting') : t('common.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -959,37 +971,36 @@ export default function AdminActivityPage() {
       <Dialog open={!!deleteChecklistId} onOpenChange={() => setDeleteChecklistId(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Checkliste löschen</DialogTitle>
+            <DialogTitle>{tAct('deleteChecklist')}</DialogTitle>
             <DialogDescription>
-              Möchten Sie diese ausgefüllte Checkliste wirklich löschen?
+              {tAct('confirmDeleteChecklist')}
               {checklistToDelete && (
                 <>
                   <br />
                   <span className="font-medium text-foreground">
-                    {checklistToDelete.template?.name || 'Unbekannte Checkliste'}
+                    {checklistToDelete.template?.name || tAct('unknownChecklist')}
                   </span>
                   <br />
                   <span className="text-xs">
-                    Ausgefüllt von {formatName(checklistToDelete.time_entry?.user)}
-                    {` am ${formatDateTime(checklistToDelete.updated_at)}`}
+                    {tAct('filledBy', { name: formatName(checklistToDelete.time_entry?.user, tAct('unknown')), date: formatDateTime(checklistToDelete.updated_at) })}
                   </span>
                 </>
               )}
               <br />
               <br />
-              Diese Aktion kann nicht rückgängig gemacht werden.
+              {tAct('cannotBeUndone')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setDeleteChecklistId(null)}>
-              Abbrechen
+              {t('common.cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={() => deleteChecklistId && deleteChecklistMutation.mutate(deleteChecklistId)}
               disabled={deleteChecklistMutation.isPending}
             >
-              {deleteChecklistMutation.isPending ? 'Wird gelöscht...' : 'Löschen'}
+              {deleteChecklistMutation.isPending ? tAct('deleting') : t('common.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

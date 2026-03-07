@@ -45,7 +45,9 @@ import {
   isSameDay,
   parseISO,
 } from 'date-fns';
-import { de } from 'date-fns/locale';
+import { useTranslations } from 'next-intl';
+import { useLocale as useAppLocale } from '@/hooks/use-locale';
+import { getDateFnsLocale } from '@/lib/i18n';
 import type { VacationRequestWithUser, Profile } from '@/types/database';
 
 const USER_COLORS = [
@@ -64,6 +66,10 @@ type Tab = 'kalender' | 'saldo' | 'antraege' | 'uebersicht';
 export default function VacationPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const t = useTranslations();
+  const tVac = useTranslations('vacation');
+  const { locale } = useAppLocale();
+  const dateFnsLocale = getDateFnsLocale(locale);
   const profile = useAuthStore((state) => state.profile);
   const organizationId = useAuthStore((state) => state.organizationId);
   const { canManageVacations } = usePermissions();
@@ -328,7 +334,7 @@ export default function VacationPage() {
 
       if (checkError) throw checkError;
       if (current.status !== 'pending') {
-        throw new Error('Antrag wurde bereits bearbeitet');
+        throw new Error(tVac('alreadyProcessed'));
       }
 
       // 2. Check user's balance before approving
@@ -359,7 +365,7 @@ export default function VacationPage() {
 
       if (usedDays + request.total_days > allowance) {
         throw new Error(
-          `Nicht genügend Ferientage: ${allowance - usedDays} verfügbar, ${request.total_days} beantragt`
+          tVac('insufficientDays', { available: allowance - usedDays, requested: request.total_days })
         );
       }
 
@@ -387,7 +393,7 @@ export default function VacationPage() {
             .join(', ');
 
           throw new Error(
-            `Konflikt: Es bestehen bereits Arbeitseinträge am ${conflictDates}. Bitte zuerst die bestehenden Einträge entfernen.`
+            tVac('conflictError', { dates: conflictDates })
           );
         }
       }
@@ -514,7 +520,7 @@ export default function VacationPage() {
       }
     },
     onSuccess: () => {
-      toast.success('Ferienantrag bewilligt');
+      toast.success(tVac('approvedSuccess'));
       queryClient.invalidateQueries({ queryKey: ['vacation-pending'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-approved'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-calendar'] });
@@ -523,7 +529,7 @@ export default function VacationPage() {
       queryClient.invalidateQueries({ queryKey: ['vacation-notification-count'] });
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`${t('common.error')}: ${error.message}`);
     },
   });
 
@@ -547,7 +553,7 @@ export default function VacationPage() {
 
       if (checkError) throw checkError;
       if (current.status !== 'pending') {
-        throw new Error('Antrag wurde bereits bearbeitet');
+        throw new Error(tVac('alreadyProcessed'));
       }
 
       const { error } = await (supabase as any)
@@ -564,7 +570,7 @@ export default function VacationPage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('Ferienantrag abgelehnt');
+      toast.success(tVac('rejectedSuccess'));
       setRejectingRequest(null);
       setRejectionReason('');
       queryClient.invalidateQueries({ queryKey: ['vacation-pending'] });
@@ -574,7 +580,7 @@ export default function VacationPage() {
       queryClient.invalidateQueries({ queryKey: ['vacation-notification-count'] });
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`${t('common.error')}: ${error.message}`);
     },
   });
 
@@ -611,7 +617,7 @@ export default function VacationPage() {
               .eq('work_day_id', workDay.id)
               .eq('entry_type', 'vacation');
 
-            if (deleteError) throw new Error(`Zeiteinträge für ${dateStr} konnten nicht gelöscht werden`);
+            if (deleteError) throw new Error(tVac('deleteTimeEntriesError', { date: dateStr }));
 
             // Check if work day has remaining entries
             const { data: remaining } = await (supabase as any)
@@ -641,7 +647,7 @@ export default function VacationPage() {
           queryClient.invalidateQueries({ queryKey: ['vacation-calendar'] });
           queryClient.invalidateQueries({ queryKey: ['vacation-own'] });
           queryClient.invalidateQueries({ queryKey: ['vacation-used-days'] });
-          toast.error('Stornierung teilweise fehlgeschlagen. Bitte prüfen Sie die Zeiteinträge.');
+          toast.error(tVac('partialCancelError'));
           throw cleanupError;
         }
       }
@@ -655,7 +661,7 @@ export default function VacationPage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('Ferienantrag storniert');
+      toast.success(tVac('cancelled'));
       queryClient.invalidateQueries({ queryKey: ['vacation-pending'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-approved'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-calendar'] });
@@ -664,7 +670,7 @@ export default function VacationPage() {
       queryClient.invalidateQueries({ queryKey: ['vacation-notification-count'] });
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`${t('common.error')}: ${error.message}`);
     },
   });
 
@@ -681,14 +687,14 @@ export default function VacationPage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('Abgelehnter Antrag entfernt');
+      toast.success(tVac('deletedRejected'));
       queryClient.invalidateQueries({ queryKey: ['vacation-rejected'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-own'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-used-days'] });
       queryClient.invalidateQueries({ queryKey: ['vacation-notification-count'] });
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`${t('common.error')}: ${error.message}`);
     },
   });
 
@@ -750,19 +756,19 @@ export default function VacationPage() {
       case 'pending':
         return (
           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-            Beantragt
+            {tVac('requested')}
           </span>
         );
       case 'approved':
         return (
           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            Bewilligt
+            {tVac('approvedStatus')}
           </span>
         );
       case 'rejected':
         return (
           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-            Abgelehnt
+            {tVac('rejectedStatus')}
           </span>
         );
       default:
@@ -780,7 +786,7 @@ export default function VacationPage() {
   // ─── Render ───
   return (
     <PageContainer
-      header={<Header title="Ferien" />}
+      header={<Header title={tVac('title')} />}
     >
       <PullToRefresh onRefresh={handleRefresh}>
         {/* Tab bar */}
@@ -804,7 +810,7 @@ export default function VacationPage() {
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            Kalender
+            {tVac('calendarTab')}
           </button>
           <button
             role="tab"
@@ -819,7 +825,7 @@ export default function VacationPage() {
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            Saldo
+            {tVac('balanceTab')}
           </button>
           {canManageVacations && (
             <button
@@ -835,7 +841,7 @@ export default function VacationPage() {
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              Anträge
+              {tVac('requestsTab')}
               {pendingRequests.length > 0 && (
                 <span className="ml-1 inline-flex items-center justify-center w-5 h-5 bg-red-500 text-white text-xs rounded-full">
                   {pendingRequests.length}
@@ -857,7 +863,7 @@ export default function VacationPage() {
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              Übersicht
+              {tVac('overviewTab')}
             </button>
           )}
         </div>
@@ -869,18 +875,18 @@ export default function VacationPage() {
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label="Vorheriger Monat"
+                aria-label={tVac('previousMonth')}
                 onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
               >
                 <ChevronLeft className="h-5 w-5" />
               </Button>
               <h2 className="text-lg font-semibold">
-                {format(currentMonth, 'MMMM yyyy', { locale: de })}
+                {format(currentMonth, 'MMMM yyyy', { locale: dateFnsLocale })}
               </h2>
               <Button
                 variant="ghost"
                 size="icon"
-                aria-label="Nächster Monat"
+                aria-label={tVac('nextMonth')}
                 onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
               >
                 <ChevronRight className="h-5 w-5" />
@@ -890,7 +896,15 @@ export default function VacationPage() {
             {/* Calendar grid */}
             <div role="grid" className="grid grid-cols-7 gap-px bg-gray-200 rounded-lg overflow-hidden">
               {/* Weekday headers */}
-              {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((day) => (
+              {[
+                tVac('weekdays.mo'),
+                tVac('weekdays.tu'),
+                tVac('weekdays.we'),
+                tVac('weekdays.th'),
+                tVac('weekdays.fr'),
+                tVac('weekdays.sa'),
+                tVac('weekdays.su'),
+              ].map((day) => (
                 <div
                   key={day}
                   role="columnheader"
@@ -937,7 +951,7 @@ export default function VacationPage() {
                         const isHalfDay = req.is_half_day && req.start_date === req.end_date;
                         const isMorning = isHalfDay && req.half_day_period === 'morning';
                         const isAfternoon = isHalfDay && req.half_day_period === 'afternoon';
-                        const periodLabel = isMorning ? ', Vormittag' : isAfternoon ? ', Nachmittag' : '';
+                        const periodLabel = isMorning ? `, ${tVac('morning')}` : isAfternoon ? `, ${tVac('afternoon')}` : '';
                         return (
                           <div
                             key={req.id}
@@ -957,8 +971,8 @@ export default function VacationPage() {
                                   ? `1px dashed ${color}`
                                   : 'none',
                               }}
-                              title={`${getUserName(req.user)} (${req.status === 'pending' ? 'beantragt' : 'bewilligt'}${periodLabel})`}
-                              aria-label={`${getUserName(req.user)} (${req.status === 'pending' ? 'beantragt' : 'bewilligt'}${periodLabel})`}
+                              title={`${getUserName(req.user)} (${req.status === 'pending' ? tVac('requested').toLowerCase() : tVac('approvedStatus').toLowerCase()}${periodLabel})`}
+                              aria-label={`${getUserName(req.user)} (${req.status === 'pending' ? tVac('requested').toLowerCase() : tVac('approvedStatus').toLowerCase()}${periodLabel})`}
                             />
                           </div>
                         );
@@ -997,19 +1011,19 @@ export default function VacationPage() {
                 <div className="flex gap-4 text-[10px] text-gray-400">
                   <div className="flex items-center gap-1">
                     <div className="w-6 h-1.5 rounded-full bg-gray-300" />
-                    <span>Ganztag</span>
+                    <span>{tVac('fullDay')}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <div className="flex w-6">
                       <div className="w-3 h-1.5 rounded-full bg-gray-300" />
                     </div>
-                    <span>Vormittag</span>
+                    <span>{tVac('morning')}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <div className="flex w-6 justify-end">
                       <div className="w-3 h-1.5 rounded-full bg-gray-300" />
                     </div>
-                    <span>Nachmittag</span>
+                    <span>{tVac('afternoon')}</span>
                   </div>
                 </div>
               </div>
@@ -1024,66 +1038,65 @@ export default function VacationPage() {
             <div className="grid grid-cols-2 gap-3 mb-4">
               <Card>
                 <CardContent className="p-4 text-center">
-                  <p className="text-xs text-muted-foreground">Jahresanspruch</p>
+                  <p className="text-xs text-muted-foreground">{tVac('totalDays')}</p>
                   <p className="text-2xl font-bold text-primary-700">
                     {vacationDaysPerYear}
                   </p>
-                  <p className="text-xs text-muted-foreground">Tage</p>
+                  <p className="text-xs text-muted-foreground">{tVac('days')}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4 text-center">
-                  <p className="text-xs text-muted-foreground">Bezogen</p>
+                  <p className="text-xs text-muted-foreground">{tVac('usedDays')}</p>
                   <p className="text-2xl font-bold text-orange-600">
                     {approvedPast}
                   </p>
-                  <p className="text-xs text-muted-foreground">Tage</p>
+                  <p className="text-xs text-muted-foreground">{tVac('days')}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4 text-center">
-                  <p className="text-xs text-muted-foreground">Bewilligt offen</p>
+                  <p className="text-xs text-muted-foreground">{tVac('plannedDays')}</p>
                   <p className="text-2xl font-bold text-blue-600">
                     {approvedFuture}
                   </p>
-                  <p className="text-xs text-muted-foreground">Tage</p>
+                  <p className="text-xs text-muted-foreground">{tVac('days')}</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4 text-center">
-                  <p className="text-xs text-muted-foreground">Verfügbar</p>
+                  <p className="text-xs text-muted-foreground">{tVac('remainingDays')}</p>
                   <p className={cn(
                     'text-2xl font-bold',
                     remaining >= 0 ? 'text-green-600' : 'text-red-600'
                   )}>
                     {remaining}
                   </p>
-                  <p className="text-xs text-muted-foreground">Tage</p>
+                  <p className="text-xs text-muted-foreground">{tVac('days')}</p>
                 </CardContent>
               </Card>
             </div>
 
             {/* Pro-rata info */}
             <div className="bg-blue-50 rounded-lg p-3 mb-6 text-sm text-blue-800">
-              Bis {format(today, 'MMMM', { locale: de })} anteilsmässig verfügbar:{' '}
-              <span className="font-semibold">{proRata} Tage</span>
+              {tVac('proRata', { month: format(today, 'MMMM', { locale: dateFnsLocale }), days: proRata })}
             </div>
 
             {/* Own requests list */}
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold">Meine Anträge</h3>
+              <h3 className="font-semibold">{tVac('myRequests')}</h3>
               <Button
                 size="sm"
                 onClick={() => router.push('/vacation/new')}
                 leftIcon={<Plus className="h-4 w-4" />}
               >
-                Beantragen
+                {tVac('request')}
               </Button>
             </div>
             {ownRequests.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Calendar className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                <p>Keine Ferienanträge vorhanden</p>
+                <p>{tVac('noOwnRequests')}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -1094,16 +1107,16 @@ export default function VacationPage() {
                         <div>
                           <p className="font-medium text-sm">
                             {format(parseISO(req.start_date), 'dd.MM.yyyy', {
-                              locale: de,
+                              locale: dateFnsLocale,
                             })}{' '}
                             &ndash;{' '}
                             {format(parseISO(req.end_date), 'dd.MM.yyyy', {
-                              locale: de,
+                              locale: dateFnsLocale,
                             })}
                           </p>
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            {req.total_days} {req.total_days === 1 ? 'Tag' : 'Tage'}
-                            {req.is_half_day && ` (${req.half_day_period === 'afternoon' ? 'Nachmittag' : 'Vormittag'})`}
+                            {req.total_days} {tVac('days')}
+                            {req.is_half_day && ` (${req.half_day_period === 'afternoon' ? tVac('afternoon') : tVac('morning')})`}
                           </p>
                           {req.notes && (
                             <p className="text-xs text-muted-foreground mt-1">
@@ -1112,7 +1125,7 @@ export default function VacationPage() {
                           )}
                           {req.rejection_reason && (
                             <p className="text-xs text-red-600 mt-1">
-                              Grund: {req.rejection_reason}
+                              {tVac('reason')}: {req.rejection_reason}
                             </p>
                           )}
                         </div>
@@ -1124,7 +1137,7 @@ export default function VacationPage() {
                               onClick={() => setConfirmCancelRequest(req)}
                               disabled={cancelMutation.isPending}
                               className="p-2 -mr-1 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                              title="Stornieren"
+                              title={tVac('cancelRequest')}
                             >
                               <X className="h-5 w-5" />
                             </button>
@@ -1145,11 +1158,11 @@ export default function VacationPage() {
           <div role="tabpanel" id="tabpanel-antraege" aria-labelledby="tab-antraege" className="space-y-6">
             {/* Pending requests */}
             <div>
-              <h3 className="font-semibold mb-3">Offene Anträge</h3>
+              <h3 className="font-semibold mb-3">{tVac('pendingRequests')}</h3>
               {pendingRequests.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <FileText className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                  <p>Keine offenen Anträge</p>
+                  <p>{tVac('noPendingRequests')}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -1162,16 +1175,16 @@ export default function VacationPage() {
                           </p>
                           <p className="text-sm text-muted-foreground">
                             {format(parseISO(req.start_date), 'dd.MM.yyyy', {
-                              locale: de,
+                              locale: dateFnsLocale,
                             })}{' '}
                             &ndash;{' '}
                             {format(parseISO(req.end_date), 'dd.MM.yyyy', {
-                              locale: de,
+                              locale: dateFnsLocale,
                             })}
                           </p>
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            {req.total_days} {req.total_days === 1 ? 'Tag' : 'Tage'}
-                            {req.is_half_day && ` (${req.half_day_period === 'afternoon' ? 'Nachmittag' : 'Vormittag'})`}
+                            {req.total_days} {tVac('days')}
+                            {req.is_half_day && ` (${req.half_day_period === 'afternoon' ? tVac('afternoon') : tVac('morning')})`}
                           </p>
                           {req.notes && (
                             <p className="text-sm text-muted-foreground mt-1">
@@ -1184,11 +1197,11 @@ export default function VacationPage() {
                           <div className="mb-3 flex items-start gap-2 p-2 bg-orange-50 border border-orange-200 rounded-lg">
                             <AlertTriangle className="h-4 w-4 text-orange-600 flex-shrink-0 mt-0.5" />
                             <p className="text-xs text-orange-800">
-                              Arbeitseinträge vorhanden am{' '}
-                              {conflictMap.get(req.id)!.map((d) =>
-                                format(parseISO(d), 'dd.MM.yyyy')
-                              ).join(', ')}
-                              {' '}&ndash; Bewilligung nicht möglich.
+                              {tVac('conflictWarning', {
+                                dates: conflictMap.get(req.id)!.map((d) =>
+                                  format(parseISO(d), 'dd.MM.yyyy')
+                                ).join(', ')
+                              })}
                             </p>
                           </div>
                         )}
@@ -1199,7 +1212,7 @@ export default function VacationPage() {
                             onClick={() => approveMutation.mutate(req)}
                             disabled={approveMutation.isPending || conflictMap.has(req.id)}
                           >
-                            {approveMutation.isPending ? 'Wird bewilligt...' : 'Bewilligen'}
+                            {approveMutation.isPending ? t('common.loading') : tVac('approve')}
                           </Button>
                           <Button
                             variant="outline"
@@ -1210,7 +1223,7 @@ export default function VacationPage() {
                             }}
                             disabled={rejectMutation.isPending}
                           >
-                            Ablehnen
+                            {tVac('reject')}
                           </Button>
                         </div>
                       </CardContent>
@@ -1222,9 +1235,9 @@ export default function VacationPage() {
 
             {/* Approved requests */}
             <div>
-              <h3 className="font-semibold mb-3">Bewilligte Ferien ({currentYear})</h3>
+              <h3 className="font-semibold mb-3">{tVac('approvedVacations')} ({currentYear})</h3>
               {approvedRequests.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4 text-center">Keine bewilligten Anträge</p>
+                <p className="text-sm text-muted-foreground py-4 text-center">{tVac('noApprovedVacation')}</p>
               ) : (
                 <div className="space-y-3">
                   {approvedRequests.map((req) => (
@@ -1237,16 +1250,16 @@ export default function VacationPage() {
                             </p>
                             <p className="text-sm text-muted-foreground">
                               {format(parseISO(req.start_date), 'dd.MM.yyyy', {
-                                locale: de,
+                                locale: dateFnsLocale,
                               })}{' '}
                               &ndash;{' '}
                               {format(parseISO(req.end_date), 'dd.MM.yyyy', {
-                                locale: de,
+                                locale: dateFnsLocale,
                               })}
                             </p>
                             <p className="text-xs text-muted-foreground mt-0.5">
-                              {req.total_days} {req.total_days === 1 ? 'Tag' : 'Tage'}
-                              {req.is_half_day && ` (${req.half_day_period === 'afternoon' ? 'Nachmittag' : 'Vormittag'})`}
+                              {req.total_days} {tVac('days')}
+                              {req.is_half_day && ` (${req.half_day_period === 'afternoon' ? tVac('afternoon') : tVac('morning')})`}
                             </p>
                           </div>
                           <Button
@@ -1256,7 +1269,7 @@ export default function VacationPage() {
                             onClick={() => setConfirmCancelApprovedRequest(req)}
                             disabled={cancelMutation.isPending}
                           >
-                            Stornieren
+                            {tVac('cancelRequest')}
                           </Button>
                         </div>
                       </CardContent>
@@ -1268,9 +1281,9 @@ export default function VacationPage() {
 
             {/* Rejected requests */}
             <div>
-              <h3 className="font-semibold mb-3">Abgelehnte Anträge ({currentYear})</h3>
+              <h3 className="font-semibold mb-3">{tVac('rejectedRequests')} ({currentYear})</h3>
               {rejectedRequests.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4 text-center">Keine abgelehnten Anträge</p>
+                <p className="text-sm text-muted-foreground py-4 text-center">{tVac('noRejectedRequests')}</p>
               ) : (
                 <div className="space-y-3">
                   {rejectedRequests.map((req) => (
@@ -1283,20 +1296,20 @@ export default function VacationPage() {
                             </p>
                             <p className="text-sm text-muted-foreground">
                               {format(parseISO(req.start_date), 'dd.MM.yyyy', {
-                                locale: de,
+                                locale: dateFnsLocale,
                               })}{' '}
                               &ndash;{' '}
                               {format(parseISO(req.end_date), 'dd.MM.yyyy', {
-                                locale: de,
+                                locale: dateFnsLocale,
                               })}
                             </p>
                             <p className="text-xs text-muted-foreground mt-0.5">
-                              {req.total_days} {req.total_days === 1 ? 'Tag' : 'Tage'}
-                              {req.is_half_day && ` (${req.half_day_period === 'afternoon' ? 'Nachmittag' : 'Vormittag'})`}
+                              {req.total_days} {tVac('days')}
+                              {req.is_half_day && ` (${req.half_day_period === 'afternoon' ? tVac('afternoon') : tVac('morning')})`}
                             </p>
                             {req.rejection_reason && (
                               <p className="text-xs text-red-600 mt-1">
-                                Grund: {req.rejection_reason}
+                                {tVac('reason')}: {req.rejection_reason}
                               </p>
                             )}
                           </div>
@@ -1307,7 +1320,7 @@ export default function VacationPage() {
                             onClick={() => setConfirmDeleteRejectedId({ id: req.id, name: getUserName(req.user) })}
                             disabled={deleteRejectedMutation.isPending}
                           >
-                            Entfernen
+                            {t('common.delete')}
                           </Button>
                         </div>
                       </CardContent>
@@ -1321,11 +1334,11 @@ export default function VacationPage() {
         {/* ════════════════ TAB 4: ÜBERSICHT (Admin) ════════════════ */}
         {activeTab === 'uebersicht' && canManageVacations && (
           <div role="tabpanel" id="tabpanel-uebersicht" aria-labelledby="tab-uebersicht">
-            <h3 className="font-semibold mb-3">Feriensaldo aller Mitarbeiter ({currentYear})</h3>
+            <h3 className="font-semibold mb-3">{tVac('overviewTitle')} ({currentYear})</h3>
             {overviewData.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Calendar className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                <p>Keine aktiven Mitarbeiter gefunden</p>
+                <p>{tVac('noActiveEmployees')}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -1335,19 +1348,19 @@ export default function VacationPage() {
                       <p className="font-semibold text-sm mb-2">{emp.name}</p>
                       <div className="grid grid-cols-4 gap-2 text-center">
                         <div>
-                          <p className="text-xs text-muted-foreground">Anspruch</p>
+                          <p className="text-xs text-muted-foreground">{tVac('totalDays')}</p>
                           <p className="text-lg font-bold text-primary-700">{emp.allowance}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Bewilligt</p>
+                          <p className="text-xs text-muted-foreground">{tVac('taken')}</p>
                           <p className="text-lg font-bold text-orange-600">{emp.approved}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Beantragt</p>
+                          <p className="text-xs text-muted-foreground">{tVac('pending')}</p>
                           <p className="text-lg font-bold text-yellow-600">{emp.pending}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Verfügbar</p>
+                          <p className="text-xs text-muted-foreground">{tVac('remaining')}</p>
                           <p className={cn(
                             'text-lg font-bold',
                             emp.available >= 0 ? 'text-green-600' : 'text-red-600'
@@ -1372,9 +1385,9 @@ export default function VacationPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Antrag ablehnen</DialogTitle>
+            <DialogTitle>{tVac('reject')}</DialogTitle>
             <DialogDescription>
-              Bitte geben Sie einen Grund für die Ablehnung an.
+              {tVac('rejectionReason')}
             </DialogDescription>
           </DialogHeader>
 
@@ -1386,19 +1399,19 @@ export default function VacationPage() {
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {format(parseISO(rejectingRequest.start_date), 'dd.MM.yyyy', {
-                    locale: de,
+                    locale: dateFnsLocale,
                   })}{' '}
                   &ndash;{' '}
                   {format(parseISO(rejectingRequest.end_date), 'dd.MM.yyyy', {
-                    locale: de,
+                    locale: dateFnsLocale,
                   })}{' '}
                   ({rejectingRequest.total_days}{' '}
-                  {rejectingRequest.total_days === 1 ? 'Tag' : 'Tage'})
+                  {tVac('days')})
                 </p>
               </div>
             )}
             <Input
-              placeholder="Ablehnungsgrund..."
+              placeholder={tVac('rejectionReasonPlaceholder')}
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
             />
@@ -1409,7 +1422,7 @@ export default function VacationPage() {
               variant="outline"
               onClick={() => setRejectingRequest(null)}
             >
-              Abbrechen
+              {t('common.cancel')}
             </Button>
             <Button
               className="bg-red-600 hover:bg-red-700 text-white"
@@ -1422,7 +1435,7 @@ export default function VacationPage() {
               }
               disabled={!rejectionReason.trim() || rejectMutation.isPending}
             >
-              {rejectMutation.isPending ? 'Wird abgelehnt...' : 'Ablehnen'}
+              {rejectMutation.isPending ? t('common.loading') : tVac('reject')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1435,11 +1448,11 @@ export default function VacationPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Antrag stornieren</DialogTitle>
+            <DialogTitle>{confirmCancelRequest?.status === 'approved' ? tVac('cancelApproved') : tVac('cancelPending')}</DialogTitle>
             <DialogDescription>
               {confirmCancelRequest?.status === 'approved'
-                ? 'Bewilligten Antrag stornieren? Die zugehörigen Zeiteinträge werden gelöscht.'
-                : 'Antrag stornieren?'}
+                ? tVac('cancelApprovedMessage')
+                : tVac('cancelPendingMessage')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -1447,7 +1460,7 @@ export default function VacationPage() {
               variant="outline"
               onClick={() => setConfirmCancelRequest(null)}
             >
-              Abbrechen
+              {t('common.cancel')}
             </Button>
             <Button
               className="bg-red-600 hover:bg-red-700 text-white"
@@ -1459,7 +1472,7 @@ export default function VacationPage() {
               }}
               disabled={cancelMutation.isPending}
             >
-              Stornieren
+              {tVac('cancelRequest')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1472,10 +1485,10 @@ export default function VacationPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Bewilligte Ferien stornieren</DialogTitle>
+            <DialogTitle>{tVac('cancelApproved')}</DialogTitle>
             <DialogDescription>
               {confirmCancelApprovedRequest
-                ? `Bewilligte Ferien von ${getUserName(confirmCancelApprovedRequest.user)} stornieren? Die Zeiteinträge werden gelöscht.`
+                ? tVac('cancelApprovedMessage')
                 : ''}
             </DialogDescription>
           </DialogHeader>
@@ -1484,7 +1497,7 @@ export default function VacationPage() {
               variant="outline"
               onClick={() => setConfirmCancelApprovedRequest(null)}
             >
-              Abbrechen
+              {t('common.cancel')}
             </Button>
             <Button
               className="bg-red-600 hover:bg-red-700 text-white"
@@ -1496,7 +1509,7 @@ export default function VacationPage() {
               }}
               disabled={cancelMutation.isPending}
             >
-              Stornieren
+              {tVac('cancelRequest')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1509,10 +1522,10 @@ export default function VacationPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Abgelehnten Antrag entfernen</DialogTitle>
+            <DialogTitle>{tVac('deleteRejected')}</DialogTitle>
             <DialogDescription>
               {confirmDeleteRejectedId
-                ? `Abgelehnten Antrag von ${confirmDeleteRejectedId.name} endgültig entfernen?`
+                ? tVac('deleteRejectedMessage')
                 : ''}
             </DialogDescription>
           </DialogHeader>
@@ -1521,7 +1534,7 @@ export default function VacationPage() {
               variant="outline"
               onClick={() => setConfirmDeleteRejectedId(null)}
             >
-              Abbrechen
+              {t('common.cancel')}
             </Button>
             <Button
               className="bg-red-600 hover:bg-red-700 text-white"
@@ -1533,7 +1546,7 @@ export default function VacationPage() {
               }}
               disabled={deleteRejectedMutation.isPending}
             >
-              Entfernen
+              {t('common.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

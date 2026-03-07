@@ -30,6 +30,7 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { getClient } from '@/lib/supabase/client';
 import { roleLabels, getAssignableRoles, canEditUser } from '@/lib/permissions';
 import { getInitials, cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 import { ErrorBoundary } from '@/components/error-boundary';
 import type { Profile, Property, UserRole } from '@/types/database';
 
@@ -63,6 +64,8 @@ function AdminUsersPageContent() {
   const organizationId = useAuthStore((state) => state.organizationId);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
   const permissions = usePermissions();
+  const t = useTranslations();
+  const tUsers = useTranslations('usersAdmin');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showInactiveUsers, setShowInactiveUsers] = useState(false);
@@ -152,13 +155,13 @@ function AdminUsersPageContent() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('Rolle wurde aktualisiert');
+      toast.success(tUsers('roleUpdated'));
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       setShowRoleDialog(false);
       setSelectedUser(null);
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`${t('common.error')}: ${error.message}`);
     },
   });
 
@@ -204,11 +207,11 @@ function AdminUsersPageContent() {
       }
     },
     onSuccess: () => {
-      toast.success('Zuweisung wurde aktualisiert');
+      toast.success(tUsers('assignmentUpdated'));
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
     },
     onError: (error: Error, { userId, propertyId, assign }) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`${t('common.error')}: ${error.message}`);
       // Revert optimistic update on error
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
     },
@@ -241,7 +244,7 @@ function AdminUsersPageContent() {
       return { userId, assign };
     },
     onSuccess: (_, { assign }) => {
-      toast.success(assign ? 'Alle Liegenschaften zugewiesen' : 'Alle Zuweisungen entfernt');
+      toast.success(assign ? tUsers('allPropertiesAssigned') : tUsers('allAssignmentsRemoved'));
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       // Update selectedUser state
       if (selectedUser) {
@@ -259,7 +262,7 @@ function AdminUsersPageContent() {
       }
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`${t('common.error')}: ${error.message}`);
     },
   });
 
@@ -280,7 +283,7 @@ function AdminUsersPageContent() {
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || 'Fehler beim Erstellen des Benutzers');
+        throw new Error(data.error || tUsers('createUserError'));
       }
       return data;
     },
@@ -303,7 +306,7 @@ function AdminUsersPageContent() {
       setShowTempPasswordDialog(true);
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`${t('common.error')}: ${error.message}`);
     },
   });
 
@@ -318,7 +321,7 @@ function AdminUsersPageContent() {
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || 'Fehler beim Zurücksetzen des Passworts');
+        throw new Error(data.error || tUsers('resetPasswordError'));
       }
       return data;
     },
@@ -336,7 +339,7 @@ function AdminUsersPageContent() {
       setShowTempPasswordDialog(true);
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`${t('common.error')}: ${error.message}`);
     },
   });
 
@@ -351,16 +354,16 @@ function AdminUsersPageContent() {
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || 'Fehler beim Entsperren des Accounts');
+        throw new Error(data.error || tUsers('unlockError'));
       }
       return data;
     },
     onSuccess: () => {
-      toast.success('Account wurde entsperrt');
+      toast.success(tUsers('accountUnlocked'));
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`${t('common.error')}: ${error.message}`);
     },
   });
 
@@ -375,13 +378,13 @@ function AdminUsersPageContent() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('Ferientage aktualisiert');
+      toast.success(tUsers('vacationDaysUpdated'));
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       setShowVacationDaysDialog(false);
       setSelectedUser(null);
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`${t('common.error')}: ${error.message}`);
     },
   });
 
@@ -398,13 +401,13 @@ function AdminUsersPageContent() {
       return { userId, isActive };
     },
     onSuccess: (_, { isActive }) => {
-      toast.success(isActive ? 'Benutzer aktiviert' : 'Benutzer deaktiviert');
+      toast.success(isActive ? tUsers('userActivated') : tUsers('userDeactivated'));
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       setShowDeactivateDialog(false);
       setSelectedUser(null);
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`${t('common.error')}: ${error.message}`);
     },
   });
 
@@ -455,7 +458,7 @@ function AdminUsersPageContent() {
 
   const handleCreateUser = () => {
     if (!newUserFirstName.trim() || !newUserLastName.trim()) {
-      toast.error('Vor- und Nachname sind erforderlich');
+      toast.error(tUsers('nameRequired'));
       return;
     }
     createUserMutation.mutate({
@@ -471,7 +474,7 @@ function AdminUsersPageContent() {
     <PageContainer
       header={
         <Header
-          title="Benutzerverwaltung"
+          title={tUsers('title')}
           rightElement={
             <Button
               size="sm"
@@ -479,7 +482,7 @@ function AdminUsersPageContent() {
               className="gap-1"
             >
               <UserPlus className="h-4 w-4" />
-              <span className="hidden sm:inline">Erstellen</span>
+              <span className="hidden sm:inline">{tUsers('create')}</span>
             </Button>
           }
         />
@@ -490,11 +493,11 @@ function AdminUsersPageContent() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Benutzer suchen..."
+            placeholder={tUsers('searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
-            aria-label="Benutzer suchen"
+            aria-label={tUsers('searchPlaceholder')}
           />
         </div>
         <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -504,25 +507,25 @@ function AdminUsersPageContent() {
             onChange={(e) => setShowInactiveUsers(e.target.checked)}
             className="rounded border-gray-300"
           />
-          <span className="text-muted-foreground">Inaktive Benutzer anzeigen</span>
+          <span className="text-muted-foreground">{tUsers('showInactive')}</span>
         </label>
       </div>
 
       {/* Users list */}
       {isLoading ? (
         <div className="text-center py-12 text-muted-foreground">
-          Wird geladen...
+          {t('common.loading')}
         </div>
       ) : filteredUsers.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p>Keine Benutzer gefunden</p>
+          <p>{tUsers('noUsers')}</p>
         </div>
       ) : (
         <div className="space-y-3">
           {filteredUsers.map((user) => {
             const initials = getInitials(user.first_name, user.last_name);
-            const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') || 'Kein Name';
+            const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') || tUsers('noName');
             const assignedCount = user.property_assignments?.length || 0;
             const username = user.auth_credentials?.[0]?.username;
             const locked = isUserLocked(user);
@@ -567,24 +570,24 @@ function AdminUsersPageContent() {
                         </span>
                         {inactive && (
                           <span className="badge bg-gray-100 text-gray-700 text-xs">
-                            Inaktiv
+                            {tUsers('inactive')}
                           </span>
                         )}
                         {locked && (
                           <span className="badge bg-red-100 text-red-700 text-xs">
-                            Gesperrt
+                            {tUsers('locked')}
                           </span>
                         )}
                         {needsPasswordChange && !locked && !inactive && (
                           <span className="badge bg-amber-100 text-amber-700 text-xs">
-                            Passwort ändern
+                            {tUsers('changePassword')}
                           </span>
                         )}
                         <span className="text-xs text-muted-foreground">
-                          {assignedCount} {assignedCount === 1 ? 'Liegenschaft' : 'Liegenschaften'}
+                          {assignedCount} {assignedCount === 1 ? tUsers('property') : tUsers('properties')}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                          {user.vacation_days_per_year ?? 25} Ferientage
+                          {user.vacation_days_per_year ?? 25} {tUsers('vacationDays')}
                         </span>
                       </div>
                     </div>
@@ -605,7 +608,7 @@ function AdminUsersPageContent() {
                               setShowDeactivateDialog(true);
                             }
                           }}
-                          aria-label={inactive ? 'Benutzer aktivieren' : 'Benutzer deaktivieren'}
+                          aria-label={inactive ? tUsers('activateUser') : tUsers('deactivateUser')}
                           disabled={toggleActiveMutation.isPending}
                         >
                           <Power className={cn('h-4 w-4', inactive ? 'text-green-500' : 'text-gray-400')} />
@@ -620,7 +623,7 @@ function AdminUsersPageContent() {
                             e.stopPropagation();
                             unlockAccountMutation.mutate(user.id);
                           }}
-                          aria-label="Account entsperren"
+                          aria-label={tUsers('unlockAccount')}
                           disabled={unlockAccountMutation.isPending}
                         >
                           <Unlock className="h-4 w-4 text-red-500" />
@@ -636,7 +639,7 @@ function AdminUsersPageContent() {
                             setSelectedUser(user);
                             setShowResetPasswordDialog(true);
                           }}
-                          aria-label="Passwort zurücksetzen"
+                          aria-label={tUsers('resetPassword')}
                         >
                           <KeyRound className="h-4 w-4" />
                         </Button>
@@ -651,7 +654,7 @@ function AdminUsersPageContent() {
                             setSelectedUser(user);
                             setShowRoleDialog(true);
                           }}
-                          aria-label="Rolle ändern"
+                          aria-label={tUsers('changeRole')}
                         >
                           <Shield className="h-4 w-4" />
                         </Button>
@@ -666,7 +669,7 @@ function AdminUsersPageContent() {
                           setVacationDaysValue(user.vacation_days_per_year ?? 25);
                           setShowVacationDaysDialog(true);
                         }}
-                        aria-label="Ferientage bearbeiten"
+                        aria-label={tUsers('editVacationDays')}
                       >
                         <Palmtree className="h-4 w-4" />
                       </Button>
@@ -679,7 +682,7 @@ function AdminUsersPageContent() {
                           setSelectedUser(user);
                           setShowAssignmentsSheet(true);
                         }}
-                        aria-label="Liegenschaften zuweisen"
+                        aria-label={tUsers('assignProperties')}
                       >
                         <Building2 className="h-4 w-4" />
                       </Button>
@@ -701,9 +704,9 @@ function AdminUsersPageContent() {
       <Dialog open={showRoleDialog} onOpenChange={setShowRoleDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rolle ändern</DialogTitle>
+            <DialogTitle>{tUsers('changeRole')}</DialogTitle>
             <DialogDescription>
-              Wählen Sie eine neue Rolle für {selectedUser?.first_name} {selectedUser?.last_name}
+              {tUsers('selectNewRole', { name: `${selectedUser?.first_name} ${selectedUser?.last_name}` })}
             </DialogDescription>
           </DialogHeader>
 
@@ -729,7 +732,7 @@ function AdminUsersPageContent() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowRoleDialog(false)}>
-              Abbrechen
+              {t('common.cancel')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -740,7 +743,7 @@ function AdminUsersPageContent() {
         <SheetContent side="bottom" className="h-[70vh]">
           <SheetHeader>
             <SheetTitle>
-              Liegenschaften für {selectedUser?.first_name} {selectedUser?.last_name}
+              {tUsers('propertiesFor', { name: `${selectedUser?.first_name} ${selectedUser?.last_name}` })}
             </SheetTitle>
           </SheetHeader>
 
@@ -752,7 +755,7 @@ function AdminUsersPageContent() {
               onClick={() => selectedUser && toggleAllPropertiesMutation.mutate({ userId: selectedUser.id, assign: true })}
               disabled={toggleAllPropertiesMutation.isPending || !selectedUser || selectedUser.property_assignments.length === allProperties.length}
             >
-              Alle zuweisen
+              {tUsers('assignAll')}
             </Button>
             <Button
               variant="outline"
@@ -760,7 +763,7 @@ function AdminUsersPageContent() {
               onClick={() => selectedUser && toggleAllPropertiesMutation.mutate({ userId: selectedUser.id, assign: false })}
               disabled={toggleAllPropertiesMutation.isPending || !selectedUser || selectedUser.property_assignments.length === 0}
             >
-              Alle entfernen
+              {tUsers('removeAll')}
             </Button>
           </div>
 
@@ -820,17 +823,17 @@ function AdminUsersPageContent() {
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Benutzer erstellen</DialogTitle>
+            <DialogTitle>{tUsers('createUser')}</DialogTitle>
             <DialogDescription>
-              Erstellen Sie einen neuen Benutzer mit temporärem Passwort.
+              {tUsers('createUserDescription')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <Input
-              label="Benutzername (optional)"
+              label={tUsers('usernameOptional')}
               type="text"
-              placeholder="Wird aus Vor-/Nachname generiert"
+              placeholder={tUsers('usernameGenerated')}
               value={newUserUsername}
               onChange={(e) => setNewUserUsername(e.target.value.toLowerCase())}
               autoCapitalize="none"
@@ -838,7 +841,7 @@ function AdminUsersPageContent() {
             />
 
             <Input
-              label="E-Mail (optional)"
+              label={tUsers('emailOptional')}
               type="email"
               placeholder="benutzer@beispiel.de"
               value={newUserEmail}
@@ -847,13 +850,13 @@ function AdminUsersPageContent() {
 
             <div className="grid grid-cols-2 gap-4">
               <Input
-                label="Vorname *"
+                label={tUsers('firstName')}
                 placeholder="Max"
                 value={newUserFirstName}
                 onChange={(e) => setNewUserFirstName(e.target.value)}
               />
               <Input
-                label="Nachname *"
+                label={tUsers('lastName')}
                 placeholder="Mustermann"
                 value={newUserLastName}
                 onChange={(e) => setNewUserLastName(e.target.value)}
@@ -862,7 +865,7 @@ function AdminUsersPageContent() {
 
             <div className="w-full">
               <label className="mb-2 block text-sm font-medium text-foreground">
-                Rolle
+                {tUsers('role')}
               </label>
               <select
                 value={newUserRole}
@@ -883,18 +886,18 @@ function AdminUsersPageContent() {
             <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 flex items-start gap-2">
               <AlertCircle className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
               <div className="text-sm text-blue-700 space-y-1">
-                <p>Ein temporäres Passwort wird generiert und muss beim ersten Login geändert werden.</p>
-                <p>Benutzername wird aus Vor-/Nachname generiert, falls nicht angegeben.</p>
+                <p>{tUsers('tempPasswordNote')}</p>
+                <p>{tUsers('usernameNote')}</p>
               </div>
             </div>
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
-              Abbrechen
+              {t('common.cancel')}
             </Button>
             <Button onClick={handleCreateUser} disabled={createUserMutation.isPending}>
-              {createUserMutation.isPending ? 'Wird erstellt...' : 'Erstellen'}
+              {createUserMutation.isPending ? tUsers('creating') : tUsers('create')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -931,22 +934,21 @@ function AdminUsersPageContent() {
       <Dialog open={showDeactivateDialog} onOpenChange={setShowDeactivateDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Benutzer deaktivieren</DialogTitle>
+            <DialogTitle>{tUsers('deactivateUser')}</DialogTitle>
             <DialogDescription>
-              Sind Sie sicher, dass Sie {selectedUser?.first_name} {selectedUser?.last_name} deaktivieren möchten?
-              Der Benutzer kann sich nicht mehr anmelden, bis das Konto wieder aktiviert wird.
+              {tUsers('confirmDeactivate', { name: `${selectedUser?.first_name} ${selectedUser?.last_name}` })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDeactivateDialog(false)}>
-              Abbrechen
+              {t('common.cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={() => selectedUser && toggleActiveMutation.mutate({ userId: selectedUser.id, isActive: false })}
               disabled={toggleActiveMutation.isPending}
             >
-              {toggleActiveMutation.isPending ? 'Wird deaktiviert...' : 'Deaktivieren'}
+              {toggleActiveMutation.isPending ? tUsers('deactivating') : tUsers('deactivate')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -955,14 +957,14 @@ function AdminUsersPageContent() {
       <Dialog open={showVacationDaysDialog} onOpenChange={setShowVacationDaysDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Ferientage pro Jahr</DialogTitle>
+            <DialogTitle>{tUsers('vacationDaysPerYear')}</DialogTitle>
             <DialogDescription>
-              Ferienanspruch für {selectedUser?.first_name} {selectedUser?.last_name} festlegen
+              {tUsers('setVacationDays', { name: `${selectedUser?.first_name} ${selectedUser?.last_name}` })}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Input
-              label="Ferientage pro Jahr"
+              label={tUsers('vacationDaysPerYear')}
               type="number"
               min={0}
               max={60}
@@ -973,13 +975,13 @@ function AdminUsersPageContent() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowVacationDaysDialog(false)}>
-              Abbrechen
+              {t('common.cancel')}
             </Button>
             <Button
               onClick={() => selectedUser && updateVacationDaysMutation.mutate({ userId: selectedUser.id, days: vacationDaysValue })}
               disabled={updateVacationDaysMutation.isPending}
             >
-              {updateVacationDaysMutation.isPending ? 'Wird gespeichert...' : 'Speichern'}
+              {updateVacationDaysMutation.isPending ? tUsers('saving') : t('common.save')}
             </Button>
           </DialogFooter>
         </DialogContent>
