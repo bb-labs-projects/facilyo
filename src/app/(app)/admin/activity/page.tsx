@@ -39,6 +39,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useLocale, getChecklistItemLabel } from '@/hooks/use-locale';
 import { useCompletedTasksNotificationCount } from '@/hooks/use-completed-tasks-notification-count';
 import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
@@ -139,6 +140,7 @@ export default function AdminActivityPage() {
   const { markAsSeen } = useCompletedTasksNotificationCount();
   const t = useTranslations();
   const tAct = useTranslations('activity');
+  const { locale } = useLocale();
 
   const getStatusLabel = (status: string): string => {
     switch (status) {
@@ -706,7 +708,7 @@ export default function AdminActivityPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <TypeIcon className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">{item.label}</span>
+                            <span className="font-medium">{getChecklistItemLabel(item, locale)}</span>
                           </div>
 
                           {/* Display value based on type */}
@@ -728,7 +730,7 @@ export default function AdminActivityPage() {
                               {item.type === 'photo' && typeof value === 'string' && (
                                 <img
                                   src={value}
-                                  alt={item.label}
+                                  alt={getChecklistItemLabel(item, locale)}
                                   className="mt-2 w-full max-w-xs rounded-lg border"
                                 />
                               )}

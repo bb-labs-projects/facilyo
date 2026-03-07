@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/sheet';
 import { useAuthStore } from '@/stores/auth-store';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useLocale, getChecklistItemLabel } from '@/hooks/use-locale';
 import { useNewTasksNotificationCount } from '@/hooks/use-new-tasks-notification-count';
 import { getClient } from '@/lib/supabase/client';
 import { swissFormat } from '@/lib/i18n';
@@ -59,6 +60,7 @@ export default function TasksPage() {
   const t = useTranslations('tasks');
   const tChecklist = useTranslations('checklist');
   const tCommon = useTranslations('common');
+  const { locale } = useLocale();
 
   const priorityConfig = {
     low: { label: t('priorities.low'), class: priorityClasses.low },
@@ -417,7 +419,7 @@ export default function TasksPage() {
                       {index + 1}
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium">{item.label}</p>
+                      <p className="font-medium">{getChecklistItemLabel(item, locale)}</p>
                       <p className="text-xs text-muted-foreground mt-1 capitalize">
                         {item.type === 'checkbox' ? tChecklist('typeCheckbox') : item.type === 'text' ? tChecklist('typeText') : item.type === 'number' ? tChecklist('typeNumber') : tChecklist('typePhoto')}
                         {item.required && ` • ${tChecklist('requiredField')}`}
