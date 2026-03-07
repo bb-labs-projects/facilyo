@@ -69,22 +69,22 @@ function AdminInvoicesPageContent() {
   const tInv = useTranslations('invoicesAdmin');
 
   const STATUS_LABELS: Record<string, string> = {
-    draft: tInv('statusDraft'),
-    pending_approval: tInv('statusPendingApproval'),
-    approved: tInv('statusApproved'),
-    sent: tInv('statusSent'),
-    paid: tInv('statusPaid'),
-    overdue: tInv('statusOverdue'),
-    cancelled: tInv('statusCancelled'),
+    draft: tInv('statuses.draft'),
+    pending_approval: tInv('statuses.pending_approval'),
+    approved: tInv('statuses.approved'),
+    sent: tInv('statuses.sent'),
+    paid: tInv('statuses.paid'),
+    overdue: tInv('statuses.overdue'),
+    cancelled: tInv('statuses.cancelled'),
   };
 
   const STATUS_FILTER_OPTIONS: { key: string; label: string }[] = [
-    { key: 'all', label: tInv('all') },
-    { key: 'draft', label: tInv('statusDraft') },
-    { key: 'sent', label: tInv('statusSent') },
-    { key: 'paid', label: tInv('statusPaid') },
-    { key: 'overdue', label: tInv('statusOverdue') },
-    { key: 'cancelled', label: tInv('statusCancelled') },
+    { key: 'all', label: tInv('statuses.all') },
+    { key: 'draft', label: tInv('statuses.draft') },
+    { key: 'sent', label: tInv('statuses.sent') },
+    { key: 'paid', label: tInv('statuses.paid') },
+    { key: 'overdue', label: tInv('statuses.overdue') },
+    { key: 'cancelled', label: tInv('statuses.cancelled') },
   ];
 
   const [activeTab, setActiveTab] = useState<'invoices' | 'subscriptions' | 'settings'>('invoices');

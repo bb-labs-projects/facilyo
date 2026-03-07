@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { getPasswordStrength } from '@/lib/auth/validation';
 import { Check, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface PasswordStrengthProps {
   password: string;
@@ -11,6 +12,7 @@ interface PasswordStrengthProps {
 }
 
 export function PasswordStrength({ password, className }: PasswordStrengthProps) {
+  const t = useTranslations('auth');
   const strength = useMemo(() => getPasswordStrength(password), [password]);
 
   if (!password) {
@@ -35,7 +37,7 @@ export function PasswordStrength({ password, className }: PasswordStrengthProps)
         aria-valuenow={strength.score}
         aria-valuemin={0}
         aria-valuemax={4}
-        aria-label="Passwortstärke"
+        aria-label={t('passwordStrengthLabel')}
       >
         {[0, 1, 2, 3, 4].map((level) => (
           <div
@@ -76,26 +78,28 @@ export function PasswordRequirements({
   username,
   className,
 }: PasswordRequirementsProps) {
+  const t = useTranslations('auth');
+
   const requirements = useMemo(() => {
     const checks = [
       {
-        label: 'Mindestens 12 Zeichen',
+        label: t('passwordRequirements.minLength'),
         met: password.length >= 12,
       },
       {
-        label: 'Enthält Grossbuchstaben',
+        label: t('passwordRequirements.uppercase'),
         met: /[A-Z]/.test(password),
       },
       {
-        label: 'Enthält Kleinbuchstaben',
+        label: t('passwordRequirements.lowercase'),
         met: /[a-z]/.test(password),
       },
       {
-        label: 'Enthält Zahlen',
+        label: t('passwordRequirements.number'),
         met: /[0-9]/.test(password),
       },
       {
-        label: 'Enthält Sonderzeichen',
+        label: t('passwordRequirements.specialChar'),
         met: /[!@#$%^&*(),.?":{}|<>\-_=+\[\]\\;'`~]/.test(password),
       },
     ];
@@ -103,13 +107,13 @@ export function PasswordRequirements({
     // Add check for username similarity if username is provided
     if (username) {
       checks.push({
-        label: 'Unterscheidet sich vom Benutzernamen',
+        label: t('passwordRequirements.differentFromUsername'),
         met: !password.toLowerCase().includes(username.toLowerCase()),
       });
     }
 
     return checks;
-  }, [password, username]);
+  }, [password, username, t]);
 
   if (!password) {
     return null;
@@ -117,7 +121,7 @@ export function PasswordRequirements({
 
   return (
     <div className={cn('space-y-2', className)}>
-      <p className="text-sm font-medium text-muted-foreground">Anforderungen:</p>
+      <p className="text-sm font-medium text-muted-foreground">{t('passwordRequirements.title')}</p>
       <ul className="space-y-1">
         {requirements.map((req, index) => (
           <li

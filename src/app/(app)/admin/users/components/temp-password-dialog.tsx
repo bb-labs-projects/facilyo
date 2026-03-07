@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Copy, Check, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -30,18 +31,19 @@ export function TempPasswordDialog({
   expiresAt,
   isNewUser = false,
 }: TempPasswordDialogProps) {
+  const t = useTranslations('usersAdmin');
   const [copied, setCopied] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleCopy = async () => {
     try {
-      const textToCopy = `Benutzername: ${username}\nPasswort: ${tempPassword}`;
+      const textToCopy = `${t('tempPasswordUsername')}: ${username}\n${t('tempPasswordLabel')}: ${tempPassword}`;
       await navigator.clipboard.writeText(textToCopy);
       setCopied(true);
-      toast.success('In Zwischenablage kopiert');
+      toast.success(t('tempPasswordCopied'));
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error('Kopieren fehlgeschlagen');
+      toast.error(t('tempPasswordCopyFailed'));
     }
   };
 
@@ -56,12 +58,12 @@ export function TempPasswordDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {isNewUser ? 'Benutzer erstellt' : 'Passwort zurückgesetzt'}
+            {isNewUser ? t('tempPasswordUserCreated') : t('tempPasswordReset')}
           </DialogTitle>
           <DialogDescription>
             {isNewUser
-              ? 'Der Benutzer wurde erfolgreich erstellt. Geben Sie die Anmeldedaten sicher an den Benutzer weiter.'
-              : 'Das Passwort wurde zurückgesetzt. Geben Sie das neue Passwort sicher an den Benutzer weiter.'}
+              ? t('tempPasswordUserCreatedDesc')
+              : t('tempPasswordResetDesc')}
           </DialogDescription>
         </DialogHeader>
 
@@ -70,11 +72,11 @@ export function TempPasswordDialog({
           <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 flex items-start gap-2">
             <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
             <div className="text-sm text-amber-700">
-              <p className="font-medium">Wichtig:</p>
+              <p className="font-medium">{t('tempPasswordImportant')}</p>
               <ul className="list-disc list-inside mt-1 space-y-1">
-                <li>Dieses Passwort wird nur einmal angezeigt</li>
-                <li>Geben Sie es persönlich oder über einen sicheren Kanal weiter</li>
-                <li>Der Benutzer muss das Passwort beim ersten Login ändern</li>
+                <li>{t('tempPasswordShownOnce')}</li>
+                <li>{t('tempPasswordShareSecurely')}</li>
+                <li>{t('tempPasswordMustChange')}</li>
               </ul>
             </div>
           </div>
@@ -83,11 +85,11 @@ export function TempPasswordDialog({
           <div className="space-y-3">
             <div className="p-3 rounded-lg bg-slate-100 space-y-2">
               <div>
-                <p className="text-xs text-muted-foreground">Benutzername</p>
+                <p className="text-xs text-muted-foreground">{t('tempPasswordUsername')}</p>
                 <p className="font-mono font-medium">{username}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Temporäres Passwort</p>
+                <p className="text-xs text-muted-foreground">{t('tempPasswordLabel')}</p>
                 <div className="flex items-center gap-2">
                   <p className="font-mono font-medium flex-1">
                     {showPassword ? tempPassword : '•'.repeat(tempPassword.length)}
@@ -95,7 +97,7 @@ export function TempPasswordDialog({
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
+                    aria-label={showPassword ? t('tempPasswordHide') : t('tempPasswordShow')}
                     className="p-1 text-muted-foreground hover:text-foreground"
                   >
                     {showPassword ? (
@@ -109,7 +111,7 @@ export function TempPasswordDialog({
             </div>
 
             <p className="text-xs text-muted-foreground">
-              Gültig bis: <span className="font-medium">{expiresFormatted}</span>
+              {t('tempPasswordValidUntil')} <span className="font-medium">{expiresFormatted}</span>
             </p>
           </div>
         </div>
@@ -123,17 +125,17 @@ export function TempPasswordDialog({
             {copied ? (
               <>
                 <Check className="h-4 w-4 mr-2" />
-                Kopiert
+                {t('tempPasswordCopiedBtn')}
               </>
             ) : (
               <>
                 <Copy className="h-4 w-4 mr-2" />
-                Kopieren
+                {t('tempPasswordCopyBtn')}
               </>
             )}
           </Button>
           <Button onClick={() => onOpenChange(false)} className="flex-1 sm:flex-none">
-            Schliessen
+            {t('tempPasswordClose')}
           </Button>
         </DialogFooter>
       </DialogContent>

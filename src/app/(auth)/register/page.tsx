@@ -8,39 +8,47 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Building2, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { generateSlug } from '@/lib/auth/slug';
 
-const registerSchema = z.object({
-  companyName: z.string().min(2, 'Mindestens 2 Zeichen erforderlich'),
-  slug: z
-    .string()
-    .min(3, 'Mindestens 3 Zeichen erforderlich')
-    .regex(/^[a-z0-9-]+$/, 'Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt'),
-  firstName: z.string().min(1, 'Dieses Feld ist erforderlich'),
-  lastName: z.string().min(1, 'Dieses Feld ist erforderlich'),
-  username: z
-    .string()
-    .min(3, 'Mindestens 3 Zeichen erforderlich')
-    .regex(/^[a-z0-9._-]+$/, 'Nur Kleinbuchstaben, Zahlen, Punkte und Bindestriche erlaubt'),
-  email: z.string().email('Ungültige E-Mail-Adresse'),
-  password: z
-    .string()
-    .min(12, 'Mindestens 12 Zeichen erforderlich')
-    .refine((val) => /[A-Z]/.test(val), 'Muss mindestens einen Grossbuchstaben enthalten')
-    .refine((val) => /[a-z]/.test(val), 'Muss mindestens einen Kleinbuchstaben enthalten')
-    .refine((val) => /[0-9]/.test(val), 'Muss mindestens eine Zahl enthalten'),
-});
+// NOTE: Zod schemas are defined outside of the component and cannot use hooks.
+// We use a function to create the schema so we can pass translated messages.
+function createRegisterSchema(t: (key: string) => string) {
+  return z.object({
+    companyName: z.string().min(2, t('validationMin2')),
+    slug: z
+      .string()
+      .min(3, t('validationMin3'))
+      .regex(/^[a-z0-9-]+$/, t('validationSlugFormat')),
+    firstName: z.string().min(1, t('validationRequired')),
+    lastName: z.string().min(1, t('validationRequired')),
+    username: z
+      .string()
+      .min(3, t('validationMin3'))
+      .regex(/^[a-z0-9._-]+$/, t('validationUsernameFormat')),
+    email: z.string().email(t('validationEmail')),
+    password: z
+      .string()
+      .min(12, t('validationMin12'))
+      .refine((val) => /[A-Z]/.test(val), t('validationUppercase'))
+      .refine((val) => /[a-z]/.test(val), t('validationLowercase'))
+      .refine((val) => /[0-9]/.test(val), t('validationNumber')),
+  });
+}
 
-type RegisterFormData = z.infer<typeof registerSchema>;
+type RegisterFormData = z.infer<ReturnType<typeof createRegisterSchema>>;
 
 export default function RegisterPage() {
   const router = useRouter();
+  const t = useTranslations('auth');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [registerError, setRegisterError] = useState<string | null>(null);
+
+  const registerSchema = createRegisterSchema(t);
 
   const {
     register,
@@ -89,14 +97,14 @@ export default function RegisterPage() {
       const result = await response.json();
 
       if (!response.ok) {
-        setRegisterError(result.error || 'Registrierung fehlgeschlagen');
+        setRegisterError(result.error || t('registrationFailed'));
         return;
       }
 
-      toast.success('Registrierung erfolgreich! Sie können sich jetzt anmelden.');
+      toast.success(t('registrationSuccess'));
       router.push('/login');
     } catch {
-      setRegisterError('Ein unerwarteter Fehler ist aufgetreten');
+      setRegisterError(t('registrationFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -108,10 +116,10 @@ export default function RegisterPage() {
         <CardHeader className="text-center">
           <CardTitle className="flex items-center justify-center gap-2">
             <Building2 className="h-6 w-6" />
-            Firma registrieren
+            {t('registerTitle')}
           </CardTitle>
           <CardDescription>
-            Erstellen Sie ein neues Firmenkonto
+            {t('registerDescription')}
           </CardDescription>
         </CardHeader>
 
@@ -125,48 +133,48 @@ export default function RegisterPage() {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-3 pb-3 border-b">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Firma</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('company')}</p>
               <Input
-                label="Firmenname"
+                label={t('companyName')}
                 type="text"
-                placeholder="Muster Facility GmbH"
+                placeholder={t('companyNamePlaceholder')}
                 error={errors.companyName?.message}
                 {...register('companyName')}
                 onChange={handleCompanyNameChange}
               />
 
               <Input
-                label="Firmenkennung (URL-Slug)"
+                label={t('companySlug')}
                 type="text"
-                placeholder="muster-hauswartung"
+                placeholder={t('companySlugPlaceholder')}
                 error={errors.slug?.message}
                 {...register('slug')}
               />
             </div>
 
             <div className="space-y-3 pb-3 border-b">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Administrator</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('administrator')}</p>
               <div className="grid grid-cols-2 gap-3">
                 <Input
-                  label="Vorname"
+                  label={t('firstName')}
                   type="text"
-                  placeholder="Max"
+                  placeholder={t('firstNamePlaceholder')}
                   error={errors.firstName?.message}
                   {...register('firstName')}
                 />
                 <Input
-                  label="Nachname"
+                  label={t('lastName')}
                   type="text"
-                  placeholder="Muster"
+                  placeholder={t('lastNamePlaceholder')}
                   error={errors.lastName?.message}
                   {...register('lastName')}
                 />
               </div>
 
               <Input
-                label="Benutzername"
+                label={t('username')}
                 type="text"
-                placeholder="max.muster"
+                placeholder={t('usernamePlaceholder')}
                 autoCapitalize="none"
                 autoCorrect="off"
                 error={errors.username?.message}
@@ -174,18 +182,18 @@ export default function RegisterPage() {
               />
 
               <Input
-                label="E-Mail"
+                label={t('email')}
                 type="email"
-                placeholder="max@muster-hauswartung.ch"
+                placeholder={t('emailPlaceholder')}
                 autoCapitalize="none"
                 error={errors.email?.message}
                 {...register('email')}
               />
 
               <Input
-                label="Passwort"
+                label={t('password')}
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Mindestens 12 Zeichen"
+                placeholder={t('passwordPlaceholder')}
                 autoComplete="new-password"
                 error={errors.password?.message}
                 rightElement={
@@ -207,16 +215,16 @@ export default function RegisterPage() {
               size="touch"
               className="w-full"
               isLoading={isLoading}
-              loadingText="Wird registriert..."
+              loadingText={t('registering')}
             >
-              Registrieren
+              {t('register')}
             </Button>
           </form>
 
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Bereits ein Konto?{' '}
+            {t('alreadyHaveAccount')}{' '}
             <Link href="/login" className="text-primary-600 hover:underline font-medium">
-              Jetzt anmelden
+              {t('loginNow')}
             </Link>
           </p>
         </CardContent>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { AlertTriangle, KeyRound } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -25,6 +26,7 @@ export function ResetPasswordDialog({
   userName,
   onConfirm,
 }: ResetPasswordDialogProps) {
+  const t = useTranslations('usersAdmin');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleConfirm = async () => {
@@ -44,9 +46,9 @@ export function ResetPasswordDialog({
           <div className="mx-auto mb-4 p-3 rounded-full bg-amber-100 w-fit">
             <KeyRound className="h-6 w-6 text-amber-600" />
           </div>
-          <DialogTitle className="text-center">Passwort zurücksetzen</DialogTitle>
+          <DialogTitle className="text-center">{t('resetPasswordTitle')}</DialogTitle>
           <DialogDescription className="text-center">
-            Möchten Sie das Passwort für <strong>{userName}</strong> wirklich zurücksetzen?
+            {t('resetPasswordConfirm', { name: userName })}
           </DialogDescription>
         </DialogHeader>
 
@@ -54,11 +56,11 @@ export function ResetPasswordDialog({
           <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 flex items-start gap-2">
             <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
             <div className="text-sm text-amber-700">
-              <p>Bei dieser Aktion wird:</p>
+              <p>{t('resetPasswordActionDesc')}</p>
               <ul className="list-disc list-inside mt-1 space-y-1">
-                <li>Ein neues temporäres Passwort generiert</li>
-                <li>Der Benutzer von allen Geräten abgemeldet</li>
-                <li>Der Benutzer muss das Passwort beim nächsten Login ändern</li>
+                <li>{t('resetPasswordActionGenerate')}</li>
+                <li>{t('resetPasswordActionLogout')}</li>
+                <li>{t('resetPasswordActionMustChange')}</li>
               </ul>
             </div>
           </div>
@@ -71,7 +73,7 @@ export function ResetPasswordDialog({
             disabled={isLoading}
             className="flex-1 sm:flex-none"
           >
-            Abbrechen
+            {t('resetPasswordCancel')}
           </Button>
           <Button
             variant="destructive"
@@ -79,7 +81,7 @@ export function ResetPasswordDialog({
             disabled={isLoading}
             className="flex-1 sm:flex-none"
           >
-            {isLoading ? 'Wird zurückgesetzt...' : 'Zurücksetzen'}
+            {isLoading ? t('resetPasswordResetting') : t('resetPasswordReset')}
           </Button>
         </DialogFooter>
       </DialogContent>

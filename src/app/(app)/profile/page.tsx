@@ -56,10 +56,10 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     try {
       await logout();
-      toast.success('Erfolgreich abgemeldet');
+      toast.success(ta('logoutSuccess'));
       router.push('/login');
     } catch (error) {
-      toast.error('Fehler beim Abmelden');
+      toast.error(ta('logoutError'));
     }
   };
 
@@ -67,7 +67,7 @@ export default function ProfilePage() {
     return (
       <PageContainer header={<Header title={t('title')} />}>
         <div className="text-center py-12 space-y-4">
-          <p className="text-muted-foreground">Profil konnte nicht geladen werden</p>
+          <p className="text-muted-foreground">{t('profileLoadError')}</p>
           <Button
             variant="outline"
             onClick={async () => {
@@ -113,7 +113,7 @@ export default function ProfilePage() {
             </span>
           </div>
         )}
-        <h2 className="text-xl font-semibold">{fullName || 'Kein Name'}</h2>
+        <h2 className="text-xl font-semibold">{fullName || tc('noName')}</h2>
         <span className="badge badge-info mt-1">
           {roleLabels[profile.role]}
         </span>

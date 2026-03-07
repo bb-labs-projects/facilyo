@@ -10,8 +10,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { usePermissions } from '@/hooks/use-permissions';
 import { getClient } from '@/lib/supabase/client';
 import {
-  roleLabels,
-  permissionLabels,
   allPermissions,
   clearPermissionsCache,
   canEditRolePermissions,
@@ -136,7 +134,7 @@ export default function AdminRolesPage() {
                 : 'bg-muted text-muted-foreground hover:bg-muted/80'
             )}
           >
-            {roleLabels[role]}
+            {tRoles(`roleLabels.${role}`)}
           </button>
         ))}
       </div>
@@ -174,7 +172,7 @@ export default function AdminRolesPage() {
                     >
                       <div className="flex items-center gap-3">
                         <Shield className="h-5 w-5 text-muted-foreground" />
-                        <span className="font-medium">{permissionLabels[permission]}</span>
+                        <span className="font-medium">{tRoles(`permissions.${permission}`)}</span>
                       </div>
                       <div
                         className={cn(

@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Key, Eye, EyeOff, AlertCircle, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -16,6 +17,7 @@ import { changePasswordSchema, type ChangePasswordFormData } from '@/lib/validat
 
 export default function ChangePasswordPage() {
   const router = useRouter();
+  const t = useTranslations('auth');
   const { username, clearMustChangePassword, logout } = useAuthStore();
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -61,15 +63,15 @@ export default function ChangePasswordPage() {
         if (result.validationErrors) {
           setValidationErrors(result.validationErrors);
         }
-        throw new Error(result.error || 'Fehler beim Ändern des Passworts');
+        throw new Error(result.error || t('changePasswordError'));
       }
 
-      toast.success('Passwort erfolgreich geändert');
+      toast.success(t('changePasswordSuccess'));
       clearMustChangePassword();
       router.push('/');
     } catch (err: any) {
       setError(err.message);
-      toast.error('Passwort konnte nicht geändert werden', {
+      toast.error(t('changePasswordFailed'), {
         description: err.message,
       });
     } finally {
@@ -95,9 +97,9 @@ export default function ChangePasswordPage() {
           <div className="mx-auto mb-2 p-3 rounded-full bg-primary-100 w-fit">
             <ShieldCheck className="h-6 w-6 text-primary-600" />
           </div>
-          <CardTitle>Passwort ändern</CardTitle>
+          <CardTitle>{t('changePassword')}</CardTitle>
           <CardDescription>
-            Bitte wählen Sie ein neues sicheres Passwort
+            {t('changePasswordDescription')}
           </CardDescription>
         </CardHeader>
 
@@ -120,7 +122,7 @@ export default function ChangePasswordPage() {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <Input
-              label="Aktuelles Passwort"
+              label={t('currentPassword')}
               type={showCurrentPassword ? 'text' : 'password'}
               placeholder="••••••••"
               autoComplete="current-password"
@@ -144,7 +146,7 @@ export default function ChangePasswordPage() {
 
             <div className="space-y-2">
               <Input
-                label="Neues Passwort"
+                label={t('newPassword')}
                 type={showNewPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 autoComplete="new-password"
@@ -169,7 +171,7 @@ export default function ChangePasswordPage() {
             </div>
 
             <Input
-              label="Neues Passwort bestätigen"
+              label={t('confirmNewPassword')}
               type={showConfirmPassword ? 'text' : 'password'}
               placeholder="••••••••"
               autoComplete="new-password"
@@ -202,10 +204,10 @@ export default function ChangePasswordPage() {
               size="touch"
               className="w-full"
               isLoading={isLoading}
-              loadingText="Wird geändert..."
+              loadingText={t('changingPassword')}
               leftIcon={<Key className="h-5 w-5" />}
             >
-              Passwort ändern
+              {t('changePassword')}
             </Button>
           </form>
 
@@ -216,7 +218,7 @@ export default function ChangePasswordPage() {
               className="w-full text-muted-foreground"
               onClick={handleLogout}
             >
-              Abmelden
+              {t('logout')}
             </Button>
           </div>
         </CardContent>

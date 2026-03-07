@@ -914,7 +914,7 @@ function AdminClientsPageContent() {
                       onChange={(e) => setRateOverrides((prev) => ({ ...prev, [at.key]: e.target.value }))}
                       className="flex-1"
                     />
-                    <span className="text-xs text-muted-foreground w-8 flex-shrink-0">/Std</span>
+                    <span className="text-xs text-muted-foreground w-8 flex-shrink-0">/{tClients('perHour')}</span>
                   </div>
                 );
               })}

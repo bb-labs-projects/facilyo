@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
 import { formatSwissNumber } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 import type { OrganizationBillingSettings, ServiceRate } from '@/types/database';
 
 interface BillingSettingsFormData {
@@ -60,6 +61,7 @@ const ACTIVITY_TYPES = [
 export function InvoiceSettings() {
   const queryClient = useQueryClient();
   const organizationId = useAuthStore((state) => state.organizationId);
+  const tClients = useTranslations('clientsAdmin');
 
   // --- Billing settings state ---
   const [formData, setFormData] = useState<BillingSettingsFormData>(defaultFormData);
@@ -547,7 +549,7 @@ export function InvoiceSettings() {
                       }))}
                       onChange={(e) => updateRateField(type.key, 'hourly_rate', e.target.value)}
                     />
-                    <span className="text-xs text-muted-foreground w-8 flex-shrink-0">/Std</span>
+                    <span className="text-xs text-muted-foreground w-8 flex-shrink-0">/{tClients('perHour')}</span>
                   </div>
                 </div>
               );

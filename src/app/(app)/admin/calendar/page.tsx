@@ -48,7 +48,9 @@ import { usePermissions } from '@/hooks/use-permissions';
 import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
 import { cn } from '@/lib/utils';
-import { swissFormat } from '@/lib/i18n';
+import { swissFormat, getDateFnsLocale } from '@/lib/i18n';
+import { useTranslations } from 'next-intl';
+import { useLocale } from '@/hooks/use-locale';
 import {
   startOfWeek,
   endOfWeek,
@@ -69,7 +71,6 @@ import {
   eachDayOfInterval,
   getDay,
 } from 'date-fns';
-import { de } from 'date-fns/locale';
 import { ErrorBoundary } from '@/components/error-boundary';
 import type { Profile, TimeEntry, WorkDay, Property, ActivityType, TimeEntryType, PropertyType } from '@/types/database';
 
@@ -86,21 +87,21 @@ interface WorkDayWithEntries extends WorkDay {
 // Property types that only allow "Reinigung" activity
 const CLEANING_ONLY_PROPERTY_TYPES: PropertyType[] = ['office', 'private_maintenance'];
 
-// Activity type display configuration
-const ACTIVITY_CONFIG: Record<ActivityType, { label: string; icon: typeof Wrench; color: string }> = {
-  hauswartung: { label: 'Hauswartung', icon: Wrench, color: 'text-blue-600 bg-blue-50' },
-  rasen_maehen: { label: 'Rasen mähen', icon: Trees, color: 'text-green-600 bg-green-50' },
-  hecken_schneiden: { label: 'Hecken schneiden', icon: Scissors, color: 'text-emerald-600 bg-emerald-50' },
-  regie: { label: 'Regie', icon: ClipboardList, color: 'text-purple-600 bg-purple-50' },
-  reinigung: { label: 'Reinigung', icon: Sparkles, color: 'text-cyan-600 bg-cyan-50' },
+// Activity type display configuration (icons/colors only, labels via i18n)
+const ACTIVITY_CONFIG: Record<ActivityType, { labelKey: string; icon: typeof Wrench; color: string }> = {
+  hauswartung: { labelKey: 'activities.hauswartung', icon: Wrench, color: 'text-blue-600 bg-blue-50' },
+  rasen_maehen: { labelKey: 'activities.rasen_maehen', icon: Trees, color: 'text-green-600 bg-green-50' },
+  hecken_schneiden: { labelKey: 'activities.hecken_schneiden', icon: Scissors, color: 'text-emerald-600 bg-emerald-50' },
+  regie: { labelKey: 'activities.regie', icon: ClipboardList, color: 'text-purple-600 bg-purple-50' },
+  reinigung: { labelKey: 'activities.reinigung', icon: Sparkles, color: 'text-cyan-600 bg-cyan-50' },
 };
 
-// Entry type display configuration
-const ENTRY_TYPE_CONFIG: Record<TimeEntryType, { label: string; icon: typeof Car; color: string }> = {
-  property: { label: 'Liegenschaft', icon: Building2, color: 'text-primary-600 bg-primary-50' },
-  travel: { label: 'Fahrzeit', icon: Car, color: 'text-amber-600 bg-amber-50' },
-  break: { label: 'Pause', icon: Coffee, color: 'text-orange-600 bg-orange-50' },
-  vacation: { label: 'Ferien', icon: Palmtree, color: 'text-green-600 bg-green-50' },
+// Entry type display configuration (icons/colors only, labels via i18n)
+const ENTRY_TYPE_CONFIG: Record<TimeEntryType, { labelKey: string; icon: typeof Car; color: string }> = {
+  property: { labelKey: 'entryTypes.property', icon: Building2, color: 'text-primary-600 bg-primary-50' },
+  travel: { labelKey: 'entryTypes.travel', icon: Car, color: 'text-amber-600 bg-amber-50' },
+  break: { labelKey: 'entryTypes.break', icon: Coffee, color: 'text-orange-600 bg-orange-50' },
+  vacation: { labelKey: 'entryTypes.vacation', icon: Palmtree, color: 'text-green-600 bg-green-50' },
 };
 
 function calculateDuration(entry: TimeEntry): number {
@@ -130,6 +131,9 @@ function CalendarPageContent() {
   const queryClient = useQueryClient();
   const permissions = usePermissions();
   const organizationId = useAuthStore((state) => state.organizationId);
+  const { locale } = useLocale();
+  const dateFnsLocale = getDateFnsLocale(locale as any);
+  const tCal = useTranslations('calendar');
   const [viewMode, setViewMode] = useState<ViewMode>('week');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -255,12 +259,12 @@ function CalendarPageContent() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('Eintrag aktualisiert');
+      toast.success(tCal('entryUpdated'));
       queryClient.invalidateQueries({ queryKey: ['calendar-work-days'] });
       setEditingEntry(null);
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Fehler beim Aktualisieren');
+      toast.error(error.message || tCal('errorUpdating'));
     },
   });
 
@@ -276,11 +280,11 @@ function CalendarPageContent() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('Eintrag gelöscht');
+      toast.success(tCal('entryDeleted'));
       queryClient.invalidateQueries({ queryKey: ['calendar-work-days'] });
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Fehler beim Löschen');
+      toast.error(error.message || tCal('errorDeleting'));
     },
   });
 
@@ -297,7 +301,7 @@ function CalendarPageContent() {
 
   const createEntryMutation = useMutation({
     mutationFn: async (input: CreateEntryInput) => {
-      if (!selectedUserId) throw new Error('Kein Benutzer ausgewählt');
+      if (!selectedUserId) throw new Error(tCal('noUserSelected'));
       const supabase = getClient();
       const dateStr = format(input.date, 'yyyy-MM-dd');
 
@@ -342,12 +346,12 @@ function CalendarPageContent() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('Eintrag erstellt');
+      toast.success(tCal('entryCreated'));
       queryClient.invalidateQueries({ queryKey: ['calendar-work-days'] });
       setShowNewEntryDialog(false);
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Fehler beim Erstellen');
+      toast.error(error.message || tCal('errorCreating'));
     },
   });
 
@@ -380,17 +384,17 @@ function CalendarPageContent() {
     setIsRefreshing(true);
     await refetch();
     setIsRefreshing(false);
-    toast.success('Kalender aktualisiert');
+    toast.success(tCal('calendarRefreshed'));
   };
 
   // Get title for current view
   const getViewTitle = () => {
     if (viewMode === 'day') {
-      return format(currentDate, 'EEEE, d. MMMM yyyy', { locale: de });
+      return format(currentDate, 'EEEE, d. MMMM yyyy', { locale: dateFnsLocale });
     } else if (viewMode === 'week') {
-      return `${format(dateRange.start, 'd. MMM', { locale: de })} - ${format(dateRange.end, 'd. MMM yyyy', { locale: de })}`;
+      return `${format(dateRange.start, 'd. MMM', { locale: dateFnsLocale })} - ${format(dateRange.end, 'd. MMM yyyy', { locale: dateFnsLocale })}`;
     } else {
-      return format(currentDate, 'MMMM yyyy', { locale: de });
+      return format(currentDate, 'MMMM yyyy', { locale: dateFnsLocale });
     }
   };
 
@@ -411,11 +415,11 @@ function CalendarPageContent() {
   if (!hasPermission) {
     return (
       <PageContainer
-        header={<Header title="Benutzerkalender" subtitle="Keine Berechtigung" />}
+        header={<Header title={tCal('title')} subtitle={tCal('noPermission')} />}
       >
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
-            Sie haben keine Berechtigung, diese Seite anzuzeigen.
+            {tCal('noPermissionMessage')}
           </CardContent>
         </Card>
       </PageContainer>
@@ -426,8 +430,8 @@ function CalendarPageContent() {
     <PageContainer
       header={
         <Header
-          title="Benutzerkalender"
-          subtitle="Zeiteinträge anzeigen und bearbeiten"
+          title={tCal('title')}
+          subtitle={tCal('subtitle')}
           showRefresh={true}
           onRefresh={handleRefresh}
         />
@@ -439,7 +443,7 @@ function CalendarPageContent() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             {/* User selector */}
             <div className="flex-1 max-w-xs">
-              <Label className="mb-2 block text-sm">Benutzer</Label>
+              <Label className="mb-2 block text-sm">{tCal('user')}</Label>
               <Select
                 value={selectedUserId || ''}
                 onValueChange={(value) => setSelectedUserId(value || null)}
@@ -450,11 +454,11 @@ function CalendarPageContent() {
                       <User className="h-4 w-4" />
                       {(() => {
                         const user = users.find(u => u.id === selectedUserId);
-                        return user ? `${user.first_name} ${user.last_name}` : 'Benutzer auswählen...';
+                        return user ? `${user.first_name} ${user.last_name}` : tCal('selectUser');
                       })()}
                     </span>
                   ) : (
-                    <span className="text-muted-foreground">Benutzer auswählen...</span>
+                    <span className="text-muted-foreground">{tCal('selectUser')}</span>
                   )}
                 </SelectTrigger>
                 <SelectContent>
@@ -477,21 +481,21 @@ function CalendarPageContent() {
                 size="sm"
                 onClick={() => setViewMode('day')}
               >
-                Tag
+                {tCal('day')}
               </Button>
               <Button
                 variant={viewMode === 'week' ? 'primary' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('week')}
               >
-                Woche
+                {tCal('week')}
               </Button>
               <Button
                 variant={viewMode === 'month' ? 'primary' : 'outline'}
                 size="sm"
                 onClick={() => setViewMode('month')}
               >
-                Monat
+                {tCal('month')}
               </Button>
             </div>
           </div>
@@ -504,7 +508,7 @@ function CalendarPageContent() {
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-semibold">{getViewTitle()}</h2>
               <Button variant="ghost" size="sm" onClick={goToToday}>
-                Heute
+                {tCal('today')}
               </Button>
             </div>
             <Button variant="outline" size="sm" onClick={goToNext}>
@@ -519,7 +523,7 @@ function CalendarPageContent() {
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
             <User className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Bitte wählen Sie einen Benutzer aus</p>
+            <p>{tCal('selectUserPrompt')}</p>
           </CardContent>
         </Card>
       ) : viewMode === 'day' ? (
@@ -528,7 +532,7 @@ function CalendarPageContent() {
           entries={getEntriesForDay(currentDate)}
           onEditEntry={setEditingEntry}
           onDeleteEntry={(entry) => {
-            if (entry.entry_type === 'vacation') { toast.error('Ferieneinträge können nur über die Ferien-Seite verwaltet werden'); return; }
+            if (entry.entry_type === 'vacation') { toast.error(tCal('vacationManageNote')); return; }
             deleteEntryMutation.mutate(entry.id);
           }}
           onAddEntry={() => setShowNewEntryDialog(true)}
@@ -539,7 +543,7 @@ function CalendarPageContent() {
           workDays={workDaysData}
           onEditEntry={setEditingEntry}
           onDeleteEntry={(entry) => {
-            if (entry.entry_type === 'vacation') { toast.error('Ferieneinträge können nur über die Ferien-Seite verwaltet werden'); return; }
+            if (entry.entry_type === 'vacation') { toast.error(tCal('vacationManageNote')); return; }
             deleteEntryMutation.mutate(entry.id);
           }}
           onDayClick={(date) => {
@@ -593,6 +597,9 @@ interface DayViewProps {
 }
 
 function DayView({ date, entries, onEditEntry, onDeleteEntry, onAddEntry }: DayViewProps) {
+  const tCal = useTranslations('calendar');
+  const { locale } = useLocale();
+  const dateFnsLocale = getDateFnsLocale(locale as any);
   const sortedEntries = [...entries].sort(
     (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
   );
@@ -605,11 +612,11 @@ function DayView({ date, entries, onEditEntry, onDeleteEntry, onAddEntry }: DayV
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <CalendarIcon className="h-5 w-5" />
-            {format(date, 'EEEE, d. MMMM yyyy', { locale: de })}
+            {format(date, 'EEEE, d. MMMM yyyy', { locale: dateFnsLocale })}
           </CardTitle>
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">
-              Gesamt: {formatDuration(totalTime)}
+              {tCal('total')}: {formatDuration(totalTime)}
             </span>
             {onAddEntry && (
               <Button variant="outline" size="icon" className="h-7 w-7" onClick={onAddEntry}>
@@ -622,7 +629,7 @@ function DayView({ date, entries, onEditEntry, onDeleteEntry, onAddEntry }: DayV
       <CardContent>
         {sortedEntries.length === 0 ? (
           <p className="text-center text-muted-foreground py-8">
-            Keine Einträge für diesen Tag
+            {tCal('noEntriesForDay')}
           </p>
         ) : (
           <div className="space-y-3">
@@ -651,6 +658,9 @@ interface WeekViewProps {
 }
 
 function WeekView({ startDate, workDays, onEditEntry, onDeleteEntry, onDayClick }: WeekViewProps) {
+  const tCal = useTranslations('calendar');
+  const { locale } = useLocale();
+  const dateFnsLocale = getDateFnsLocale(locale as any);
   const days = eachDayOfInterval({
     start: startDate,
     end: addDays(startDate, 6),
@@ -680,10 +690,10 @@ function WeekView({ startDate, workDays, onEditEntry, onDeleteEntry, onDayClick 
             >
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-2">
-                  {format(day, 'EEEE, d. MMM', { locale: de })}
+                  {format(day, 'EEEE, d. MMM', { locale: dateFnsLocale })}
                   {isToday && (
                     <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
-                      Heute
+                      {tCal('today')}
                     </span>
                   )}
                 </CardTitle>
@@ -710,7 +720,7 @@ function WeekView({ startDate, workDays, onEditEntry, onDeleteEntry, onDayClick 
                       onClick={() => onDayClick(day)}
                       className="text-sm text-primary hover:underline"
                     >
-                      +{entries.length - 3} weitere Einträge
+                      {tCal('moreEntries', { count: entries.length - 3 })}
                     </button>
                   )}
                 </div>
@@ -731,13 +741,17 @@ interface MonthViewProps {
 }
 
 function MonthView({ currentDate, workDays, onDayClick }: MonthViewProps) {
+  const tCal = useTranslations('calendar');
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
   const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
 
   const days = eachDayOfInterval({ start: startDate, end: endDate });
-  const weekDays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+  const weekDays = [
+    tCal('weekDays.mo'), tCal('weekDays.tu'), tCal('weekDays.we'),
+    tCal('weekDays.th'), tCal('weekDays.fr'), tCal('weekDays.sa'), tCal('weekDays.su')
+  ];
 
   const getWorkDay = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
@@ -808,6 +822,7 @@ interface TimeEntryRowProps {
 }
 
 function TimeEntryRow({ entry, onEdit, onDelete }: TimeEntryRowProps) {
+  const tCal = useTranslations('calendar');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const duration = calculateDuration(entry);
   const entryConfig = ENTRY_TYPE_CONFIG[entry.entry_type];
@@ -830,12 +845,12 @@ function TimeEntryRow({ entry, onEdit, onDelete }: TimeEntryRowProps) {
             <span className="font-medium">
               {entry.entry_type === 'property' && entry.property
                 ? entry.property.name
-                : entryConfig.label}
+                : tCal(entryConfig.labelKey)}
             </span>
             {activityConfig && ActivityIcon && (
               <span className={cn('flex items-center gap-1 text-xs px-2 py-0.5 rounded-full', activityConfig.color)}>
                 <ActivityIcon className="h-3 w-3" />
-                {activityConfig.label}
+                {tCal(activityConfig.labelKey)}
               </span>
             )}
           </div>
@@ -860,7 +875,7 @@ function TimeEntryRow({ entry, onEdit, onDelete }: TimeEntryRowProps) {
               <Trash2 className="h-4 w-4" />
             </Button>
           ) : (
-            <span className="text-[10px] text-muted-foreground w-8 text-center">Ferien</span>
+            <span className="text-[10px] text-muted-foreground w-8 text-center">{tCal('entryTypes.vacation')}</span>
           )}
         </div>
       </div>
@@ -868,14 +883,14 @@ function TimeEntryRow({ entry, onEdit, onDelete }: TimeEntryRowProps) {
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Eintrag löschen?</DialogTitle>
+            <DialogTitle>{tCal('deleteEntryTitle')}</DialogTitle>
             <DialogDescription>
-              Möchten Sie diesen Zeiteintrag wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+              {tCal('deleteEntryDescription')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
-              Abbrechen
+              {tCal('cancel')}
             </Button>
             <Button
               variant="destructive"
@@ -884,7 +899,7 @@ function TimeEntryRow({ entry, onEdit, onDelete }: TimeEntryRowProps) {
                 onDelete();
               }}
             >
-              Löschen
+              {tCal('delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -900,6 +915,7 @@ interface TimeEntryCompactProps {
 }
 
 function TimeEntryCompact({ entry, onEdit }: TimeEntryCompactProps) {
+  const tCal = useTranslations('calendar');
   const duration = calculateDuration(entry);
   const entryConfig = ENTRY_TYPE_CONFIG[entry.entry_type];
   const EntryIcon = entryConfig.icon;
@@ -916,7 +932,7 @@ function TimeEntryCompact({ entry, onEdit }: TimeEntryCompactProps) {
       <span className="flex-1 truncate">
         {entry.entry_type === 'property' && entry.property
           ? entry.property.name
-          : entryConfig.label}
+          : tCal(entryConfig.labelKey)}
       </span>
       <span className="font-mono text-xs">{formatDuration(duration)}</span>
     </div>
@@ -942,6 +958,7 @@ interface EditEntryDialogProps {
 }
 
 function EditEntryDialog({ entry, properties, onClose, onSave, isLoading }: EditEntryDialogProps) {
+  const tCal = useTranslations('calendar');
   const isVacation = entry.entry_type === 'vacation';
   const [startTime, setStartTime] = useState(
     format(parseISO(entry.start_time), "yyyy-MM-dd'T'HH:mm")
@@ -958,13 +975,13 @@ function EditEntryDialog({ entry, properties, onClose, onSave, isLoading }: Edit
   const selectedProperty = propertyId ? properties.find(p => p.id === propertyId) : null;
   const isCleaningOnly = selectedProperty && CLEANING_ONLY_PROPERTY_TYPES.includes(selectedProperty.type);
 
-  const availableActivities: { value: ActivityType; label: string }[] = isCleaningOnly
-    ? [{ value: 'reinigung', label: 'Reinigung' }]
+  const availableActivities: { value: ActivityType; labelKey: string }[] = isCleaningOnly
+    ? [{ value: 'reinigung', labelKey: 'activities.reinigung' }]
     : [
-        { value: 'hauswartung', label: 'Hauswartung' },
-        { value: 'rasen_maehen', label: 'Rasen mähen' },
-        { value: 'hecken_schneiden', label: 'Hecken schneiden' },
-        { value: 'regie', label: 'Regie' },
+        { value: 'hauswartung', labelKey: 'activities.hauswartung' },
+        { value: 'rasen_maehen', labelKey: 'activities.rasen_maehen' },
+        { value: 'hecken_schneiden', labelKey: 'activities.hecken_schneiden' },
+        { value: 'regie', labelKey: 'activities.regie' },
       ];
 
   const handlePropertyChange = (newPropertyId: string | null) => {
@@ -995,21 +1012,21 @@ function EditEntryDialog({ entry, properties, onClose, onSave, isLoading }: Edit
       <Dialog open onOpenChange={onClose}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Ferieneintrag</DialogTitle>
+            <DialogTitle>{tCal('vacationEntry')}</DialogTitle>
           </DialogHeader>
           <div className="py-4 space-y-3">
             <div className="p-4 bg-green-50 rounded-lg border border-green-200 text-sm text-green-800">
-              <p><span className="font-medium">Startzeit:</span> {format(parseISO(entry.start_time), 'dd.MM.yyyy HH:mm')}</p>
-              <p><span className="font-medium">Endzeit:</span> {entry.end_time ? format(parseISO(entry.end_time), 'dd.MM.yyyy HH:mm') : '–'}</p>
-              <p><span className="font-medium">Dauer:</span> {formatDuration(calculateDuration(entry))}</p>
+              <p><span className="font-medium">{tCal('startTimeLabel')}:</span> {format(parseISO(entry.start_time), 'dd.MM.yyyy HH:mm')}</p>
+              <p><span className="font-medium">{tCal('endTimeLabel')}:</span> {entry.end_time ? format(parseISO(entry.end_time), 'dd.MM.yyyy HH:mm') : '–'}</p>
+              <p><span className="font-medium">{tCal('durationLabel')}:</span> {formatDuration(calculateDuration(entry))}</p>
             </div>
             <p className="text-xs text-center text-muted-foreground">
-              Ferieneinträge können nur über die Ferien-Seite verwaltet werden
+              {tCal('vacationManageNote')}
             </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={onClose}>
-              Schliessen
+              {tCal('close')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1021,21 +1038,21 @@ function EditEntryDialog({ entry, properties, onClose, onSave, isLoading }: Edit
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Zeiteintrag bearbeiten</DialogTitle>
+          <DialogTitle>{tCal('editTimeEntry')}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           {/* Entry Type */}
           <div className="space-y-2">
-            <Label>Eintragstyp</Label>
+            <Label>{tCal('entryType')}</Label>
             <Select value={entryType} onValueChange={(v) => setEntryType(v as TimeEntryType)}>
               <SelectTrigger>
-                <span>{ENTRY_TYPE_CONFIG[entryType]?.label ?? entryType}</span>
+                <span>{tCal(ENTRY_TYPE_CONFIG[entryType]?.labelKey ?? entryType)}</span>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="property">Liegenschaft</SelectItem>
-                <SelectItem value="travel">Fahrzeit</SelectItem>
-                <SelectItem value="break">Pause</SelectItem>
+                <SelectItem value="property">{tCal('entryTypes.property')}</SelectItem>
+                <SelectItem value="travel">{tCal('entryTypes.travel')}</SelectItem>
+                <SelectItem value="break">{tCal('entryTypes.break')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -1044,7 +1061,7 @@ function EditEntryDialog({ entry, properties, onClose, onSave, isLoading }: Edit
           {entryType === 'property' && (
             <>
               <div className="space-y-2">
-                <Label>Liegenschaft</Label>
+                <Label>{tCal('entryTypes.property')}</Label>
                 <Select
                   value={propertyId || ''}
                   onValueChange={(v) => handlePropertyChange(v || null)}
@@ -1052,8 +1069,8 @@ function EditEntryDialog({ entry, properties, onClose, onSave, isLoading }: Edit
                   <SelectTrigger>
                     <span className={!propertyId ? 'text-muted-foreground' : ''}>
                       {propertyId
-                        ? properties.find(p => p.id === propertyId)?.name || 'Liegenschaft wählen...'
-                        : 'Liegenschaft wählen...'}
+                        ? properties.find(p => p.id === propertyId)?.name || tCal('selectProperty')
+                        : tCal('selectProperty')}
                     </span>
                   </SelectTrigger>
                   <SelectContent>
@@ -1067,7 +1084,7 @@ function EditEntryDialog({ entry, properties, onClose, onSave, isLoading }: Edit
               </div>
 
               <div className="space-y-2">
-                <Label>Tätigkeit</Label>
+                <Label>{tCal('activityLabel')}</Label>
                 <Select
                   value={activityType || ''}
                   onValueChange={(v) => setActivityType((v as ActivityType) || null)}
@@ -1075,14 +1092,14 @@ function EditEntryDialog({ entry, properties, onClose, onSave, isLoading }: Edit
                   <SelectTrigger>
                     <span className={!activityType ? 'text-muted-foreground' : ''}>
                       {activityType
-                        ? availableActivities.find(a => a.value === activityType)?.label || 'Tätigkeit wählen...'
-                        : 'Tätigkeit wählen...'}
+                        ? tCal(availableActivities.find(a => a.value === activityType)?.labelKey || 'selectActivity')
+                        : tCal('selectActivity')}
                     </span>
                   </SelectTrigger>
                   <SelectContent>
                     {availableActivities.map((activity) => (
                       <SelectItem key={activity.value} value={activity.value}>
-                        {activity.label}
+                        {tCal(activity.labelKey)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1093,7 +1110,7 @@ function EditEntryDialog({ entry, properties, onClose, onSave, isLoading }: Edit
 
           {/* Start Time */}
           <div className="space-y-2">
-            <Label>Startzeit</Label>
+            <Label>{tCal('startTimeLabel')}</Label>
             <Input
               type="datetime-local"
               value={startTime}
@@ -1103,7 +1120,7 @@ function EditEntryDialog({ entry, properties, onClose, onSave, isLoading }: Edit
 
           {/* End Time */}
           <div className="space-y-2">
-            <Label>Endzeit</Label>
+            <Label>{tCal('endTimeLabel')}</Label>
             <Input
               type="datetime-local"
               value={endTime}
@@ -1113,21 +1130,21 @@ function EditEntryDialog({ entry, properties, onClose, onSave, isLoading }: Edit
 
           {/* Notes */}
           <div className="space-y-2">
-            <Label>Notizen</Label>
+            <Label>{tCal('notes')}</Label>
             <Input
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Optionale Notizen..."
+              placeholder={tCal('optionalNotes')}
             />
           </div>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Abbrechen
+            {tCal('cancel')}
           </Button>
           <Button onClick={handleSave} disabled={isLoading}>
-            {isLoading ? 'Speichern...' : 'Speichern'}
+            {isLoading ? tCal('saving') : tCal('save')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1153,6 +1170,9 @@ interface NewEntryDialogProps {
 }
 
 function NewEntryDialog({ date, properties, onClose, onSave, isLoading }: NewEntryDialogProps) {
+  const tCal = useTranslations('calendar');
+  const { locale } = useLocale();
+  const dateFnsLocale = getDateFnsLocale(locale as any);
   const dateStr = format(date, 'yyyy-MM-dd');
   const [entryType, setEntryType] = useState<TimeEntryType>('property');
   const [propertyId, setPropertyId] = useState<string | null>(null);
@@ -1166,13 +1186,13 @@ function NewEntryDialog({ date, properties, onClose, onSave, isLoading }: NewEnt
   const isCleaningOnly = selectedProperty && CLEANING_ONLY_PROPERTY_TYPES.includes(selectedProperty.type);
 
   // Available activities based on selected property
-  const availableActivities: { value: ActivityType; label: string }[] = isCleaningOnly
-    ? [{ value: 'reinigung', label: 'Reinigung' }]
+  const availableActivities: { value: ActivityType; labelKey: string }[] = isCleaningOnly
+    ? [{ value: 'reinigung', labelKey: 'activities.reinigung' }]
     : [
-        { value: 'hauswartung', label: 'Hauswartung' },
-        { value: 'rasen_maehen', label: 'Rasen mähen' },
-        { value: 'hecken_schneiden', label: 'Hecken schneiden' },
-        { value: 'regie', label: 'Regie' },
+        { value: 'hauswartung', labelKey: 'activities.hauswartung' },
+        { value: 'rasen_maehen', labelKey: 'activities.rasen_maehen' },
+        { value: 'hecken_schneiden', labelKey: 'activities.hecken_schneiden' },
+        { value: 'regie', labelKey: 'activities.regie' },
       ];
 
   // Reset activity when property changes and current activity is no longer available
@@ -1211,24 +1231,24 @@ function NewEntryDialog({ date, properties, onClose, onSave, isLoading }: NewEnt
     <Dialog open onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Neuer Zeiteintrag</DialogTitle>
+          <DialogTitle>{tCal('newTimeEntry')}</DialogTitle>
           <DialogDescription>
-            {format(date, 'EEEE, d. MMMM yyyy', { locale: de })}
+            {format(date, 'EEEE, d. MMMM yyyy', { locale: dateFnsLocale })}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           {/* Entry Type */}
           <div className="space-y-2">
-            <Label>Eintragstyp</Label>
+            <Label>{tCal('entryType')}</Label>
             <Select value={entryType} onValueChange={(v) => setEntryType(v as TimeEntryType)}>
               <SelectTrigger>
-                <span>{ENTRY_TYPE_CONFIG[entryType]?.label ?? entryType}</span>
+                <span>{tCal(ENTRY_TYPE_CONFIG[entryType]?.labelKey ?? entryType)}</span>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="property">Liegenschaft</SelectItem>
-                <SelectItem value="travel">Fahrzeit</SelectItem>
-                <SelectItem value="break">Pause</SelectItem>
+                <SelectItem value="property">{tCal('entryTypes.property')}</SelectItem>
+                <SelectItem value="travel">{tCal('entryTypes.travel')}</SelectItem>
+                <SelectItem value="break">{tCal('entryTypes.break')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -1237,7 +1257,7 @@ function NewEntryDialog({ date, properties, onClose, onSave, isLoading }: NewEnt
           {entryType === 'property' && (
             <>
               <div className="space-y-2">
-                <Label>Liegenschaft</Label>
+                <Label>{tCal('entryTypes.property')}</Label>
                 <Select
                   value={propertyId || ''}
                   onValueChange={(v) => handlePropertyChange(v || null)}
@@ -1245,8 +1265,8 @@ function NewEntryDialog({ date, properties, onClose, onSave, isLoading }: NewEnt
                   <SelectTrigger>
                     <span className={!propertyId ? 'text-muted-foreground' : ''}>
                       {propertyId
-                        ? properties.find(p => p.id === propertyId)?.name || 'Liegenschaft wählen...'
-                        : 'Liegenschaft wählen...'}
+                        ? properties.find(p => p.id === propertyId)?.name || tCal('selectProperty')
+                        : tCal('selectProperty')}
                     </span>
                   </SelectTrigger>
                   <SelectContent>
@@ -1260,7 +1280,7 @@ function NewEntryDialog({ date, properties, onClose, onSave, isLoading }: NewEnt
               </div>
 
               <div className="space-y-2">
-                <Label>Tätigkeit</Label>
+                <Label>{tCal('activityLabel')}</Label>
                 <Select
                   value={activityType || ''}
                   onValueChange={(v) => setActivityType((v as ActivityType) || null)}
@@ -1268,14 +1288,14 @@ function NewEntryDialog({ date, properties, onClose, onSave, isLoading }: NewEnt
                   <SelectTrigger>
                     <span className={!activityType ? 'text-muted-foreground' : ''}>
                       {activityType
-                        ? availableActivities.find(a => a.value === activityType)?.label || 'Tätigkeit wählen...'
-                        : 'Tätigkeit wählen...'}
+                        ? tCal(availableActivities.find(a => a.value === activityType)?.labelKey || 'selectActivity')
+                        : tCal('selectActivity')}
                     </span>
                   </SelectTrigger>
                   <SelectContent>
                     {availableActivities.map((activity) => (
                       <SelectItem key={activity.value} value={activity.value}>
-                        {activity.label}
+                        {tCal(activity.labelKey)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1286,7 +1306,7 @@ function NewEntryDialog({ date, properties, onClose, onSave, isLoading }: NewEnt
 
           {/* Start Time */}
           <div className="space-y-2">
-            <Label>Startzeit</Label>
+            <Label>{tCal('startTimeLabel')}</Label>
             <Input
               type="datetime-local"
               value={startTime}
@@ -1296,7 +1316,7 @@ function NewEntryDialog({ date, properties, onClose, onSave, isLoading }: NewEnt
 
           {/* End Time */}
           <div className="space-y-2">
-            <Label>Endzeit</Label>
+            <Label>{tCal('endTimeLabel')}</Label>
             <Input
               type="datetime-local"
               value={endTime}
@@ -1306,21 +1326,21 @@ function NewEntryDialog({ date, properties, onClose, onSave, isLoading }: NewEnt
 
           {/* Notes */}
           <div className="space-y-2">
-            <Label>Notizen</Label>
+            <Label>{tCal('notes')}</Label>
             <Input
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Optionale Notizen..."
+              placeholder={tCal('optionalNotes')}
             />
           </div>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Abbrechen
+            {tCal('cancel')}
           </Button>
           <Button onClick={handleSave} disabled={isLoading || !canSave()}>
-            {isLoading ? 'Erstellen...' : 'Erstellen'}
+            {isLoading ? tCal('creating') : tCal('create')}
           </Button>
         </DialogFooter>
       </DialogContent>
