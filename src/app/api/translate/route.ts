@@ -47,7 +47,7 @@ async function translateBatch(labels: { id: string; label: string }[], targetLan
       ],
       temperature: 0.1,
     }),
-    signal: AbortSignal.timeout(30000),
+    signal: AbortSignal.timeout(60000),
   });
 
   if (!response.ok) {
@@ -98,20 +98,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Items array is required' }, { status: 400 });
     }
 
-    // Translate batch to all supported locales in parallel
-    const translationPromises = SUPPORTED_LOCALES.map(async (locale) => {
-      try {
-        const result = await translateBatch(items, locale);
-        return { locale, result };
-      } catch {
-        // Fallback: use original labels
-        const fallback: Record<string, string> = {};
-        items.forEach(item => { fallback[item.id] = item.label; });
-        return { locale, result: fallback };
-      }
-    });
-
-    const results = await Promise.all(translationPromises);
+    // Translate batch to all supported locales sequentially in groups of 3
+    // to avoid rate limiting on Near AI
+    const results: { locale: string; result: Record<string, string> }[] = [];
+    for (let i = 0; i < SUPPORTED_LOCALES.length; i += 3) {
+      const batch = SUPPORTED_LOCALES.slice(i, i + 3);
+      const batchResults = await Promise.all(
+        batch.map(async (locale) => {
+          try {
+            const result = await translateBatch(items, locale);
+            return { locale, result };
+          } catch (err) {
+            console.error(`Translation failed for ${locale}:`, err);
+            // Fallback: use original labels
+            const fallback: Record<string, string> = {};
+            items.forEach(item => { fallback[item.id] = item.label; });
+            return { locale, result: fallback };
+          }
+        })
+      );
+      results.push(...batchResults);
+    }
 
     // Restructure: { itemId: { locale: translation } }
     const translatedItems: Record<string, Record<string, string>> = {};
