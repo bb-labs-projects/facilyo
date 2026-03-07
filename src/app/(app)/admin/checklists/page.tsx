@@ -39,6 +39,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { useTranslations } from 'next-intl';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
@@ -57,19 +58,20 @@ interface ChecklistTemplateWithProperty extends ChecklistTemplate {
 
 const isPdfUrl = (url: string) => /\.pdf(\?|$)/i.test(url);
 
-const itemTypeConfig: Record<ChecklistItemType, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
-  checkbox: { label: 'Checkbox', icon: Check },
-  text: { label: 'Text', icon: Type },
-  number: { label: 'Zahl', icon: Hash },
-  photo: { label: 'Foto', icon: Camera },
-};
-
 export default function AdminChecklistsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const permissions = usePermissions();
   const organizationId = useAuthStore((state) => state.organizationId);
   const isSuperAdmin = useAuthStore((state) => state.isSuperAdmin);
+  const tCheck = useTranslations('checklistAdmin');
+
+  const itemTypeConfig: Record<ChecklistItemType, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
+    checkbox: { label: tCheck('itemTypes.checkbox'), icon: Check },
+    text: { label: tCheck('itemTypes.text'), icon: Type },
+    number: { label: tCheck('itemTypes.number'), icon: Hash },
+    photo: { label: tCheck('itemTypes.photo'), icon: Camera },
+  };
 
   const [showForm, setShowForm] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<ChecklistTemplateWithProperty | null>(null);
@@ -146,7 +148,7 @@ export default function AdminChecklistsPage() {
       }));
     } catch (error) {
       console.error('Auto-translation failed:', error);
-      toast.error('Automatische Übersetzung fehlgeschlagen – Checkliste wird ohne Übersetzungen gespeichert');
+      toast.error(tCheck('translationFailed'));
       return items;
     }
   };
@@ -174,12 +176,12 @@ export default function AdminChecklistsPage() {
       return result as ChecklistTemplate;
     },
     onSuccess: () => {
-      toast.success('Checkliste wurde erstellt');
+      toast.success(tCheck('created'));
       queryClient.invalidateQueries({ queryKey: ['admin-checklists'] });
       resetForm();
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(error.message);
     },
   });
 
@@ -206,12 +208,12 @@ export default function AdminChecklistsPage() {
       return result as ChecklistTemplate;
     },
     onSuccess: () => {
-      toast.success('Checkliste wurde aktualisiert');
+      toast.success(tCheck('updated'));
       queryClient.invalidateQueries({ queryKey: ['admin-checklists'] });
       resetForm();
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(error.message);
     },
   });
 
@@ -227,13 +229,13 @@ export default function AdminChecklistsPage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('Checkliste wurde deaktiviert');
+      toast.success(tCheck('deactivated'));
       queryClient.invalidateQueries({ queryKey: ['admin-checklists'] });
       setShowDeleteDialog(false);
       setDeletingTemplate(null);
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(error.message);
     },
   });
 
@@ -273,7 +275,7 @@ export default function AdminChecklistsPage() {
   };
 
   const openCopyForm = (template: ChecklistTemplateWithProperty) => {
-    setName(`${template.name} (Kopie)`);
+    setName(`${template.name} (${tCheck('copy')})`);
     setPropertyId(template.property_id);
     setIsActive(template.is_active);
     setImageUrl(template.image_url || '');
@@ -387,7 +389,7 @@ export default function AdminChecklistsPage() {
       const { data: { publicUrl } } = supabase.storage.from('photos').getPublicUrl(data.path);
       setImageUrl(publicUrl);
     } catch (error: any) {
-      toast.error(error?.message || 'Datei konnte nicht hochgeladen werden');
+      toast.error(error?.message || tCheck('uploadError'));
     } finally {
       setIsUploadingImage(false);
     }
@@ -420,7 +422,7 @@ export default function AdminChecklistsPage() {
     <PageContainer
       header={
         <Header
-          title="Checklisten"
+          title={tCheck('title')}
           rightElement={
             <div className="flex items-center gap-1">
               <Button
@@ -443,13 +445,13 @@ export default function AdminChecklistsPage() {
       {showFilters && (
         <Card className="mb-4">
           <CardContent className="p-4">
-            <label className="text-sm font-medium block mb-2">Liegenschaft</label>
+            <label className="text-sm font-medium block mb-2">{tCheck('property')}</label>
             <select
               value={filterPropertyId}
               onChange={(e) => setFilterPropertyId(e.target.value)}
               className="flex h-11 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
             >
-              <option value="">Alle Liegenschaften</option>
+              <option value="">{tCheck('allProperties')}</option>
               {properties.map((property) => (
                 <option key={property.id} value={property.id}>
                   {property.name}
@@ -463,15 +465,15 @@ export default function AdminChecklistsPage() {
       {/* Templates list */}
       {isLoading ? (
         <div className="text-center py-12 text-muted-foreground">
-          Wird geladen...
+          {tCheck('loading')}
         </div>
       ) : Object.keys(templatesByProperty).length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <ClipboardList className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p>Keine Checklisten vorhanden</p>
+          <p>{tCheck('noChecklists')}</p>
           <Button className="mt-4" onClick={() => setShowForm(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Erste Checkliste erstellen
+            {tCheck('createFirst')}
           </Button>
         </div>
       ) : (
@@ -504,7 +506,7 @@ export default function AdminChecklistsPage() {
                               <h3 className="font-medium">{template.name}</h3>
                               {!template.is_active && (
                                 <span className="badge bg-muted text-muted-foreground text-xs">
-                                  Inaktiv
+                                  {tCheck('inactive')}
                                 </span>
                               )}
                               {isSuperAdmin && template.organizations?.name && (
@@ -514,7 +516,7 @@ export default function AdminChecklistsPage() {
                               )}
                             </div>
                             <p className="text-sm text-muted-foreground">
-                              {itemCount} {itemCount === 1 ? 'Punkt' : 'Punkte'}
+                              {tCheck('itemCount', { count: itemCount })}
                             </p>
                           </div>
                           <div className="flex gap-1 flex-shrink-0">
@@ -522,7 +524,7 @@ export default function AdminChecklistsPage() {
                               variant="ghost"
                               size="icon"
                               onClick={() => openCopyForm(template)}
-                              title="Kopieren"
+                              title={tCheck('copy')}
                             >
                               <Copy className="h-4 w-4" />
                             </Button>
@@ -530,7 +532,7 @@ export default function AdminChecklistsPage() {
                               variant="ghost"
                               size="icon"
                               onClick={() => openEditForm(template)}
-                              title="Bearbeiten"
+                              title={tCheck('editAction')}
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -541,7 +543,7 @@ export default function AdminChecklistsPage() {
                                 setDeletingTemplate(template);
                                 setShowDeleteDialog(true);
                               }}
-                              title="Löschen"
+                              title={tCheck('deleteAction')}
                             >
                               <Trash2 className="h-4 w-4 text-error-600" />
                             </Button>
@@ -567,32 +569,32 @@ export default function AdminChecklistsPage() {
         <SheetContent side="bottom" className="h-[90vh]">
           <SheetHeader>
             <SheetTitle>
-              {editingTemplate ? 'Checkliste bearbeiten' : 'Neue Checkliste'}
+              {editingTemplate ? tCheck('editChecklist') : tCheck('newChecklist')}
             </SheetTitle>
           </SheetHeader>
 
           <form onSubmit={handleSubmit} className="mt-4 space-y-4 overflow-y-auto max-h-[calc(90vh-120px)]">
             <div className="space-y-2">
               <label className="text-sm font-medium">
-                Name <span className="text-error-500">*</span>
+                {tCheck('name')} <span className="text-error-500">*</span>
               </label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Checklistenname"
+                placeholder={tCheck('namePlaceholder')}
               />
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium">
-                Liegenschaft <span className="text-error-500">*</span>
+                {tCheck('property')} <span className="text-error-500">*</span>
               </label>
               <select
                 value={propertyId}
                 onChange={(e) => setPropertyId(e.target.value)}
                 className="flex h-11 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
               >
-                <option value="">Liegenschaft wählen...</option>
+                <option value="">{tCheck('selectProperty')}</option>
                 {properties.map((property) => (
                   <option key={property.id} value={property.id}>
                     {property.name}
@@ -617,23 +619,23 @@ export default function AdminChecklistsPage() {
                   )}
                 />
               </button>
-              <label className="text-sm font-medium">Aktiv</label>
+              <label className="text-sm font-medium">{tCheck('active')}</label>
             </div>
 
             {/* Image upload */}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Pflichtenheft</label>
+              <label className="text-sm font-medium">{tCheck('specSheet')}</label>
               {isUploadingImage ? (
                 <div className="w-full h-24 border-2 border-dashed border-primary-300 rounded-lg flex flex-col items-center justify-center gap-2 bg-primary-50">
                   <Loader2 className="h-6 w-6 text-primary-500 animate-spin" />
-                  <span className="text-sm text-primary-600">Wird hochgeladen...</span>
+                  <span className="text-sm text-primary-600">{tCheck('uploading')}</span>
                 </div>
               ) : imageUrl ? (
                 isPdfUrl(imageUrl) ? (
                   <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
                     <FileText className="h-5 w-5 text-red-500 flex-shrink-0" />
                     <a href={imageUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-medium flex-1 hover:underline">
-                      PDF anzeigen
+                      {tCheck('viewPdf')}
                     </a>
                     <button
                       type="button"
@@ -646,7 +648,7 @@ export default function AdminChecklistsPage() {
                 ) : (
                   <div className="relative rounded-lg overflow-hidden bg-slate-100 border border-slate-200">
                     <a href={imageUrl} target="_blank" rel="noopener noreferrer" className="block">
-                      <img src={imageUrl} alt="Pflichtenheft" className="w-full max-h-[300px] object-contain" />
+                      <img src={imageUrl} alt={tCheck('specSheet')} className="w-full max-h-[300px] object-contain" />
                     </a>
                     <button
                       type="button"
@@ -664,7 +666,7 @@ export default function AdminChecklistsPage() {
                   className="w-full h-24 border-2 border-dashed border-muted-foreground/50 rounded-lg flex flex-col items-center justify-center gap-2 hover:border-primary-500 transition-colors"
                 >
                   <ImagePlus className="h-6 w-6 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Pflichtenheft hochladen (Bild/PDF)</span>
+                  <span className="text-sm text-muted-foreground">{tCheck('uploadSpecSheet')}</span>
                 </button>
               )}
               <input
@@ -679,7 +681,7 @@ export default function AdminChecklistsPage() {
             {/* Items section */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Checklistenpunkte</label>
+                <label className="text-sm font-medium">{tCheck('checklistItems')}</label>
                 <Button
                   type="button"
                   variant="outline"
@@ -687,7 +689,7 @@ export default function AdminChecklistsPage() {
                   onClick={() => setShowItemForm(true)}
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  Punkt hinzufügen
+                  {tCheck('addItem')}
                 </Button>
               </div>
 
@@ -695,20 +697,20 @@ export default function AdminChecklistsPage() {
               {showItemForm && (
                 <div className="rounded-lg border border-dashed border-primary-300 bg-primary-50/50 p-4 space-y-3">
                   <p className="text-sm font-medium text-primary-700">
-                    {editingItemIndex !== null ? 'Punkt bearbeiten' : 'Neuer Punkt'}
+                    {editingItemIndex !== null ? tCheck('editItem') : tCheck('newItem')}
                   </p>
                   <div className="space-y-2">
                     <label className="text-sm font-medium">
-                      Bezeichnung <span className="text-error-500">*</span>
+                      {tCheck('label')} <span className="text-error-500">*</span>
                     </label>
                     <Input
                       value={itemLabel}
                       onChange={(e) => setItemLabel(e.target.value)}
-                      placeholder="z.B. Fenster gereinigt"
+                      placeholder={tCheck('labelPlaceholder')}
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Typ</label>
+                    <label className="text-sm font-medium">{tCheck('type')}</label>
                     <div className="grid grid-cols-2 gap-2">
                       {(Object.keys(itemTypeConfig) as ChecklistItemType[]).map((type) => {
                         const config = itemTypeConfig[type];
@@ -748,14 +750,14 @@ export default function AdminChecklistsPage() {
                         )}
                       />
                     </button>
-                    <label className="text-sm font-medium">Pflichtfeld</label>
+                    <label className="text-sm font-medium">{tCheck('required')}</label>
                   </div>
                   <div className="flex gap-2 pt-1">
                     <Button type="button" variant="outline" size="sm" onClick={resetItemForm}>
-                      Abbrechen
+                      {tCheck('cancel')}
                     </Button>
                     <Button type="button" size="sm" onClick={handleAddItem} disabled={!itemLabel.trim()}>
-                      {editingItemIndex !== null ? 'Speichern' : 'Hinzufügen'}
+                      {editingItemIndex !== null ? tCheck('save') : tCheck('add')}
                     </Button>
                   </div>
                 </div>
@@ -763,7 +765,7 @@ export default function AdminChecklistsPage() {
 
               {items.length === 0 && !showItemForm ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
-                  Noch keine Punkte hinzugefügt
+                  {tCheck('noItemsYet')}
                 </p>
               ) : (
                 <div className="space-y-2">
@@ -838,7 +840,7 @@ export default function AdminChecklistsPage() {
                 className="flex-1"
                 onClick={resetForm}
               >
-                Abbrechen
+                {tCheck('cancel')}
               </Button>
               <Button
                 type="submit"
@@ -846,10 +848,10 @@ export default function AdminChecklistsPage() {
                 disabled={isSubmitting || !name.trim() || !propertyId}
               >
                 {isSubmitting
-                  ? 'Wird gespeichert...'
+                  ? tCheck('saving')
                   : editingTemplate
-                  ? 'Speichern'
-                  : 'Erstellen'}
+                  ? tCheck('save')
+                  : tCheck('create')}
               </Button>
             </div>
           </form>
@@ -860,21 +862,21 @@ export default function AdminChecklistsPage() {
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Checkliste deaktivieren</DialogTitle>
+            <DialogTitle>{tCheck('deactivateTitle')}</DialogTitle>
             <DialogDescription>
-              Sind Sie sicher, dass Sie &quot;{deletingTemplate?.name}&quot; deaktivieren möchten? Die Checkliste und alle bisherigen Einträge bleiben erhalten.
+              {tCheck('deactivateMessage', { name: deletingTemplate?.name ?? '' })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
-              Abbrechen
+              {tCheck('cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={() => deletingTemplate && deleteMutation.mutate(deletingTemplate.id)}
               disabled={deleteMutation.isPending}
             >
-              {deleteMutation.isPending ? 'Wird deaktiviert...' : 'Deaktivieren'}
+              {deleteMutation.isPending ? tCheck('deactivating') : tCheck('deactivate')}
             </Button>
           </DialogFooter>
         </DialogContent>

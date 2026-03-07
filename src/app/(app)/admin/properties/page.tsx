@@ -55,7 +55,7 @@ function AdminPropertiesPageContent() {
     industrial: tProp('propertyTypes.industrial'),
     mixed: tProp('propertyTypes.mixed'),
     office: tProp('propertyTypes.office'),
-    private_maintenance: tProp('propertyTypes.privateMaintenance'),
+    private_maintenance: tProp('propertyTypes.private_maintenance'),
   };
 
   const [searchQuery, setSearchQuery] = useState('');

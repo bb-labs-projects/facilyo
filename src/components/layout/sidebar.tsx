@@ -41,11 +41,11 @@ interface NavItem {
 }
 
 const mainNavItems: NavItem[] = [
-  { href: '/', labelKey: 'start', icon: Home },
-  { href: '/time', labelKey: 'time', icon: Clock },
-  { href: '/tasks', labelKey: 'tasks', icon: ClipboardList },
-  { href: '/issues', labelKey: 'issues', icon: AlertTriangle },
-  { href: '/vacation', labelKey: 'vacation', icon: Palmtree },
+  { href: '/', labelKey: 'nav.start', icon: Home },
+  { href: '/time', labelKey: 'nav.time', icon: Clock },
+  { href: '/tasks', labelKey: 'nav.tasks', icon: ClipboardList },
+  { href: '/issues', labelKey: 'nav.issues', icon: AlertTriangle },
+  { href: '/vacation', labelKey: 'nav.vacation', icon: Palmtree },
 ];
 
 const adminNavItems: NavItem[] = [

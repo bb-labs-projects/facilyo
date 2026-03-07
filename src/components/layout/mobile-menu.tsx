@@ -18,6 +18,7 @@ import {
   Crown,
   FileText,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useAuthStore } from '@/stores/auth-store';
@@ -35,7 +36,7 @@ import {
 
 interface NavItem {
   href: string;
-  label: string;
+  labelKey: string;
   icon: React.ComponentType<{ className?: string }>;
   requireAdmin?: boolean;
   requireOwner?: boolean;
@@ -45,23 +46,23 @@ interface NavItem {
 }
 
 const mainNavItems: NavItem[] = [
-  { href: '/', label: 'Start', icon: Home },
-  { href: '/time', label: 'Zeiten', icon: Clock },
-  { href: '/tasks', label: 'Aufgaben', icon: ClipboardList },
-  { href: '/issues', label: 'Meldungen', icon: AlertTriangle },
-  { href: '/vacation', label: 'Ferien', icon: Palmtree },
+  { href: '/', labelKey: 'start', icon: Home },
+  { href: '/time', labelKey: 'time', icon: Clock },
+  { href: '/tasks', labelKey: 'tasks', icon: ClipboardList },
+  { href: '/issues', labelKey: 'issues', icon: AlertTriangle },
+  { href: '/vacation', labelKey: 'vacation', icon: Palmtree },
 ];
 
 const adminNavItems: NavItem[] = [
-  { href: '/admin/users', label: 'Benutzer', icon: Users, requireAdmin: true, requireOwner: true },
-  { href: '/admin/properties', label: 'Liegenschaften', icon: Building2, requireAdmin: true },
-  { href: '/admin/clients', label: 'Kunden', icon: Briefcase, requireAdmin: true },
-  { href: '/admin/checklists', label: 'Checklisten', icon: ClipboardList, requireAdmin: true },
-  { href: '/admin/activity', label: 'Aktivitäten', icon: Activity, requireAdmin: true },
-  { href: '/admin/time-overview', label: 'Zeitübersicht', icon: Clock, requireAdmin: true },
-  { href: '/admin/calendar', label: 'Benutzerkalender', icon: CalendarDays, requireAdmin: true, requireUserCalendar: true },
-  { href: '/admin/roles', label: 'Rollen', icon: Shield, requireAdmin: true, requireRolePermissions: true },
-  { href: '/admin/invoices', label: 'Rechnungen', icon: FileText, requireAdmin: true, requireInvoices: true },
+  { href: '/admin/users', labelKey: 'users', icon: Users, requireAdmin: true, requireOwner: true },
+  { href: '/admin/properties', labelKey: 'properties', icon: Building2, requireAdmin: true },
+  { href: '/admin/clients', labelKey: 'clients', icon: Briefcase, requireAdmin: true },
+  { href: '/admin/checklists', labelKey: 'checklists', icon: ClipboardList, requireAdmin: true },
+  { href: '/admin/activity', labelKey: 'activities', icon: Activity, requireAdmin: true },
+  { href: '/admin/time-overview', labelKey: 'timeOverview', icon: Clock, requireAdmin: true },
+  { href: '/admin/calendar', labelKey: 'calendar', icon: CalendarDays, requireAdmin: true, requireUserCalendar: true },
+  { href: '/admin/roles', labelKey: 'roles', icon: Shield, requireAdmin: true, requireRolePermissions: true },
+  { href: '/admin/invoices', labelKey: 'invoices', icon: FileText, requireAdmin: true, requireInvoices: true },
 ];
 
 interface MobileMenuProps {
@@ -71,6 +72,7 @@ interface MobileMenuProps {
 
 export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
   const pathname = usePathname();
+  const t = useTranslations();
   const permissions = usePermissions();
   const { user, profile } = useAuthStore();
   const openIssuesCount = useOpenIssuesCount();
@@ -157,7 +159,7 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
                       </span>
                     )}
                   </span>
-                  <span>{item.label}</span>
+                  <span>{t(`nav.${item.labelKey}`)}</span>
                   {item.href === '/tasks' && newTasksCount > 0 && (
                     <span className="sr-only">, {newTasksCount} neue</span>
                   )}
@@ -177,7 +179,7 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
             <>
               <div className="my-4 border-t border-primary-800" />
               <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                Administration
+                {t('admin.administration')}
               </p>
               <div className="space-y-1">
                 {filteredAdminItems.map((item) => {
@@ -204,7 +206,7 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
                           </span>
                         )}
                       </span>
-                      <span>{item.label}</span>
+                      <span>{t(`admin.${item.labelKey}`)}</span>
                       {item.href === '/admin/activity' && completedTasksCount > 0 && (
                         <span className="sr-only">, {completedTasksCount} erledigt</span>
                       )}
@@ -257,7 +259,7 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
             </div>
             <div className="flex flex-col overflow-hidden">
               <span className="truncate text-sm font-medium">
-                {profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Benutzer' : 'Benutzer'}
+                {profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || t('common.user') : t('common.user')}
               </span>
               <span className="truncate text-xs text-slate-400">
                 {user?.email || ''}
