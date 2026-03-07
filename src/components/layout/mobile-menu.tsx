@@ -58,7 +58,7 @@ const adminNavItems: NavItem[] = [
   { href: '/admin/properties', labelKey: 'properties', icon: Building2, requireAdmin: true },
   { href: '/admin/clients', labelKey: 'clients', icon: Briefcase, requireAdmin: true },
   { href: '/admin/checklists', labelKey: 'checklists', icon: ClipboardList, requireAdmin: true },
-  { href: '/admin/activity', labelKey: 'activities', icon: Activity, requireAdmin: true },
+  { href: '/admin/activity', labelKey: 'activity', icon: Activity, requireAdmin: true },
   { href: '/admin/time-overview', labelKey: 'timeOverview', icon: Clock, requireAdmin: true },
   { href: '/admin/calendar', labelKey: 'calendar', icon: CalendarDays, requireAdmin: true, requireUserCalendar: true },
   { href: '/admin/roles', labelKey: 'roles', icon: Shield, requireAdmin: true, requireRolePermissions: true },
