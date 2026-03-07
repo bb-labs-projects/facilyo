@@ -1,7 +1,6 @@
 import { getRequestConfig } from 'next-intl/server';
 import { format, formatDistance, formatRelative, parseISO } from 'date-fns';
 import { de, enUS, es, pt, sl, sq, mk, hr, bs, sr } from 'date-fns/locale';
-import { cookies } from 'next/headers';
 
 // Default locale
 export const defaultLocale = 'de-CH';
@@ -53,23 +52,24 @@ export function getDateFnsLocale(locale: Locale = defaultLocale) {
   return dateFnsLocales[locale] || de;
 }
 
-// Map locale codes to message file names
-function getMessageFile(locale: Locale): string {
-  return locale;
-}
-
-// next-intl config
+// next-intl config — uses dynamic import of cookies to avoid bundling next/headers in client
 export default getRequestConfig(async () => {
-  const cookieStore = cookies();
-  const localeCookie = cookieStore.get('facilyo-locale')?.value;
+  let localeCookie: string | undefined;
+  try {
+    const { cookies } = await import('next/headers');
+    const cookieStore = cookies();
+    localeCookie = cookieStore.get('facilyo-locale')?.value;
+  } catch {
+    // Fallback if cookies() is not available
+  }
+
   const locale = (locales as readonly string[]).includes(localeCookie || '')
     ? (localeCookie as Locale)
     : defaultLocale;
-  const messageFile = getMessageFile(locale);
 
   return {
     locale,
-    messages: (await import(`../messages/${messageFile}.json`)).default,
+    messages: (await import(`../messages/${locale}.json`)).default,
   };
 });
 
