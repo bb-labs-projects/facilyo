@@ -367,6 +367,7 @@
     "editAction": "Modifica",
     "deleteAction": "Elimina",
     "translationFailed": "Traduzione automatica fallita – la lista verrà salvata senza traduzioni",
+    "translateItems": "Traduci gli elementi in tutte le lingue",
     "uploadError": "Impossibile caricare il file",
     "property": "Proprietà",
     "allProperties": "Tutte le proprietà",

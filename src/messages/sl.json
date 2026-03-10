@@ -367,6 +367,7 @@
     "editAction": "Uredi",
     "deleteAction": "Izbriši",
     "translationFailed": "Samodejni prevod ni uspel – seznam bo shranjen brez prevodov",
+    "translateItems": "Prevedi postavke v vse jezike",
     "uploadError": "Datoteke ni bilo mogoče naložiti",
     "property": "Nepremičnina",
     "allProperties": "Vse nepremičnine",

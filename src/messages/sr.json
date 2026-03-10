@@ -367,6 +367,7 @@
     "editAction": "Уреди",
     "deleteAction": "Обриши",
     "translationFailed": "Аутоматски превод није успео – листа ће бити сачувана без превода",
+    "translateItems": "Prevedi stavke na sve jezike",
     "uploadError": "Датотека није могла бити отпремљена",
     "property": "Некретнина",
     "allProperties": "Све некретнине",

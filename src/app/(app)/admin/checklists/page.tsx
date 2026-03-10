@@ -19,7 +19,6 @@ import {
   Loader2,
   X,
   Filter,
-  Languages,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Header, PageContainer } from '@/components/layout/header';
@@ -82,7 +81,7 @@ export default function AdminChecklistsPage() {
   const [deletingTemplate, setDeletingTemplate] = useState<ChecklistTemplateWithProperty | null>(null);
   const [filterPropertyId, setFilterPropertyId] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
-  const [isTranslatingAll, setIsTranslatingAll] = useState(false);
+  const [shouldTranslate, setShouldTranslate] = useState(true);
 
   // Form state
   const [name, setName] = useState('');
@@ -157,42 +156,15 @@ export default function AdminChecklistsPage() {
     }
   };
 
-  // Re-translate all checklists
-  const translateAllChecklists = async () => {
-    if (isTranslatingAll || templates.length === 0) return;
-    setIsTranslatingAll(true);
-    let successCount = 0;
-    try {
-      const supabase = getClient();
-      for (const template of templates) {
-        const items = (template.items as unknown as ChecklistItem[]) || [];
-        if (items.length === 0) continue;
-        const translatedItems = await translateItems(items);
-        const { error } = await (supabase as any)
-          .from('checklist_templates')
-          .update({ items: translatedItems })
-          .eq('id', template.id);
-        if (!error) successCount++;
-      }
-      queryClient.invalidateQueries({ queryKey: ['admin-checklists'] });
-      toast.success(tCheck('allTranslated', { count: successCount }));
-    } catch (error) {
-      console.error('Translate all failed:', error);
-      toast.error(tCheck('translationFailed'));
-    } finally {
-      setIsTranslatingAll(false);
-    }
-  };
-
   // Create mutation
   const createMutation = useMutation({
     mutationFn: async (data: { name: string; property_id: string; items: ChecklistItem[]; is_active: boolean; image_url: string | null }) => {
-      const translatedItems = await translateItems(data.items);
+      const finalItems = shouldTranslate ? await translateItems(data.items) : data.items;
       const supabase = getClient();
       const insertData = {
         name: data.name,
         property_id: data.property_id,
-        items: translatedItems,
+        items: finalItems,
         is_active: data.is_active,
         image_url: data.image_url,
         organization_id: organizationId,
@@ -219,12 +191,12 @@ export default function AdminChecklistsPage() {
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: { name: string; property_id: string; items: ChecklistItem[]; is_active: boolean; image_url: string | null } }) => {
-      const translatedItems = await translateItems(data.items);
+      const finalItems = shouldTranslate ? await translateItems(data.items) : data.items;
       const supabase = getClient();
       const updateData = {
         name: data.name,
         property_id: data.property_id,
-        items: translatedItems,
+        items: finalItems,
         is_active: data.is_active,
         image_url: data.image_url,
       };
@@ -285,6 +257,7 @@ export default function AdminChecklistsPage() {
     setItems([]);
     setEditingTemplate(null);
     setShowForm(false);
+    setShouldTranslate(true);
   };
 
   const resetItemForm = () => {
@@ -342,19 +315,26 @@ export default function AdminChecklistsPage() {
   const handleAddItem = () => {
     if (!itemLabel.trim()) return;
 
-    const newItem: ChecklistItem = {
-      id: crypto.randomUUID(),
-      label: itemLabel.trim(),
-      type: itemType,
-      required: itemRequired,
-      order: editingItemIndex !== null ? items[editingItemIndex].order : items.length,
-    };
-
     if (editingItemIndex !== null) {
+      // Preserve existing item's id and translations when editing
+      const existing = items[editingItemIndex];
+      const updatedItem: ChecklistItem = {
+        ...existing,
+        label: itemLabel.trim(),
+        type: itemType,
+        required: itemRequired,
+      };
       const newItems = [...items];
-      newItems[editingItemIndex] = newItem;
+      newItems[editingItemIndex] = updatedItem;
       setItems(newItems);
     } else {
+      const newItem: ChecklistItem = {
+        id: crypto.randomUUID(),
+        label: itemLabel.trim(),
+        type: itemType,
+        required: itemRequired,
+        order: items.length,
+      };
       setItems([...items, newItem]);
     }
 
@@ -456,14 +436,6 @@ export default function AdminChecklistsPage() {
           title={tCheck('title')}
           rightElement={
             <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={translateAllChecklists}
-                disabled={isTranslatingAll}
-              >
-                {isTranslatingAll ? <Loader2 className="h-5 w-5 animate-spin" /> : <Languages className="h-5 w-5" />}
-              </Button>
               <Button
                 variant="ghost"
                 size="icon"
@@ -871,6 +843,19 @@ export default function AdminChecklistsPage() {
                 </div>
               )}
             </div>
+
+            {/* Translate checkbox */}
+            {items.length > 0 && (
+              <label className="flex items-center gap-2 text-sm cursor-pointer pt-2">
+                <input
+                  type="checkbox"
+                  checked={shouldTranslate}
+                  onChange={(e) => setShouldTranslate(e.target.checked)}
+                  className="rounded border-gray-300"
+                />
+                <span className="text-slate-700">{tCheck('translateItems')}</span>
+              </label>
+            )}
 
             <div className="flex gap-3 pt-4">
               <Button

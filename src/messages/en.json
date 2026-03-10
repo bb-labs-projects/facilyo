@@ -367,6 +367,7 @@
     "editAction": "Edit",
     "deleteAction": "Delete",
     "translationFailed": "Automatic translation failed – checklist will be saved without translations",
+    "translateItems": "Translate items to all languages",
     "uploadError": "File could not be uploaded",
     "property": "Property",
     "allProperties": "All properties",

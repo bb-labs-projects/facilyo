@@ -50,18 +50,13 @@ const defaultFormData: BillingSettingsFormData = {
   approval_required: false,
 };
 
-const ACTIVITY_TYPES = [
-  { key: 'hauswartung', label: 'Hauswartung' },
-  { key: 'rasen_maehen', label: 'Rasen mähen' },
-  { key: 'hecken_schneiden', label: 'Hecken schneiden' },
-  { key: 'regie', label: 'Regie' },
-  { key: 'reinigung', label: 'Reinigung' },
-] as const;
+const ACTIVITY_TYPE_KEYS = ['hauswartung', 'rasen_maehen', 'hecken_schneiden', 'regie', 'reinigung'] as const;
 
 export function InvoiceSettings() {
   const queryClient = useQueryClient();
   const organizationId = useAuthStore((state) => state.organizationId);
   const tClients = useTranslations('clientsAdmin');
+  const tInv = useTranslations('invoicesAdmin');
 
   // --- Billing settings state ---
   const [formData, setFormData] = useState<BillingSettingsFormData>(defaultFormData);
@@ -88,7 +83,7 @@ export function InvoiceSettings() {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error || !session) {
         const { error: refreshError } = await supabase.auth.refreshSession();
-        if (refreshError) throw new Error('Sitzung abgelaufen.');
+        if (refreshError) throw new Error(tInv('settingsMgmt.sessionExpired'));
       }
       lastSessionCheck.current = now;
     } finally {
@@ -164,7 +159,7 @@ export function InvoiceSettings() {
       }
     },
     onSuccess: () => {
-      toast.success('Einstellungen wurden gespeichert');
+      toast.success(tInv('settingsMgmt.saved'));
       queryClient.invalidateQueries({ queryKey: ['billing-settings', organizationId] });
 
       // Regenerate PDFs for all draft invoices (fire and forget)
@@ -173,7 +168,7 @@ export function InvoiceSettings() {
       });
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`${tInv('settingsMgmt.error')}: ${error.message}`);
     },
   });
 
@@ -203,9 +198,9 @@ export function InvoiceSettings() {
 
       const { data: { publicUrl } } = supabase.storage.from('photos').getPublicUrl(data.path);
       setFormData((prev) => ({ ...prev, logo_url: publicUrl }));
-      toast.success('Logo wurde hochgeladen');
+      toast.success(tInv('settingsMgmt.logoUploaded'));
     } catch (error: any) {
-      toast.error(error?.message || 'Logo konnte nicht hochgeladen werden');
+      toast.error(error?.message || tInv('settingsMgmt.logoUploadFailed'));
     } finally {
       setIsUploadingLogo(false);
     }
@@ -246,9 +241,9 @@ export function InvoiceSettings() {
   // Initialize rate values from fetched data
   useEffect(() => {
     const values: Record<string, { hourly_rate: string; description: string; editing: boolean }> = {};
-    for (const at of ACTIVITY_TYPES) {
-      const existing = ratesByType[at.key];
-      values[at.key] = {
+    for (const key of ACTIVITY_TYPE_KEYS) {
+      const existing = ratesByType[key];
+      values[key] = {
         hourly_rate: existing ? String(existing.hourly_rate) : '',
         description: existing?.description ?? '',
         editing: false,
@@ -267,17 +262,17 @@ export function InvoiceSettings() {
 
   const saveAllRatesMutation = useMutation({
     mutationFn: async () => {
-      if (!organizationId) throw new Error('Fehlende Daten.');
+      if (!organizationId) throw new Error(tInv('settingsMgmt.missingData'));
       const supabase = getClient();
       await ensureValidSession();
 
-      const upserts = ACTIVITY_TYPES
-        .filter((at) => rateValues[at.key]?.hourly_rate && parseFloat(rateValues[at.key].hourly_rate) > 0)
-        .map((at) => ({
+      const upserts = ACTIVITY_TYPE_KEYS
+        .filter((key) => rateValues[key]?.hourly_rate && parseFloat(rateValues[key].hourly_rate) > 0)
+        .map((key) => ({
           organization_id: organizationId,
-          activity_type: at.key,
-          hourly_rate: parseFloat(rateValues[at.key].hourly_rate),
-          description: rateValues[at.key].description.trim() || null,
+          activity_type: key,
+          hourly_rate: parseFloat(rateValues[key].hourly_rate),
+          description: rateValues[key].description.trim() || null,
           is_active: true,
         }));
 
@@ -300,18 +295,18 @@ export function InvoiceSettings() {
       }
     },
     onSuccess: () => {
-      toast.success('Stundenansätze gespeichert');
+      toast.success(tInv('settingsMgmt.hourlyRatesSaved'));
       queryClient.invalidateQueries({ queryKey: ['service-rates', organizationId] });
     },
     onError: (error: Error) => {
-      toast.error(`Fehler: ${error.message}`);
+      toast.error(`${tInv('settingsMgmt.error')}: ${error.message}`);
     },
   });
 
   if (isLoadingSettings || isLoadingRates) {
     return (
       <div className="text-center py-12 text-muted-foreground">
-        Wird geladen...
+        {tInv('settingsMgmt.loading')}
       </div>
     );
   }
@@ -321,17 +316,17 @@ export function InvoiceSettings() {
       {/* Section 1: Firmendaten */}
       <Card>
         <CardContent className="p-4 lg:p-5 space-y-4">
-          <h2 className="text-base font-semibold text-slate-800">Firmendaten</h2>
+          <h2 className="text-base font-semibold text-slate-800">{tInv('settingsMgmt.companyData')}</h2>
 
           <Input
-            label="Firmenname"
+            label={tInv('settingsMgmt.companyName')}
             value={formData.company_name || ''}
             onChange={(e) => updateField('company_name', e.target.value || null)}
             placeholder="Muster GmbH"
           />
 
           <Input
-            label="Adresse"
+            label={tInv('settingsMgmt.address')}
             value={formData.company_address || ''}
             onChange={(e) => updateField('company_address', e.target.value || null)}
             placeholder="Musterstrasse 1"
@@ -339,13 +334,13 @@ export function InvoiceSettings() {
 
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="PLZ"
+              label={tInv('settingsMgmt.postalCode')}
               value={formData.company_postal_code || ''}
               onChange={(e) => updateField('company_postal_code', e.target.value || null)}
               placeholder="8000"
             />
             <Input
-              label="Ort"
+              label={tInv('settingsMgmt.city')}
               value={formData.company_city || ''}
               onChange={(e) => updateField('company_city', e.target.value || null)}
               placeholder="Zürich"
@@ -354,13 +349,13 @@ export function InvoiceSettings() {
 
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Telefon"
+              label={tInv('settingsMgmt.phone')}
               value={formData.company_phone || ''}
               onChange={(e) => updateField('company_phone', e.target.value || null)}
               placeholder="+41 44 123 45 67"
             />
             <Input
-              label="E-Mail"
+              label={tInv('settingsMgmt.email')}
               type="email"
               value={formData.company_email || ''}
               onChange={(e) => updateField('company_email', e.target.value || null)}
@@ -369,7 +364,7 @@ export function InvoiceSettings() {
           </div>
 
           <Input
-            label="Webseite"
+            label={tInv('settingsMgmt.website')}
             value={formData.company_website || ''}
             onChange={(e) => updateField('company_website', e.target.value || null)}
             placeholder="www.muster.ch"
@@ -380,13 +375,13 @@ export function InvoiceSettings() {
       {/* Section 2: Logo */}
       <Card>
         <CardContent className="p-4 lg:p-5 space-y-4">
-          <h2 className="text-base font-semibold text-slate-800">Logo</h2>
+          <h2 className="text-base font-semibold text-slate-800">{tInv('settingsMgmt.logo')}</h2>
 
           {formData.logo_url && (
             <div className="flex items-center gap-4">
               <img
                 src={formData.logo_url}
-                alt="Firmenlogo"
+                alt={tInv('settingsMgmt.companyLogo')}
                 className="h-16 w-auto object-contain rounded-lg border border-slate-200"
               />
               <Button
@@ -394,14 +389,14 @@ export function InvoiceSettings() {
                 size="sm"
                 onClick={() => updateField('logo_url', null)}
               >
-                Entfernen
+                {tInv('settingsMgmt.removeLogo')}
               </Button>
             </div>
           )}
 
           <div className="space-y-2">
             <label className="block text-xs lg:text-sm font-medium text-slate-500">
-              Logo hochladen
+              {tInv('settingsMgmt.uploadLogo')}
             </label>
             <input
               ref={fileInputRef}
@@ -412,7 +407,7 @@ export function InvoiceSettings() {
               disabled={isUploadingLogo}
             />
             {isUploadingLogo && (
-              <p className="text-sm text-muted-foreground">Wird hochgeladen...</p>
+              <p className="text-sm text-muted-foreground">{tInv('settingsMgmt.uploading')}</p>
             )}
           </div>
         </CardContent>
@@ -421,7 +416,7 @@ export function InvoiceSettings() {
       {/* Section 3: Bankverbindung */}
       <Card>
         <CardContent className="p-4 lg:p-5 space-y-4">
-          <h2 className="text-base font-semibold text-slate-800">Bankverbindung</h2>
+          <h2 className="text-base font-semibold text-slate-800">{tInv('settingsMgmt.bankDetails')}</h2>
 
           <Input
             label="IBAN"
@@ -442,7 +437,7 @@ export function InvoiceSettings() {
       {/* Section 4: MWST */}
       <Card>
         <CardContent className="p-4 lg:p-5 space-y-4">
-          <h2 className="text-base font-semibold text-slate-800">MWST</h2>
+          <h2 className="text-base font-semibold text-slate-800">{tInv('settingsMgmt.vat')}</h2>
 
           <label className="flex items-center gap-2 text-sm cursor-pointer">
             <input
@@ -451,13 +446,13 @@ export function InvoiceSettings() {
               onChange={(e) => updateField('mwst_enabled', e.target.checked)}
               className="rounded border-gray-300"
             />
-            <span className="text-slate-700">MWST-pflichtig</span>
+            <span className="text-slate-700">{tInv('settingsMgmt.vatLiable')}</span>
           </label>
 
           {formData.mwst_enabled && (
             <>
               <Input
-                label="MWST-Satz (%)"
+                label={tInv('settingsMgmt.vatRate')}
                 type="number"
                 step="0.01"
                 value={formData.mwst_rate}
@@ -465,7 +460,7 @@ export function InvoiceSettings() {
               />
 
               <Input
-                label="MWST-Nummer"
+                label={tInv('settingsMgmt.vatNumber')}
                 value={formData.mwst_number || ''}
                 onChange={(e) => updateField('mwst_number', e.target.value || null)}
                 placeholder="CHE-123.456.789 MWST"
@@ -478,17 +473,17 @@ export function InvoiceSettings() {
       {/* Section 5: Rechnungsoptionen */}
       <Card>
         <CardContent className="p-4 lg:p-5 space-y-4">
-          <h2 className="text-base font-semibold text-slate-800">Rechnungsoptionen</h2>
+          <h2 className="text-base font-semibold text-slate-800">{tInv('settingsMgmt.invoiceOptions')}</h2>
 
           <Input
-            label="Zahlungsfrist (Tage)"
+            label={tInv('settingsMgmt.paymentTerms')}
             type="number"
             value={formData.payment_terms_days}
             onChange={(e) => updateField('payment_terms_days', parseInt(e.target.value) || 0)}
           />
 
           <Input
-            label="Rechnungsnummer-Präfix"
+            label={tInv('settingsMgmt.invoicePrefix')}
             value={formData.invoice_number_prefix}
             onChange={(e) => updateField('invoice_number_prefix', e.target.value || 'RE')}
             placeholder="RE"
@@ -501,7 +496,7 @@ export function InvoiceSettings() {
               onChange={(e) => updateField('approval_required', e.target.checked)}
               className="rounded border-gray-300"
             />
-            <span className="text-slate-700">Genehmigung erforderlich vor dem Versand</span>
+            <span className="text-slate-700">{tInv('settingsMgmt.approvalRequired')}</span>
           </label>
         </CardContent>
       </Card>
@@ -513,7 +508,7 @@ export function InvoiceSettings() {
         onClick={handleSaveBilling}
         disabled={saveMutation.isPending}
       >
-        {saveMutation.isPending ? 'Wird gespeichert...' : 'Speichern'}
+        {saveMutation.isPending ? tInv('settingsMgmt.saving') : tInv('settingsMgmt.save')}
       </Button>
 
       {/* Divider */}
@@ -522,17 +517,17 @@ export function InvoiceSettings() {
       {/* Section 6: Stundenansätze */}
       <Card>
         <CardContent className="p-4 lg:p-5 space-y-4">
-          <h2 className="text-base font-semibold text-slate-800">Stundenansätze</h2>
+          <h2 className="text-base font-semibold text-slate-800">{tInv('settingsMgmt.hourlyRates')}</h2>
 
           <div className="space-y-3">
-            {ACTIVITY_TYPES.map((type) => {
-              const rv = rateValues[type.key];
+            {ACTIVITY_TYPE_KEYS.map((key) => {
+              const rv = rateValues[key];
               const rawVal = rv?.hourly_rate ?? '';
               const numVal = parseFloat(rawVal);
               const displayVal = rv?.editing || !rawVal ? rawVal : (isNaN(numVal) ? rawVal : formatSwissNumber(numVal));
               return (
-                <div key={type.key} className="space-y-1">
-                  <label className="text-sm font-medium">{type.label}</label>
+                <div key={key} className="space-y-1">
+                  <label className="text-sm font-medium">{tInv(`activities.${key}`)}</label>
                   <div className="flex items-center gap-3">
                     <Input
                       type="text"
@@ -541,13 +536,13 @@ export function InvoiceSettings() {
                       value={displayVal}
                       onFocus={() => setRateValues((prev) => ({
                         ...prev,
-                        [type.key]: { ...prev[type.key], editing: true },
+                        [key]: { ...prev[key], editing: true },
                       }))}
                       onBlur={() => setRateValues((prev) => ({
                         ...prev,
-                        [type.key]: { ...prev[type.key], editing: false },
+                        [key]: { ...prev[key], editing: false },
                       }))}
-                      onChange={(e) => updateRateField(type.key, 'hourly_rate', e.target.value)}
+                      onChange={(e) => updateRateField(key, 'hourly_rate', e.target.value)}
                     />
                     <span className="text-xs text-muted-foreground w-8 flex-shrink-0">/{tClients('perHour')}</span>
                   </div>
@@ -561,7 +556,7 @@ export function InvoiceSettings() {
             onClick={() => saveAllRatesMutation.mutate()}
             disabled={saveAllRatesMutation.isPending}
           >
-            {saveAllRatesMutation.isPending ? 'Wird gespeichert...' : 'Stundenansätze speichern'}
+            {saveAllRatesMutation.isPending ? tInv('settingsMgmt.saving') : tInv('settingsMgmt.saveHourlyRates')}
           </Button>
         </CardContent>
       </Card>
