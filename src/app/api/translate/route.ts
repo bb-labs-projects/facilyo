@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
 const SUPPORTED_LOCALES = ['de-CH', 'de-DE', 'en', 'hr', 'sr', 'bs', 'sl', 'mk', 'sq', 'es', 'pt', 'fr', 'it'] as const;
 
 const NEAR_AI_URL = 'https://cloud-api.near.ai/v1';
-const NEAR_AI_KEY = process.env.NEAR_AI_API_KEY || 'sk-f8b3cad314574234b9ad8ac39cc5c016';
+const NEAR_AI_KEY = process.env.NEAR_AI_API_KEY;
 
 export const maxDuration = 60;
 
@@ -29,6 +29,10 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!NEAR_AI_KEY) {
+      return NextResponse.json({ error: 'Translation service not configured' }, { status: 503 });
     }
 
     const body = await request.json();
