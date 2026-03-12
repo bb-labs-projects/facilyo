@@ -161,13 +161,13 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
                   </span>
                   <span>{t(`nav.${item.labelKey}`)}</span>
                   {item.href === '/tasks' && newTasksCount > 0 && (
-                    <span className="sr-only">, {newTasksCount} neue</span>
+                    <span className="sr-only">, {t('nav.newCount', { count: newTasksCount })}</span>
                   )}
                   {item.href === '/issues' && openIssuesCount > 0 && (
-                    <span className="sr-only">, {openIssuesCount} offen</span>
+                    <span className="sr-only">, {t('nav.openCount', { count: openIssuesCount })}</span>
                   )}
                   {item.href === '/vacation' && vacationCount > 0 && (
-                    <span className="sr-only">, {vacationCount} offen</span>
+                    <span className="sr-only">, {t('nav.openCount', { count: vacationCount })}</span>
                   )}
                 </a>
               );
@@ -208,7 +208,7 @@ export function MobileMenu({ open, onOpenChange }: MobileMenuProps) {
                       </span>
                       <span>{t(`admin.${item.labelKey}`)}</span>
                       {item.href === '/admin/activity' && completedTasksCount > 0 && (
-                        <span className="sr-only">, {completedTasksCount} erledigt</span>
+                        <span className="sr-only">, {t('nav.completedCount', { count: completedTasksCount })}</span>
                       )}
                     </a>
                   );

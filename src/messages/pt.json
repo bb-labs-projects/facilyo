@@ -44,7 +44,10 @@
     "tasks": "Tarefas",
     "issues": "Ocorrências",
     "vacation": "Férias",
-    "profile": "Perfil"
+    "profile": "Perfil",
+    "newCount": "{count} novos",
+    "openCount": "{count} abertos",
+    "completedCount": "{count} concluídos"
   },
   "admin": {
     "title": "Administração",

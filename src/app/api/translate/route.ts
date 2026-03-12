@@ -9,6 +9,23 @@ const NEAR_AI_KEY = process.env.NEAR_AI_API_KEY;
 
 export const maxDuration = 60;
 
+// In-memory rate limiting: 60 requests per minute per user
+const RATE_LIMIT = 60;
+const RATE_WINDOW_MS = 60_000;
+const rateLimitMap = new Map<string, number[]>();
+
+function isRateLimited(userId: string): boolean {
+  const now = Date.now();
+  const timestamps = rateLimitMap.get(userId) || [];
+  const recent = timestamps.filter(t => now - t < RATE_WINDOW_MS);
+  rateLimitMap.set(userId, recent);
+  if (recent.length >= RATE_LIMIT) {
+    return true;
+  }
+  recent.push(now);
+  return false;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const cookieStore = cookies();
@@ -29,6 +46,13 @@ export async function POST(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (isRateLimited(user.id)) {
+      return NextResponse.json(
+        { error: 'Too many translation requests. Please wait a moment and try again.' },
+        { status: 429 }
+      );
     }
 
     if (!NEAR_AI_KEY) {

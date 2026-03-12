@@ -83,6 +83,7 @@ export interface Database {
           vacation_days_per_year: number;
           organization_id: string;
           is_super_admin: boolean;
+          preferred_locale: string;
           created_at: string;
           updated_at: string;
         };
@@ -99,6 +100,7 @@ export interface Database {
           vacation_days_per_year?: number;
           organization_id: string;
           is_super_admin?: boolean;
+          preferred_locale?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -115,6 +117,7 @@ export interface Database {
           vacation_days_per_year?: number;
           organization_id?: string;
           is_super_admin?: boolean;
+          preferred_locale?: string;
           created_at?: string;
           updated_at?: string;
         };

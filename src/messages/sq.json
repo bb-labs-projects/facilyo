@@ -44,7 +44,10 @@
     "tasks": "Detyrat",
     "issues": "Raportimet",
     "vacation": "Pushim",
-    "profile": "Profili"
+    "profile": "Profili",
+    "newCount": "{count} të reja",
+    "openCount": "{count} të hapura",
+    "completedCount": "{count} të përfunduara"
   },
   "admin": {
     "title": "Administrimi",

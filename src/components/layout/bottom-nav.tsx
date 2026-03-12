@@ -90,13 +90,13 @@ export function BottomNav() {
                 )}
               </span>
               {item.href === '/tasks' && newTasksCount > 0 && (
-                <span className="sr-only">{newTasksCount} neue</span>
+                <span className="sr-only">{t('newCount', { count: newTasksCount })}</span>
               )}
               {item.href === '/issues' && openIssuesCount > 0 && (
-                <span className="sr-only">{openIssuesCount} offen</span>
+                <span className="sr-only">{t('openCount', { count: openIssuesCount })}</span>
               )}
               {item.href === '/vacation' && vacationCount > 0 && (
-                <span className="sr-only">{vacationCount} offen</span>
+                <span className="sr-only">{t('openCount', { count: vacationCount })}</span>
               )}
               <span
                 className={cn(

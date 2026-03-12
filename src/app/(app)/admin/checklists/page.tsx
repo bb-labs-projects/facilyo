@@ -143,7 +143,10 @@ export default function AdminChecklistsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items: items.map(i => ({ id: i.id, label: i.label })) }),
       });
-      if (!response.ok) throw new Error('Translation failed');
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Translation failed');
+      }
       const { translations } = await response.json();
       return items.map(item => ({
         ...item,
@@ -151,7 +154,8 @@ export default function AdminChecklistsPage() {
       }));
     } catch (error) {
       console.error('Auto-translation failed:', error);
-      toast.error(tCheck('translationFailed'));
+      const message = error instanceof Error ? error.message : tCheck('translationFailed');
+      toast.error(message);
       return items;
     }
   };

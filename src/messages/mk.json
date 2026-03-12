@@ -44,7 +44,10 @@
     "tasks": "Задачи",
     "issues": "Пријави",
     "vacation": "Одмор",
-    "profile": "Профил"
+    "profile": "Профил",
+    "newCount": "{count} нови",
+    "openCount": "{count} отворени",
+    "completedCount": "{count} завршени"
   },
   "admin": {
     "title": "Управување",
