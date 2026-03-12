@@ -224,6 +224,25 @@ function AdminPropertiesPageContent() {
         }
         throw error;
       }
+
+      // Auto-assign new property to all active users in the organization
+      const { data: activeUsers } = await (supabase as any)
+        .from('profiles')
+        .select('id')
+        .eq('organization_id', organizationId)
+        .eq('is_active', true);
+
+      if (activeUsers && activeUsers.length > 0) {
+        const assignments = activeUsers.map((u: { id: string }) => ({
+          property_id: result.id,
+          user_id: u.id,
+          organization_id: organizationId,
+        }));
+        await (supabase as any)
+          .from('property_assignments')
+          .insert(assignments);
+      }
+
       return result as Property;
     },
     onSuccess: () => {

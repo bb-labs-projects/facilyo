@@ -223,6 +223,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Auto-assign all organization properties to the new user
+    const { data: orgProperties } = await (serviceClient as any)
+      .from('properties')
+      .select('id')
+      .eq('organization_id', organizationId);
+
+    if (orgProperties && orgProperties.length > 0) {
+      const assignments = orgProperties.map((p: { id: string }) => ({
+        property_id: p.id,
+        user_id: authUser.user.id,
+        organization_id: organizationId,
+      }));
+      await (serviceClient as any)
+        .from('property_assignments')
+        .insert(assignments);
+    }
+
     // Log audit event
     await logAuditEvent(serviceClient, {
       user_id: authUser.user.id,
