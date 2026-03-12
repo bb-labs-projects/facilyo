@@ -1179,6 +1179,8 @@
     "noPermissionMessage": "Nimate dovoljenja za ogled te strani.",
     "user": "Uporabnik",
     "selectUser": "Izberite uporabnika...",
+    "searchUser": "Iskanje uporabnika...",
+    "noUsersFound": "Ni najdenih uporabnikov",
     "day": "Dan",
     "week": "Teden",
     "month": "Mesec",

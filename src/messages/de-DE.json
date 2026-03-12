@@ -1179,6 +1179,8 @@
     "noPermissionMessage": "Sie haben keine Berechtigung, diese Seite anzuzeigen.",
     "user": "Benutzer",
     "selectUser": "Benutzer auswählen...",
+    "searchUser": "Benutzer suchen...",
+    "noUsersFound": "Keine Benutzer gefunden",
     "day": "Tag",
     "week": "Woche",
     "month": "Monat",

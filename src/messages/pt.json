@@ -1179,6 +1179,8 @@
     "noPermissionMessage": "Não tem permissão para ver esta página.",
     "user": "Utilizador",
     "selectUser": "Selecionar utilizador...",
+    "searchUser": "Pesquisar utilizador...",
+    "noUsersFound": "Nenhum utilizador encontrado",
     "day": "Dia",
     "week": "Semana",
     "month": "Mês",

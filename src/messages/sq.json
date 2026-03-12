@@ -1179,6 +1179,8 @@
     "noPermissionMessage": "Nuk keni leje për të parë këtë faqe.",
     "user": "Përdoruesi",
     "selectUser": "Zgjidhni përdoruesin...",
+    "searchUser": "Kërko përdoruesin...",
+    "noUsersFound": "Nuk u gjetën përdorues",
     "day": "Ditë",
     "week": "Javë",
     "month": "Muaj",

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -23,6 +23,9 @@ import {
   Pencil,
   Trash2,
   RefreshCw,
+  Search,
+  Check,
+  ChevronDown,
 } from 'lucide-react';
 import { Header, PageContainer } from '@/components/layout/header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -137,6 +140,10 @@ function CalendarPageContent() {
   const [viewMode, setViewMode] = useState<ViewMode>('week');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [userSearchOpen, setUserSearchOpen] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const userSearchRef = useRef<HTMLDivElement>(null);
+  const userSearchInputRef = useRef<HTMLInputElement>(null);
   const [editingEntry, setEditingEntry] = useState<TimeEntryWithProperty | null>(null);
   const [showNewEntryDialog, setShowNewEntryDialog] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -182,6 +189,37 @@ function CalendarPageContent() {
 
   const users = usersQuery.data ?? [];
   const properties = propertiesQuery.data ?? [];
+
+  // Filtered users for searchable dropdown
+  const filteredUsers = useMemo(() => {
+    if (!userSearchQuery.trim()) return users;
+    const q = userSearchQuery.toLowerCase();
+    return users.filter(u =>
+      `${u.first_name} ${u.last_name}`.toLowerCase().includes(q)
+    );
+  }, [users, userSearchQuery]);
+
+  // Close user search dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userSearchRef.current && !userSearchRef.current.contains(e.target as Node)) {
+        setUserSearchOpen(false);
+      }
+    };
+    if (userSearchOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [userSearchOpen]);
+
+  // Focus search input when dropdown opens
+  useEffect(() => {
+    if (userSearchOpen) {
+      setTimeout(() => userSearchInputRef.current?.focus(), 0);
+    } else {
+      setUserSearchQuery('');
+    }
+  }, [userSearchOpen]);
 
   // Calculate date range based on view mode
   const dateRange = useMemo(() => {
@@ -438,40 +476,71 @@ function CalendarPageContent() {
       }
     >
       {/* Controls */}
-      <Card className="mb-6">
+      <Card className="mb-6 overflow-visible">
         <CardContent className="pt-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             {/* User selector */}
-            <div className="flex-1 max-w-xs">
+            <div className="flex-1 max-w-xs relative" ref={userSearchRef}>
               <Label className="mb-2 block text-sm">{tCal('user')}</Label>
-              <Select
-                value={selectedUserId || ''}
-                onValueChange={(value) => setSelectedUserId(value || null)}
+              <button
+                type="button"
+                onClick={() => setUserSearchOpen(!userSearchOpen)}
+                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
               >
-                <SelectTrigger>
-                  {selectedUserId ? (
-                    <span className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      {(() => {
-                        const user = users.find(u => u.id === selectedUserId);
-                        return user ? `${user.first_name} ${user.last_name}` : tCal('selectUser');
-                      })()}
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground">{tCal('selectUser')}</span>
-                  )}
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4" />
-                        {user.first_name} {user.last_name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                {selectedUserId ? (
+                  <span className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    {(() => {
+                      const user = users.find(u => u.id === selectedUserId);
+                      return user ? `${user.first_name} ${user.last_name}` : tCal('selectUser');
+                    })()}
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">{tCal('selectUser')}</span>
+                )}
+                <ChevronDown className="h-4 w-4 opacity-50" />
+              </button>
+              {userSearchOpen && (
+                <div className="absolute z-[100] mt-1 w-full rounded-md border bg-popover shadow-lg">
+                  <div className="p-2 border-b">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <input
+                        ref={userSearchInputRef}
+                        type="text"
+                        value={userSearchQuery}
+                        onChange={(e) => setUserSearchQuery(e.target.value)}
+                        placeholder={tCal('searchUser')}
+                        className="w-full rounded-md border border-input bg-background py-2 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+                      />
+                    </div>
+                  </div>
+                  <div className="max-h-60 overflow-auto p-1">
+                    {filteredUsers.length === 0 ? (
+                      <p className="py-4 text-center text-sm text-muted-foreground">{tCal('noUsersFound')}</p>
+                    ) : (
+                      filteredUsers.map((user) => (
+                        <button
+                          key={user.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedUserId(user.id);
+                            setUserSearchOpen(false);
+                          }}
+                          className={cn(
+                            'flex w-full items-center gap-2 rounded-sm px-2 py-2 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground',
+                            selectedUserId === user.id && 'bg-accent text-accent-foreground'
+                          )}
+                        >
+                          <User className="h-4 w-4 flex-shrink-0" />
+                          <span className="flex-1 text-left">{user.first_name} {user.last_name}</span>
+                          {selectedUserId === user.id && <Check className="h-4 w-4 flex-shrink-0" />}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* View mode toggle */}

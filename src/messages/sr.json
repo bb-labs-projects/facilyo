@@ -1179,6 +1179,8 @@
     "noPermissionMessage": "Nemate dozvolu za pregled ove stranice.",
     "user": "Korisnik",
     "selectUser": "Izaberite korisnika...",
+    "searchUser": "Pretraži korisnika...",
+    "noUsersFound": "Nema pronađenih korisnika",
     "day": "Dan",
     "week": "Nedelja",
     "month": "Mesec",
