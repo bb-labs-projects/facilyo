@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -10,6 +11,7 @@ import {
   Building2,
   LogOut,
   ChevronRight,
+  ChevronDown,
   Bell,
   Info,
   Settings,
@@ -23,6 +25,8 @@ import { Button } from '@/components/ui/button';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { useAuthStore } from '@/stores/auth-store';
 import { usePermissions } from '@/hooks/use-permissions';
+import { useLocale } from '@/hooks/use-locale';
+import { localeNames } from '@/lib/i18n';
 import { getClient } from '@/lib/supabase/client';
 import { getInitials, cn } from '@/lib/utils';
 import type { Property } from '@/types/database';
@@ -36,6 +40,9 @@ export default function ProfilePage() {
   const tc = useTranslations('common');
   const tp = useTranslations('properties');
   const ta = useTranslations('auth');
+  const { locale } = useLocale();
+  const [languageOpen, setLanguageOpen] = useState(false);
+  const [propertiesOpen, setPropertiesOpen] = useState(false);
 
   // Fetch assigned properties
   const { data: properties = [] } = useQuery({
@@ -156,40 +163,6 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      {/* Assigned properties */}
-      <Card className="mb-4">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Building2 className="h-4 w-4" />
-            {tp('title')} ({properties.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {properties.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              {tp('noProperties')}
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {properties.map((property) => (
-                <div
-                  key={property.id}
-                  className="flex items-center gap-3 p-2 rounded-lg bg-muted/50"
-                >
-                  <Building2 className="h-4 w-4 text-muted-foreground" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{property.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {property.address}, {property.city}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Admin section (for privileged users) */}
       {permissions.canAccessAdminPanel && (
         <Card className="mb-4">
@@ -208,16 +181,80 @@ export default function ProfilePage() {
         </Card>
       )}
 
-      {/* Language */}
+      {/* Language (collapsible) */}
       <Card className="mb-4">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Globe className="h-4 w-4" />
-            {t('language')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <LanguageSwitcher />
+        <CardContent className="p-0">
+          <button
+            onClick={() => setLanguageOpen(!languageOpen)}
+            className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <Globe className="h-5 w-5 text-muted-foreground" />
+              <span className="font-medium">{t('language')}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">{localeNames[locale]}</span>
+              {languageOpen ? (
+                <ChevronDown className="h-5 w-5 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              )}
+            </div>
+          </button>
+          {languageOpen && (
+            <div className="px-4 pb-4">
+              <LanguageSwitcher />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Assigned properties (collapsible) */}
+      <Card className="mb-4">
+        <CardContent className="p-0">
+          <button
+            onClick={() => setPropertiesOpen(!propertiesOpen)}
+            className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <Building2 className="h-5 w-5 text-muted-foreground" />
+              <span className="font-medium">{tp('title')}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">{properties.length}</span>
+              {propertiesOpen ? (
+                <ChevronDown className="h-5 w-5 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              )}
+            </div>
+          </button>
+          {propertiesOpen && (
+            <div className="px-4 pb-4">
+              {properties.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {tp('noProperties')}
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {properties.map((property) => (
+                    <div
+                      key={property.id}
+                      className="flex items-center gap-3 p-2 rounded-lg bg-muted/50"
+                    >
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{property.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {property.address}, {property.city}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
