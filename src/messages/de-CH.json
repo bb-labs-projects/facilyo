@@ -371,6 +371,7 @@
     "deleteAction": "Löschen",
     "translationFailed": "Automatische Übersetzung fehlgeschlagen – Checkliste wird ohne Übersetzungen gespeichert",
     "translateItems": "Punkte in alle Sprachen übersetzen",
+    "translateName": "Name in alle Sprachen übersetzen",
     "uploadError": "Datei konnte nicht hochgeladen werden",
     "property": "Liegenschaft",
     "allProperties": "Alle Liegenschaften",

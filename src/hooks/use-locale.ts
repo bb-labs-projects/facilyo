@@ -65,3 +65,11 @@ export function getChecklistItemLabel(
 ): string {
   return item.translations?.[locale] || item.label;
 }
+
+export function getChecklistName(
+  template: { name: string; name_translations?: any },
+  locale: string
+): string {
+  const translations = template.name_translations as Record<string, string> | null | undefined;
+  return translations?.[locale] || template.name;
+}

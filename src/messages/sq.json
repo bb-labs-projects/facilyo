@@ -371,6 +371,7 @@
     "deleteAction": "Fshi",
     "translationFailed": "Përkthimi automatik dështoi – lista do të ruhet pa përkthime",
     "translateItems": "Përkthe artikujt në të gjitha gjuhët",
+    "translateName": "Përkthe emrin në të gjitha gjuhët",
     "uploadError": "Skedari nuk mund të ngarkohej",
     "property": "Pronë",
     "allProperties": "Të gjitha pronat",

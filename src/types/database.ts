@@ -347,6 +347,7 @@ export interface Database {
           id: string;
           property_id: string;
           name: string;
+          name_translations: Json;
           items: Json;
           image_url: string | null;
           is_active: boolean;
@@ -358,6 +359,7 @@ export interface Database {
           id?: string;
           property_id: string;
           name: string;
+          name_translations?: Json;
           items: Json;
           image_url?: string | null;
           is_active?: boolean;
@@ -369,6 +371,7 @@ export interface Database {
           id?: string;
           property_id?: string;
           name?: string;
+          name_translations?: Json;
           items?: Json;
           image_url?: string | null;
           is_active?: boolean;

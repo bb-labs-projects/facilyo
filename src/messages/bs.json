@@ -371,6 +371,7 @@
     "deleteAction": "Obriši",
     "translationFailed": "Automatski prijevod nije uspio – lista će biti spremljena bez prijevoda",
     "translateItems": "Prevedi stavke na sve jezike",
+    "translateName": "Prevedi naziv na sve jezike",
     "uploadError": "Datoteka se nije mogla prenijeti",
     "property": "Nekretnina",
     "allProperties": "Sve nekretnine",

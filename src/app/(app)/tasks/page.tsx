@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/sheet';
 import { useAuthStore } from '@/stores/auth-store';
 import { usePermissions } from '@/hooks/use-permissions';
-import { useLocale, getChecklistItemLabel } from '@/hooks/use-locale';
+import { useLocale, getChecklistItemLabel, getChecklistName } from '@/hooks/use-locale';
 import { useNewTasksNotificationCount } from '@/hooks/use-new-tasks-notification-count';
 import { getClient } from '@/lib/supabase/client';
 import { swissFormat } from '@/lib/i18n';
@@ -308,7 +308,7 @@ export default function TasksPage() {
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex-1 min-w-0">
-                            <h3 className="font-medium">{checklist.name}</h3>
+                            <h3 className="font-medium">{getChecklistName(checklist, locale)}</h3>
                             <p className="text-sm text-muted-foreground">
                               {itemCount} {itemCount === 1 ? tChecklist('point') : tChecklist('points')}
                             </p>

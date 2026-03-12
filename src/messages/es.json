@@ -371,6 +371,7 @@
     "deleteAction": "Eliminar",
     "translationFailed": "La traducción automática falló – la lista se guardará sin traducciones",
     "translateItems": "Traducir elementos a todos los idiomas",
+    "translateName": "Traducir nombre a todos los idiomas",
     "uploadError": "No se pudo subir el archivo",
     "property": "Propiedad",
     "allProperties": "Todas las propiedades",

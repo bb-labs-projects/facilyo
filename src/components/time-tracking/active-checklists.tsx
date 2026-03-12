@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { getClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
-import { useLocale, getChecklistItemLabel } from '@/hooks/use-locale';
+import { useLocale, getChecklistItemLabel, getChecklistName } from '@/hooks/use-locale';
 import { cn, hapticFeedback } from '@/lib/utils';
 import type { ChecklistTemplate, ChecklistItem, Property } from '@/types/database';
 
@@ -288,7 +288,7 @@ export function ActiveChecklists({ propertyId, timeEntryId, className }: ActiveC
                     )
                   )}
                   <div className="flex-1 min-w-0">
-                    <CardTitle className="text-base">{checklist.name}</CardTitle>
+                    <CardTitle className="text-base">{getChecklistName(checklist, locale)}</CardTitle>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {t('completedOf', { completed: progress.completed, total: progress.total })}
                     </p>

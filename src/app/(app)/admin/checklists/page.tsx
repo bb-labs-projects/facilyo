@@ -81,7 +81,7 @@ export default function AdminChecklistsPage() {
   const [deletingTemplate, setDeletingTemplate] = useState<ChecklistTemplateWithProperty | null>(null);
   const [filterPropertyId, setFilterPropertyId] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
-  const [shouldTranslate, setShouldTranslate] = useState(true);
+  const [translateName, setTranslateName] = useState(false);
 
   // Form state
   const [name, setName] = useState('');
@@ -160,13 +160,38 @@ export default function AdminChecklistsPage() {
     }
   };
 
+  // Translate a checklist name using the same API (sends as a single item)
+  const translateNameValue = async (nameStr: string): Promise<Record<string, string>> => {
+    try {
+      const tempId = 'name';
+      const response = await fetch('/api/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: [{ id: tempId, label: nameStr }] }),
+      });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Translation failed');
+      }
+      const { translations } = await response.json();
+      return translations[tempId] || {};
+    } catch (error) {
+      console.error('Name translation failed:', error);
+      const message = error instanceof Error ? error.message : tCheck('translationFailed');
+      toast.error(message);
+      return {};
+    }
+  };
+
   // Create mutation
   const createMutation = useMutation({
     mutationFn: async (data: { name: string; property_id: string; items: ChecklistItem[]; is_active: boolean; image_url: string | null }) => {
-      const finalItems = shouldTranslate ? await translateItems(data.items) : data.items;
+      const finalItems = await translateItems(data.items);
+      const nameTranslations = translateName ? await translateNameValue(data.name) : {};
       const supabase = getClient();
       const insertData = {
         name: data.name,
+        name_translations: nameTranslations,
         property_id: data.property_id,
         items: finalItems,
         is_active: data.is_active,
@@ -195,10 +220,12 @@ export default function AdminChecklistsPage() {
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: { name: string; property_id: string; items: ChecklistItem[]; is_active: boolean; image_url: string | null } }) => {
-      const finalItems = shouldTranslate ? await translateItems(data.items) : data.items;
+      const finalItems = await translateItems(data.items);
+      const nameTranslations = translateName ? await translateNameValue(data.name) : (editingTemplate?.name_translations || {});
       const supabase = getClient();
       const updateData = {
         name: data.name,
+        name_translations: nameTranslations,
         property_id: data.property_id,
         items: finalItems,
         is_active: data.is_active,
@@ -261,7 +288,7 @@ export default function AdminChecklistsPage() {
     setItems([]);
     setEditingTemplate(null);
     setShowForm(false);
-    setShouldTranslate(true);
+    setTranslateName(false);
   };
 
   const resetItemForm = () => {
@@ -598,6 +625,15 @@ export default function AdminChecklistsPage() {
                 onChange={(e) => setName(e.target.value)}
                 placeholder={tCheck('namePlaceholder')}
               />
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={translateName}
+                  onChange={(e) => setTranslateName(e.target.checked)}
+                  className="rounded border-gray-300"
+                />
+                <span className="text-slate-700">{tCheck('translateName')}</span>
+              </label>
             </div>
 
             <div className="space-y-2">
@@ -847,19 +883,6 @@ export default function AdminChecklistsPage() {
                 </div>
               )}
             </div>
-
-            {/* Translate checkbox */}
-            {items.length > 0 && (
-              <label className="flex items-center gap-2 text-sm cursor-pointer pt-2">
-                <input
-                  type="checkbox"
-                  checked={shouldTranslate}
-                  onChange={(e) => setShouldTranslate(e.target.checked)}
-                  className="rounded border-gray-300"
-                />
-                <span className="text-slate-700">{tCheck('translateItems')}</span>
-              </label>
-            )}
 
             <div className="flex gap-3 pt-4">
               <Button
