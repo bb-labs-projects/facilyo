@@ -143,6 +143,11 @@ function AdminUsersPageContent() {
   const allProperties = propertiesQuery.data ?? [];
   const isLoading = usersQuery.isLoading || propertiesQuery.isLoading;
 
+  // Filter properties to same org as selected user (prevents cross-org assignments by super admin)
+  const userProperties = selectedUser
+    ? allProperties.filter(p => p.organization_id === selectedUser.organization_id)
+    : allProperties;
+
   // Update role mutation
   const updateRoleMutation = useMutation({
     mutationFn: async ({ userId, role }: { userId: string; role: UserRole }) => {
@@ -225,7 +230,7 @@ function AdminUsersPageContent() {
         // Get currently assigned property IDs
         const currentAssignments = selectedUser?.property_assignments.map(a => a.property_id) || [];
         // Filter to only unassigned properties
-        const unassignedProperties = allProperties.filter(p => !currentAssignments.includes(p.id));
+        const unassignedProperties = userProperties.filter(p => !currentAssignments.includes(p.id));
 
         if (unassignedProperties.length > 0) {
           const { error } = await (supabase as any)
@@ -254,7 +259,7 @@ function AdminUsersPageContent() {
         if (assign) {
           setSelectedUser({
             ...selectedUser,
-            property_assignments: allProperties.map(p => ({ property_id: p.id, property: p }))
+            property_assignments: userProperties.map(p => ({ property_id: p.id, property: p }))
           });
         } else {
           setSelectedUser({
@@ -756,7 +761,7 @@ function AdminUsersPageContent() {
               variant="outline"
               size="sm"
               onClick={() => selectedUser && toggleAllPropertiesMutation.mutate({ userId: selectedUser.id, assign: true })}
-              disabled={toggleAllPropertiesMutation.isPending || !selectedUser || selectedUser.property_assignments.length === allProperties.length}
+              disabled={toggleAllPropertiesMutation.isPending || !selectedUser || selectedUser.property_assignments.length === userProperties.length}
             >
               {tUsers('assignAll')}
             </Button>
@@ -771,7 +776,7 @@ function AdminUsersPageContent() {
           </div>
 
           <div className="mt-4 space-y-2 overflow-y-auto max-h-[calc(70vh-160px)]">
-            {allProperties.map((property) => {
+            {userProperties.map((property) => {
               const isAssigned = selectedUser
                 ? getUserAssignedPropertyIds(selectedUser).includes(property.id)
                 : false;

@@ -124,6 +124,11 @@ function AdminPropertiesPageContent() {
     },
   });
 
+  // Filter users to same org as selected property (prevents cross-org assignments by super admin)
+  const propertyUsers = assigningProperty
+    ? allUsers.filter(u => u.organization_id === assigningProperty.organization_id)
+    : allUsers;
+
   // Fetch active clients for dropdown
   const { data: activeClients = [] } = useQuery({
     queryKey: ['active-clients'],
@@ -378,7 +383,7 @@ function AdminPropertiesPageContent() {
 
       if (assign) {
         // Get currently assigned user IDs
-        const unassignedUsers = allUsers.filter(u => !propertyAssignments.includes(u.id));
+        const unassignedUsers = propertyUsers.filter(u => !propertyAssignments.includes(u.id));
         if (unassignedUsers.length > 0) {
           const { error } = await (supabase as any)
             .from('property_assignments')
@@ -1063,7 +1068,7 @@ function AdminPropertiesPageContent() {
               variant="outline"
               size="sm"
               onClick={() => assigningProperty && toggleAllUsersMutation.mutate({ propertyId: assigningProperty.id, assign: true })}
-              disabled={toggleAllUsersMutation.isPending || !assigningProperty || propertyAssignments.length === allUsers.length}
+              disabled={toggleAllUsersMutation.isPending || !assigningProperty || propertyAssignments.length === propertyUsers.length}
             >
               {tProp('assignAll')}
             </Button>
@@ -1078,7 +1083,7 @@ function AdminPropertiesPageContent() {
           </div>
 
           <div className="mt-4 space-y-2 overflow-y-auto max-h-[calc(70vh-160px)]">
-            {allUsers.map((user) => {
+            {propertyUsers.map((user) => {
               const isAssigned = propertyAssignments.includes(user.id);
               const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') || '–';
               const initials = getInitials(user.first_name, user.last_name);
