@@ -162,9 +162,9 @@ function AdminInvoicesPageContent() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['admin-invoices'] });
       if (data.failed === 0) {
-        toast.success(tInv('bulkSendSuccess', { count: data.sent }));
+        toast.success(tInv('sentSuccess', { sent: data.sent }));
       } else {
-        toast.warning(tInv('bulkSendPartial', { sent: data.sent, failed: data.failed }));
+        toast.warning(tInv('sentWithFailures', { sent: data.sent, failed: data.failed }));
       }
     },
     onError: (error: Error) => {

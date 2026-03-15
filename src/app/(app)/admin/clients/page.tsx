@@ -194,10 +194,10 @@ function AdminClientsPageContent() {
   ];
 
   const INTERVAL_LABELS: Record<SubscriptionInterval, string> = {
-    monthly: tClients('intervalMonthly'),
-    quarterly: tClients('intervalQuarterly'),
-    half_yearly: tClients('intervalHalfYearly'),
-    annually: tClients('intervalAnnually'),
+    monthly: tClients('monthly'),
+    quarterly: tClients('quarterly'),
+    half_yearly: tClients('semiAnnually'),
+    annually: tClients('annually'),
   };
 
   // Session refresh helpers
@@ -218,7 +218,7 @@ function AdminClientsPageContent() {
       if (error || !session) {
         const { error: refreshError } = await supabase.auth.refreshSession();
         if (refreshError) {
-          throw new Error(tClients('sessionExpired'));
+          throw new Error(t('auth.sessionExpired'));
         }
       }
       lastSessionCheck.current = now;
@@ -255,7 +255,7 @@ function AdminClientsPageContent() {
       return result as Client;
     },
     onSuccess: () => {
-      toast.success(tClients('clientCreated'));
+      toast.success(tClients('created'));
       queryClient.invalidateQueries({ queryKey: ['admin-clients'] });
       resetForm();
     },
@@ -294,7 +294,7 @@ function AdminClientsPageContent() {
       return result as Client;
     },
     onSuccess: () => {
-      toast.success(tClients('clientUpdated'));
+      toast.success(tClients('updated'));
       queryClient.invalidateQueries({ queryKey: ['admin-clients'] });
       resetForm();
     },
@@ -329,7 +329,7 @@ function AdminClientsPageContent() {
       return { clientId, isActive };
     },
     onSuccess: (_, { isActive }) => {
-      toast.success(isActive ? tClients('clientActivated') : tClients('clientDeactivated'));
+      toast.success(isActive ? tClients('activated') : tClients('deactivated'));
       queryClient.invalidateQueries({ queryKey: ['admin-clients'] });
       setShowDeactivateDialog(false);
       setDeactivatingClient(null);
@@ -369,7 +369,7 @@ function AdminClientsPageContent() {
       }
     },
     onSuccess: () => {
-      toast.success(tClients('ratesSaved'));
+      toast.success(t('common.success'));
       queryClient.invalidateQueries({ queryKey: ['client-rate-overrides', ratesClient?.id] });
     },
     onError: (error: Error) => {
@@ -402,7 +402,7 @@ function AdminClientsPageContent() {
       }
     },
     onSuccess: () => {
-      toast.success(editingSub ? tClients('subscriptionUpdated') : tClients('subscriptionCreated'));
+      toast.success(t('common.success'));
       queryClient.invalidateQueries({ queryKey: ['client-subscriptions', subscriptionsClient?.id] });
       resetSubForm();
     },
@@ -422,7 +422,7 @@ function AdminClientsPageContent() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success(tClients('subscriptionDeleted'));
+      toast.success(t('common.success'));
       queryClient.invalidateQueries({ queryKey: ['client-subscriptions', subscriptionsClient?.id] });
     },
     onError: (error: Error) => {
@@ -657,7 +657,7 @@ function AdminClientsPageContent() {
                             setShowDeactivateDialog(true);
                           }
                         }}
-                        title={inactive ? tClients('activate') : tClients('deactivate')}
+                        title={inactive ? tClients('activated') : tClients('deactivateTitle')}
                         disabled={toggleActiveMutation.isPending}
                       >
                         <Power className={cn('h-4 w-4', inactive ? 'text-green-500' : 'text-gray-400')} />
@@ -666,7 +666,7 @@ function AdminClientsPageContent() {
                         variant="ghost"
                         size="icon"
                         onClick={() => openEditForm(client)}
-                        title={tClients('edit')}
+                        title={t('common.edit')}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -676,7 +676,7 @@ function AdminClientsPageContent() {
                             variant="ghost"
                             size="icon"
                             onClick={() => openRatesSheet(client)}
-                            title={tClients('hourlyRates')}
+                            title={tClients('rates')}
                           >
                             <Banknote className="h-4 w-4" />
                           </Button>
@@ -684,7 +684,7 @@ function AdminClientsPageContent() {
                             variant="ghost"
                             size="icon"
                             onClick={() => openSubscriptionsSheet(client)}
-                            title={tClients('subscriptions')}
+                            title={tClients('subscriptionsTab')}
                           >
                             <Repeat className="h-4 w-4" />
                           </Button>
@@ -721,7 +721,7 @@ function AdminClientsPageContent() {
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder={tClients('namePlaceholder')}
+                placeholder=""
                 required
               />
             </div>
@@ -731,7 +731,7 @@ function AdminClientsPageContent() {
               <Input
                 value={contactPerson}
                 onChange={(e) => setContactPerson(e.target.value)}
-                placeholder={tClients('contactPersonPlaceholder')}
+                placeholder=""
               />
             </div>
 
@@ -742,7 +742,7 @@ function AdminClientsPageContent() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder={tClients('emailPlaceholder')}
+                  placeholder=""
                 />
               </div>
               <div className="space-y-2">
@@ -750,7 +750,7 @@ function AdminClientsPageContent() {
                 <Input
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder={tClients('phonePlaceholder')}
+                  placeholder=""
                 />
               </div>
             </div>
@@ -760,7 +760,7 @@ function AdminClientsPageContent() {
               <Input
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                placeholder={tClients('addressPlaceholder')}
+                placeholder=""
               />
             </div>
 
@@ -784,11 +784,11 @@ function AdminClientsPageContent() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">{tClients('notes')}</label>
+              <label className="text-sm font-medium">{t('calendar.notes')}</label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder={tClients('notesPlaceholder')}
+                placeholder=""
                 className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
@@ -808,10 +808,10 @@ function AdminClientsPageContent() {
                 disabled={isSubmitting || !name.trim()}
               >
                 {isSubmitting
-                  ? tClients('saving')
+                  ? t('common.saving')
                   : editingClient
                   ? t('common.save')
-                  : tClients('create')}
+                  : t('common.save')}
               </Button>
             </div>
           </form>
@@ -822,9 +822,9 @@ function AdminClientsPageContent() {
       <Dialog open={showDeactivateDialog} onOpenChange={setShowDeactivateDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{tClients('deactivateClient')}</DialogTitle>
+            <DialogTitle>{tClients('deactivateTitle')}</DialogTitle>
             <DialogDescription>
-              {tClients('confirmDeactivate', { name: deactivatingClient?.name || '' })}
+              {tClients('deactivateMessage', { name: deactivatingClient?.name || '' })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -836,7 +836,7 @@ function AdminClientsPageContent() {
               onClick={() => deactivatingClient && toggleActiveMutation.mutate({ clientId: deactivatingClient.id, isActive: false })}
               disabled={toggleActiveMutation.isPending}
             >
-              {toggleActiveMutation.isPending ? tClients('deactivating') : tClients('deactivate')}
+              {toggleActiveMutation.isPending ? t('common.loading') : tClients('deactivateTitle')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -850,14 +850,14 @@ function AdminClientsPageContent() {
         <SheetContent side="bottom" className="h-[50vh]">
           <SheetHeader>
             <SheetTitle>
-              {tClients('propertiesOf', { name: selectedClient?.name || '' })}
+              {tClients('assignedProperties')} – {selectedClient?.name || ''}
             </SheetTitle>
           </SheetHeader>
 
           <div className="mt-4 space-y-2 overflow-y-auto max-h-[calc(50vh-100px)]">
             {clientProperties.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
-                {tClients('noPropertiesAssigned')}
+                {tClients('noProperties')}
               </p>
             ) : (
               clientProperties.map((property) => (
@@ -925,7 +925,7 @@ function AdminClientsPageContent() {
               onClick={() => saveRateOverridesMutation.mutate(rateOverrides)}
               disabled={saveRateOverridesMutation.isPending}
             >
-              {saveRateOverridesMutation.isPending ? tClients('saving') : t('common.save')}
+              {saveRateOverridesMutation.isPending ? t('common.saving') : t('common.save')}
             </Button>
           </div>
         </SheetContent>
@@ -942,7 +942,7 @@ function AdminClientsPageContent() {
         <SheetContent side="bottom" className="h-[85vh]">
           <SheetHeader>
             <SheetTitle>
-              {tClients('subscriptionsFor', { name: subscriptionsClient?.name || '' })}
+              {tClients('subscriptionsTab')} – {subscriptionsClient?.name || ''}
             </SheetTitle>
           </SheetHeader>
 
@@ -955,12 +955,12 @@ function AdminClientsPageContent() {
                   variant="outline"
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  {tClients('newSubscription')}
+                  {tClients('subscriptionsTab')}
                 </Button>
 
                 {clientSubs.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">
-                    {tClients('noSubscriptions')}
+                    {t('common.noData')}
                   </p>
                 ) : (
                   clientSubs.map((sub) => (
@@ -982,7 +982,7 @@ function AdminClientsPageContent() {
                             )}
                             {sub.next_billing_date && (
                               <p className="text-xs text-muted-foreground mt-1">
-                                {tClients('nextBilling', { date: new Date(sub.next_billing_date).toLocaleDateString('de-CH') })}
+                                {tClients('billingInterval')}: {new Date(sub.next_billing_date).toLocaleDateString('de-CH')}
                               </p>
                             )}
                           </div>
@@ -991,7 +991,7 @@ function AdminClientsPageContent() {
                               variant="ghost"
                               size="icon"
                               onClick={() => openEditSubForm(sub)}
-                              title={tClients('edit')}
+                              title={t('common.edit')}
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -1034,24 +1034,24 @@ function AdminClientsPageContent() {
                   <Input
                     value={subName}
                     onChange={(e) => setSubName(e.target.value)}
-                    placeholder={tClients('subscriptionNamePlaceholder')}
+                    placeholder=""
                     required
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">{tClients('description')}</label>
+                  <label className="text-sm font-medium">{t('common.description')}</label>
                   <Input
                     value={subDescription}
                     onChange={(e) => setSubDescription(e.target.value)}
-                    placeholder={tClients('descriptionPlaceholder')}
+                    placeholder=""
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">
-                      {tClients('yearlyAmount')} <span className="text-error-500">*</span>
+                      {`${t('common.total')} / ${tClients('annually')}`} <span className="text-error-500">*</span>
                     </label>
                     <Input
                       type="number"
@@ -1064,22 +1064,22 @@ function AdminClientsPageContent() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">{tClients('interval')}</label>
+                    <label className="text-sm font-medium">{tClients('billingInterval')}</label>
                     <select
                       value={subInterval}
                       onChange={(e) => setSubInterval(e.target.value as SubscriptionInterval)}
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
-                      <option value="monthly">{tClients('intervalMonthly')}</option>
-                      <option value="quarterly">{tClients('intervalQuarterly')}</option>
-                      <option value="half_yearly">{tClients('intervalHalfYearly')}</option>
-                      <option value="annually">{tClients('intervalAnnually')}</option>
+                      <option value="monthly">{tClients('monthly')}</option>
+                      <option value="quarterly">{tClients('quarterly')}</option>
+                      <option value="half_yearly">{tClients('semiAnnually')}</option>
+                      <option value="annually">{tClients('annually')}</option>
                     </select>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">{tClients('nextBillingDate')}</label>
+                  <label className="text-sm font-medium">{t('common.date')}</label>
                   <Input
                     type="date"
                     value={subNextBillingDate}
@@ -1112,10 +1112,10 @@ function AdminClientsPageContent() {
                     disabled={saveSubMutation.isPending || !subName.trim() || !subAmount}
                   >
                     {saveSubMutation.isPending
-                      ? tClients('saving')
+                      ? t('common.saving')
                       : editingSub
                       ? t('common.save')
-                      : tClients('create')}
+                      : t('common.save')}
                   </Button>
                 </div>
               </form>

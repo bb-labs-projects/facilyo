@@ -246,7 +246,7 @@ function AdminPropertiesPageContent() {
       return result as Property;
     },
     onSuccess: () => {
-      toast.success(tProp('propertyCreated'));
+      toast.success(tProp('created'));
       queryClient.invalidateQueries({ queryKey: ['admin-properties'] });
       resetForm();
     },
@@ -289,7 +289,7 @@ function AdminPropertiesPageContent() {
       return result as Property;
     },
     onSuccess: () => {
-      toast.success(tProp('propertyUpdated'));
+      toast.success(tProp('updated'));
       queryClient.invalidateQueries({ queryKey: ['admin-properties'] });
       resetForm();
     },
@@ -330,7 +330,7 @@ function AdminPropertiesPageContent() {
       return { propertyId, isActive };
     },
     onSuccess: (_, { isActive }) => {
-      toast.success(isActive ? tProp('propertyActivated') : tProp('propertyDeactivated'));
+      toast.success(isActive ? tProp('activated') : tProp('deactivated'));
       queryClient.invalidateQueries({ queryKey: ['admin-properties'] });
       setShowDeactivateDialog(false);
       setDeactivatingProperty(null);
@@ -473,7 +473,7 @@ function AdminPropertiesPageContent() {
     if (isNaN(num)) {
       setLatitudeError(tProp('invalidNumber'));
     } else if (num < -90 || num > 90) {
-      setLatitudeError(tProp('latitudeRange'));
+      setLatitudeError(tProp('latRange'));
     } else {
       setLatitudeError(null);
     }
@@ -490,7 +490,7 @@ function AdminPropertiesPageContent() {
     if (isNaN(num)) {
       setLongitudeError(tProp('invalidNumber'));
     } else if (num < -180 || num > 180) {
-      setLongitudeError(tProp('longitudeRange'));
+      setLongitudeError(tProp('lngRange'));
     } else {
       setLongitudeError(null);
     }
@@ -528,7 +528,7 @@ function AdminPropertiesPageContent() {
 
     // Validate: if one coordinate is set, both must be set
     if ((parsedLatitude !== null) !== (parsedLongitude !== null)) {
-      toast.error(tProp('bothCoordsRequired'));
+      toast.error(tProp('coordinatesBothRequired'));
       return;
     }
 
@@ -542,9 +542,9 @@ function AdminPropertiesPageContent() {
           parsedLongitude = result.lng;
           setLatitude(result.lat.toString());
           setLongitude(result.lng.toString());
-          toast.success(tProp('coordsAutoDetected'));
+          toast.success(tProp('coordinatesDetected'));
         } else {
-          toast.warning(tProp('geocodeFailed'));
+          toast.warning(tProp('coordinatesNotFound'));
         }
       } finally {
         setIsGeocoding(false);
@@ -714,7 +714,7 @@ function AdminPropertiesPageContent() {
                             setShowDeactivateDialog(true);
                           }
                         }}
-                        title={inactive ? tProp('activate') : tProp('deactivate')}
+                        title={inactive ? tProp('activated') : tProp('deactivateTitle')}
                         disabled={toggleActiveMutation.isPending}
                       >
                         <Power className={cn('h-4 w-4', inactive ? 'text-green-500' : 'text-gray-400')} />
@@ -726,7 +726,7 @@ function AdminPropertiesPageContent() {
                           setAssigningProperty(property);
                           setShowUsersSheet(true);
                         }}
-                        title={tProp('assignEmployees')}
+                        title={tProp('employeesFor', { name: '' })}
                       >
                         <Users className="h-4 w-4" />
                       </Button>
@@ -734,7 +734,7 @@ function AdminPropertiesPageContent() {
                         variant="ghost"
                         size="icon"
                         onClick={() => openEditForm(property)}
-                        title={tProp('edit')}
+                        title={t('common.edit')}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -745,7 +745,7 @@ function AdminPropertiesPageContent() {
                           setDeactivatingProperty(property);
                           setShowDeactivateDialog(true);
                         }}
-                        title={tProp('deactivate')}
+                        title={tProp('deactivateTitle')}
                       >
                         <Trash2 className="h-4 w-4 text-error-600" />
                       </Button>
@@ -917,7 +917,7 @@ function AdminPropertiesPageContent() {
                     {client.name}
                   </option>
                 ))}
-                <option value="__new__">{tProp('createNewClient')}</option>
+                <option value="__new__">{tProp('newClientCreate')}</option>
               </select>
             </div>
 
@@ -932,7 +932,7 @@ function AdminPropertiesPageContent() {
                   <Input
                     value={newClientName}
                     onChange={(e) => setNewClientName(e.target.value)}
-                    placeholder={tProp('clientNamePlaceholder')}
+                    placeholder={tProp('namePlaceholder')}
                     required={creatingNewClient}
                   />
                 </div>
@@ -941,7 +941,7 @@ function AdminPropertiesPageContent() {
                   <Input
                     value={newClientContactPerson}
                     onChange={(e) => setNewClientContactPerson(e.target.value)}
-                    placeholder={tProp('contactPersonPlaceholder')}
+                    placeholder={tProp('contactPerson')}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -1007,7 +1007,7 @@ function AdminPropertiesPageContent() {
                 disabled={isSubmitting || !name.trim() || !address.trim() || !city.trim() || !postalCode.trim() || !!latitudeError || !!longitudeError || (creatingNewClient && !newClientName.trim())}
               >
                 {isGeocoding
-                  ? tProp('detectingCoords')
+                  ? tProp('detectingCoordinates')
                   : isSubmitting
                   ? tProp('saving')
                   : editingProperty
@@ -1025,9 +1025,9 @@ function AdminPropertiesPageContent() {
       <Dialog open={showDeactivateDialog} onOpenChange={setShowDeactivateDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{tProp('deactivateProperty')}</DialogTitle>
+            <DialogTitle>{tProp('deactivateTitle')}</DialogTitle>
             <DialogDescription>
-              {tProp('confirmDeactivate', { name: deactivatingProperty?.name || '' })}
+              {tProp('deactivateMessage', { name: deactivatingProperty?.name || '' })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -1039,7 +1039,7 @@ function AdminPropertiesPageContent() {
               onClick={() => deactivatingProperty && toggleActiveMutation.mutate({ propertyId: deactivatingProperty.id, isActive: false })}
               disabled={toggleActiveMutation.isPending}
             >
-              {toggleActiveMutation.isPending ? tProp('deactivating') : tProp('deactivate')}
+              {toggleActiveMutation.isPending ? tProp('deactivateTitle') : tProp('deactivateTitle')}
             </Button>
           </DialogFooter>
         </DialogContent>
