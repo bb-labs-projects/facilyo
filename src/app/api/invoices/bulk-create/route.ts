@@ -2,52 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, createServiceRoleClient } from '@/lib/supabase/server';
 import { generateAndUploadInvoicePdf } from '@/lib/invoice-pdf';
 import type { InvoicePdfData, BillingSettingsData } from '@/lib/invoice-pdf';
-import type { SubscriptionInterval } from '@/types/database';
+import {
+  calculatePeriodDates,
+  getPeriodAmount,
+  advanceNextBillingDate,
+  formatDateLocal,
+  type BillingMode,
+} from '@/lib/billing-utils';
 
 interface BulkCreateBody {
   billing_period_end: string;
-}
-
-/** Format a Date as YYYY-MM-DD using local year/month/day (avoids toISOString UTC shift) */
-function formatDateLocal(d: Date): string {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-function getPeriodAmount(yearlyAmount: number, interval: SubscriptionInterval): number {
-  switch (interval) {
-    case 'monthly': return Math.round((yearlyAmount / 12) * 100) / 100;
-    case 'quarterly': return Math.round((yearlyAmount / 4) * 100) / 100;
-    case 'half_yearly': return Math.round((yearlyAmount / 2) * 100) / 100;
-    case 'annually': return yearlyAmount;
-  }
-}
-
-function calculatePeriodDates(nextBillingDate: string, interval: SubscriptionInterval): { period_start: string; period_end: string } {
-  // Parse as local date parts to avoid timezone shifts
-  const [year, month] = nextBillingDate.split('-').map(Number);
-  // period_start = first of the next month after next_billing_date
-  const periodStart = new Date(year, month, 1); // month is already 1-based from string, so this is next month (Date uses 0-based)
-
-  const monthsMap = { monthly: 1, quarterly: 3, half_yearly: 6, annually: 12 } as const;
-  // period_end = last day of the period
-  const periodEnd = new Date(periodStart.getFullYear(), periodStart.getMonth() + monthsMap[interval], 0);
-
-  return {
-    period_start: formatDateLocal(periodStart),
-    period_end: formatDateLocal(periodEnd),
-  };
-}
-
-function advanceNextBillingDate(nextBillingDate: string, interval: SubscriptionInterval): string {
-  const [year, month] = nextBillingDate.split('-').map(Number);
-  const monthsMap = { monthly: 1, quarterly: 3, half_yearly: 6, annually: 12 } as const;
-  // Advance to the last day of the month that is N months ahead
-  // month is 1-based from string, +monthsMap gives target month (0-based for Date), day 0 = last day of previous month
-  const advanced = new Date(year, month + monthsMap[interval], 0);
-  return formatDateLocal(advanced);
 }
 
 export async function POST(request: NextRequest) {
@@ -109,10 +73,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const billingMode: BillingMode = billingSettings.billing_mode || 'advance';
+
     // 6. Fetch active subscriptions with next_billing_date <= billing_period_end
     const { data: subscriptions, error: subError } = await (serviceClient as any)
       .from('client_subscriptions')
-      .select('*, clients(id, name, contact_person, email, address, postal_code, city)')
+      .select('*, clients(id, name, contact_person, email, address, postal_code, city), properties(id, name)')
       .eq('organization_id', organizationId)
       .eq('is_active', true)
       .not('next_billing_date', 'is', null)
@@ -139,7 +105,9 @@ export async function POST(request: NextRequest) {
     const eligibleSubs: typeof subscriptions = [];
 
     for (const sub of subscriptions) {
-      const { period_start, period_end } = calculatePeriodDates(sub.next_billing_date, sub.interval);
+      const { period_start, period_end } = calculatePeriodDates(
+        sub.next_billing_date, sub.interval, billingMode, sub.contract_start_date
+      );
 
       // Check for overlapping non-cancelled invoice line items
       const { data: existingItems } = await (serviceClient as any)
@@ -174,8 +142,8 @@ export async function POST(request: NextRequest) {
     let currentNextNumber = billingSettings.next_invoice_number;
     const prefix = billingSettings.invoice_number_prefix;
     const mwstRate = billingSettings.mwst_enabled ? billingSettings.mwst_rate : 0;
-    const today = new Date().toISOString().split('T')[0];
-    const dueDate = new Date(Date.now() + billingSettings.payment_terms_days * 86400000).toISOString().split('T')[0];
+    const today = formatDateLocal(new Date());
+    const dueDate = formatDateLocal(new Date(Date.now() + billingSettings.payment_terms_days * 86400000));
 
     for (const [clientId, subs] of Array.from(clientGroups.entries())) {
       const invoiceNumber = `${prefix}-${String(currentNextNumber).padStart(4, '0')}`;
@@ -183,21 +151,32 @@ export async function POST(request: NextRequest) {
 
       // Build line items
       const lineItems = subs.map((sub: any, index: number) => {
-        const periodAmount = getPeriodAmount(sub.yearly_amount, sub.interval);
-        const { period_start, period_end } = calculatePeriodDates(sub.next_billing_date, sub.interval);
+        const period = calculatePeriodDates(
+          sub.next_billing_date, sub.interval, billingMode, sub.contract_start_date
+        );
+        const periodAmount = getPeriodAmount(sub.yearly_amount, sub.interval, period.proration_factor);
+
+        // Build description with optional property name and proration note
+        let description = sub.name;
+        if (sub.properties?.name) description += ` (${sub.properties.name})`;
+        if (sub.description) description += ` - ${sub.description}`;
+        if (period.is_prorated) description += ' (anteilig)';
+
         return {
           organization_id: organizationId,
           invoice_id: '', // will be set after invoice insert
           line_type: 'subscription' as const,
           sort_order: index,
-          description: sub.name + (sub.description ? ` - ${sub.description}` : ''),
+          description,
           quantity: 1,
           unit: 'Stk',
           unit_price: periodAmount,
           total: periodAmount,
           subscription_id: sub.id,
-          period_start,
-          period_end,
+          period_start: period.period_start,
+          period_end: period.period_end,
+          _is_prorated: period.is_prorated,
+          _period_end: period.period_end,
         };
       });
 
@@ -229,8 +208,11 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      // Insert line items
-      const lineItemInserts = lineItems.map((item: any) => ({ ...item, invoice_id: invoice.id }));
+      // Insert line items (strip internal fields)
+      const lineItemInserts = lineItems.map(({ _is_prorated, _period_end, ...item }: any) => ({
+        ...item,
+        invoice_id: invoice.id,
+      }));
       const { error: lineItemsError } = await (serviceClient as any)
         .from('invoice_line_items')
         .insert(lineItemInserts);
@@ -242,8 +224,12 @@ export async function POST(request: NextRequest) {
       }
 
       // Advance next_billing_date for each subscription
-      for (const sub of subs) {
-        const newDate = advanceNextBillingDate(sub.next_billing_date, sub.interval);
+      for (let i = 0; i < subs.length; i++) {
+        const sub = subs[i];
+        const li = lineItems[i];
+        const newDate = advanceNextBillingDate(
+          sub.next_billing_date, sub.interval, billingMode, li._period_end, li._is_prorated
+        );
         await (serviceClient as any)
           .from('client_subscriptions')
           .update({ next_billing_date: newDate })

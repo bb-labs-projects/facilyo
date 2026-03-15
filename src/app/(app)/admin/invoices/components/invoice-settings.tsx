@@ -29,6 +29,7 @@ interface BillingSettingsFormData {
   payment_terms_days: number;
   invoice_number_prefix: string;
   approval_required: boolean;
+  billing_mode: 'advance' | 'arrears';
 }
 
 const defaultFormData: BillingSettingsFormData = {
@@ -48,6 +49,7 @@ const defaultFormData: BillingSettingsFormData = {
   payment_terms_days: 30,
   invoice_number_prefix: 'RE',
   approval_required: false,
+  billing_mode: 'advance',
 };
 
 const ACTIVITY_TYPE_KEYS = ['hauswartung', 'rasen_maehen', 'hecken_schneiden', 'regie', 'reinigung'] as const;
@@ -127,6 +129,7 @@ export function InvoiceSettings() {
         payment_terms_days: settings.payment_terms_days,
         invoice_number_prefix: settings.invoice_number_prefix,
         approval_required: settings.approval_required,
+        billing_mode: settings.billing_mode || 'advance',
       });
     }
   }, [settings]);
@@ -498,6 +501,21 @@ export function InvoiceSettings() {
             />
             <span className="text-slate-700">{tInv('settingsMgmt.approvalRequired')}</span>
           </label>
+
+          <div className="space-y-2">
+            <label className="block text-xs lg:text-sm font-medium text-slate-500">
+              {tInv('settingsMgmt.billingModeLabel')}
+            </label>
+            <select
+              value={formData.billing_mode}
+              onChange={(e) => updateField('billing_mode', e.target.value as 'advance' | 'arrears')}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            >
+              <option value="advance">{tInv('settingsMgmt.billingModeAdvance')}</option>
+              <option value="arrears">{tInv('settingsMgmt.billingModeArrears')}</option>
+            </select>
+            <p className="text-xs text-muted-foreground">{tInv('settingsMgmt.billingModeHint')}</p>
+          </div>
         </CardContent>
       </Card>
 

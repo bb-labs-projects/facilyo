@@ -1090,7 +1090,13 @@
       "close": "Cerrar",
       "noInvoicesCreated": "No se crearon facturas",
       "bulkCreateError": "Error al crear facturas",
-      "unknown": "Desconocido"
+      "unknown": "Desconocido",
+      "contractStartDateLabel": "Fecha inicio contrato",
+      "contractStartDateHint": "Si se establece, el primer período de facturación se prorrateará.",
+      "contractStart": "Inicio contrato",
+      "propertyLabel": "Propiedad",
+      "noProperty": "Sin propiedad",
+      "prorated": "Prorrateado"
     },
     "settingsMgmt": {
       "loading": "Cargando...",
@@ -1118,6 +1124,10 @@
       "paymentTerms": "Plazo de pago (días)",
       "invoicePrefix": "Prefijo del número de factura",
       "approvalRequired": "Aprobación requerida antes del envío",
+      "billingModeLabel": "Modo de facturación",
+      "billingModeAdvance": "Anticipado (factura al inicio del período)",
+      "billingModeArrears": "Vencido (factura al final del período)",
+      "billingModeHint": "Determina si las suscripciones se facturan al inicio o al final del período.",
       "save": "Guardar",
       "saving": "Guardando...",
       "saved": "Configuración guardada",

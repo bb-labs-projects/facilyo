@@ -1090,7 +1090,13 @@
       "close": "Zapri",
       "noInvoicesCreated": "Ni ustvarjenih računov",
       "bulkCreateError": "Napaka pri ustvarjanju računov",
-      "unknown": "Neznano"
+      "unknown": "Neznano",
+      "contractStartDateLabel": "Datum začetka pogodbe",
+      "contractStartDateHint": "Če je nastavljeno, bo prvo obračunsko obdobje sorazmerno.",
+      "contractStart": "Začetek pogodbe",
+      "propertyLabel": "Nepremičnina",
+      "noProperty": "Brez nepremičnine",
+      "prorated": "Sorazmerno"
     },
     "settingsMgmt": {
       "loading": "Nalaganje...",
@@ -1118,6 +1124,10 @@
       "paymentTerms": "Rok plačila (dni)",
       "invoicePrefix": "Predpona številke računa",
       "approvalRequired": "Pred pošiljanjem potrebna odobritev",
+      "billingModeLabel": "Način obračuna",
+      "billingModeAdvance": "Vnaprej (račun na začetku obdobja)",
+      "billingModeArrears": "Naknadno (račun na koncu obdobja)",
+      "billingModeHint": "Določa, ali se naročnine zaračunajo na začetku ali na koncu obdobja.",
       "save": "Shrani",
       "saving": "Shranjevanje...",
       "saved": "Nastavitve shranjene",

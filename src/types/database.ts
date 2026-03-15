@@ -759,6 +759,7 @@ export interface Database {
           invoice_number_prefix: string;
           next_invoice_number: number;
           approval_required: boolean;
+          billing_mode: 'advance' | 'arrears';
           created_at: string;
           updated_at: string;
         };
@@ -782,6 +783,7 @@ export interface Database {
           invoice_number_prefix?: string;
           next_invoice_number?: number;
           approval_required?: boolean;
+          billing_mode?: 'advance' | 'arrears';
           created_at?: string;
           updated_at?: string;
         };
@@ -805,6 +807,7 @@ export interface Database {
           invoice_number_prefix?: string;
           next_invoice_number?: number;
           approval_required?: boolean;
+          billing_mode?: 'advance' | 'arrears';
           created_at?: string;
           updated_at?: string;
         };
@@ -881,6 +884,8 @@ export interface Database {
           interval: SubscriptionInterval;
           is_active: boolean;
           next_billing_date: string | null;
+          contract_start_date: string | null;
+          property_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -894,6 +899,8 @@ export interface Database {
           interval?: SubscriptionInterval;
           is_active?: boolean;
           next_billing_date?: string | null;
+          contract_start_date?: string | null;
+          property_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -907,6 +914,8 @@ export interface Database {
           interval?: SubscriptionInterval;
           is_active?: boolean;
           next_billing_date?: string | null;
+          contract_start_date?: string | null;
+          property_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };

@@ -1090,7 +1090,13 @@
       "close": "Schliessen",
       "noInvoicesCreated": "Keine Rechnungen erstellt",
       "bulkCreateError": "Fehler beim Erstellen der Rechnungen",
-      "unknown": "Unbekannt"
+      "unknown": "Unbekannt",
+      "contractStartDateLabel": "Vertragsstart",
+      "contractStartDateHint": "Bei gesetztem Datum wird die erste Abrechnung anteilig berechnet.",
+      "contractStart": "Vertragsstart",
+      "propertyLabel": "Liegenschaft",
+      "noProperty": "Keine Liegenschaft",
+      "prorated": "Anteilig"
     },
     "settingsMgmt": {
       "loading": "Wird geladen...",
@@ -1118,6 +1124,10 @@
       "paymentTerms": "Zahlungsfrist (Tage)",
       "invoicePrefix": "Rechnungsnummer-Präfix",
       "approvalRequired": "Genehmigung erforderlich vor dem Versand",
+      "billingModeLabel": "Abrechnungsmodus",
+      "billingModeAdvance": "Vorschüssig (Rechnung zu Beginn der Periode)",
+      "billingModeArrears": "Nachschüssig (Rechnung am Ende der Periode)",
+      "billingModeHint": "Bestimmt ob Abonnements zu Beginn oder am Ende der Periode abgerechnet werden.",
       "save": "Speichern",
       "saving": "Wird gespeichert...",
       "saved": "Einstellungen wurden gespeichert",

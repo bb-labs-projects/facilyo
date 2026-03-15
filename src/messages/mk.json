@@ -1090,7 +1090,13 @@
       "close": "Затвори",
       "noInvoicesCreated": "Нема креирани фактури",
       "bulkCreateError": "Грешка при креирање на фактури",
-      "unknown": "Непознато"
+      "unknown": "Непознато",
+      "contractStartDateLabel": "Датум на почеток на договор",
+      "contractStartDateHint": "Ако е поставено, првиот период на наплата ќе биде пропорционален.",
+      "contractStart": "Почеток на договор",
+      "propertyLabel": "Имот",
+      "noProperty": "Без имот",
+      "prorated": "Пропорционално"
     },
     "settingsMgmt": {
       "loading": "Се вчитува...",
@@ -1118,6 +1124,10 @@
       "paymentTerms": "Рок на плаќање (денови)",
       "invoicePrefix": "Префикс на број на фактура",
       "approvalRequired": "Потребно одобрување пред испраќање",
+      "billingModeLabel": "Начин на наплата",
+      "billingModeAdvance": "Однапред (фактура на почеток на период)",
+      "billingModeArrears": "Наназад (фактура на крај на период)",
+      "billingModeHint": "Одредува дали претплатите се фактурираат на почеток или на крај на период.",
       "save": "Зачувај",
       "saving": "Се зачувува...",
       "saved": "Поставките се зачувани",

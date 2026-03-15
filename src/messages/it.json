@@ -1090,7 +1090,13 @@
       "close": "Chiudi",
       "noInvoicesCreated": "Nessuna fattura creata",
       "bulkCreateError": "Errore nella creazione delle fatture",
-      "unknown": "Sconosciuto"
+      "unknown": "Sconosciuto",
+      "contractStartDateLabel": "Data inizio contratto",
+      "contractStartDateHint": "Se impostata, il primo periodo di fatturazione sarà calcolato proporzionalmente.",
+      "contractStart": "Inizio contratto",
+      "propertyLabel": "Immobile",
+      "noProperty": "Nessun immobile",
+      "prorated": "Proporzionale"
     },
     "settingsMgmt": {
       "loading": "Caricamento...",
@@ -1118,6 +1124,10 @@
       "paymentTerms": "Termini di pagamento (giorni)",
       "invoicePrefix": "Prefisso numero fattura",
       "approvalRequired": "Approvazione richiesta prima dell'invio",
+      "billingModeLabel": "Modalità di fatturazione",
+      "billingModeAdvance": "Anticipato (fattura a inizio periodo)",
+      "billingModeArrears": "Posticipato (fattura a fine periodo)",
+      "billingModeHint": "Determina se gli abbonamenti vengono fatturati all'inizio o alla fine del periodo.",
       "save": "Salva",
       "saving": "Salvataggio...",
       "saved": "Impostazioni salvate",

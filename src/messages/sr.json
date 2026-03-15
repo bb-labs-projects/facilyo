@@ -1090,7 +1090,13 @@
       "close": "Zatvori",
       "noInvoicesCreated": "Nema kreiranih računa",
       "bulkCreateError": "Greška pri kreiranju računa",
-      "unknown": "Nepoznato"
+      "unknown": "Nepoznato",
+      "contractStartDateLabel": "Датум почетка уговора",
+      "contractStartDateHint": "Ако је постављено, први период наплате биће пропорционалан.",
+      "contractStart": "Почетак уговора",
+      "propertyLabel": "Некретнина",
+      "noProperty": "Без некретнине",
+      "prorated": "Пропорционално"
     },
     "settingsMgmt": {
       "loading": "Učitavanje...",
@@ -1118,6 +1124,10 @@
       "paymentTerms": "Rok plaćanja (dani)",
       "invoicePrefix": "Prefiks broja računa",
       "approvalRequired": "Potrebno odobrenje pre slanja",
+      "billingModeLabel": "Начин наплате",
+      "billingModeAdvance": "Унапред (фактура на почетку периода)",
+      "billingModeArrears": "Накнадно (фактура на крају периода)",
+      "billingModeHint": "Одређује да ли се претплате фактуришу на почетку или на крају периода.",
       "save": "Sačuvaj",
       "saving": "Čuvanje...",
       "saved": "Podešavanja sačuvana",

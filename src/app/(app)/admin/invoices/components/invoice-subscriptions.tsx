@@ -17,6 +17,11 @@ import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
 import { formatSwissNumber } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
+import {
+  calculatePeriodDates,
+  getPeriodAmount,
+  type BillingMode,
+} from '@/lib/billing-utils';
 import type { Client, ClientSubscription, SubscriptionInterval } from '@/types/database';
 
 interface BulkPreviewItem {
@@ -27,6 +32,7 @@ interface BulkPreviewItem {
   period_amount: number;
   period_start: string;
   period_end: string;
+  is_prorated: boolean;
   status: 'eligible' | 'skipped';
   skip_reason?: string;
 }
@@ -38,24 +44,12 @@ interface BulkCreateResult {
   skipped_details: Array<{ subscription_name: string; client_name: string; reason: string }>;
 }
 
-/** Format a Date as YYYY-MM-DD using local year/month/day (avoids toISOString UTC shift) */
-function formatDateLocal(d: Date): string {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
+type SubWithClient = ClientSubscription & {
+  clients: { name: string } | null;
+  properties: { id: string; name: string } | null;
+};
 
-function getPeriodAmount(yearly: number, interval: SubscriptionInterval): number {
-  switch (interval) {
-    case 'monthly': return yearly / 12;
-    case 'quarterly': return yearly / 4;
-    case 'half_yearly': return yearly / 2;
-    case 'annually': return yearly;
-  }
-}
-
-type SubWithClient = ClientSubscription & { clients: { name: string } | null };
+const selectClass = 'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2';
 
 export function InvoiceSubscriptions() {
   const queryClient = useQueryClient();
@@ -70,6 +64,8 @@ export function InvoiceSubscriptions() {
   const [subYearlyAmount, setSubYearlyAmount] = useState('');
   const [subInterval, setSubInterval] = useState<SubscriptionInterval>('monthly');
   const [subNextBillingDate, setSubNextBillingDate] = useState('');
+  const [subContractStartDate, setSubContractStartDate] = useState('');
+  const [subPropertyId, setSubPropertyId] = useState('');
   const [subIsActive, setSubIsActive] = useState(true);
 
   // Bulk invoice run state
@@ -105,14 +101,31 @@ export function InvoiceSubscriptions() {
     }
   };
 
-  // Fetch all subscriptions with client name
+  // Fetch billing settings for billing mode
+  const { data: billingSettings } = useQuery({
+    queryKey: ['billing-settings', organizationId],
+    queryFn: async () => {
+      const supabase = getClient();
+      const { data, error } = await (supabase as any)
+        .from('organization_billing_settings')
+        .select('billing_mode')
+        .eq('organization_id', organizationId)
+        .maybeSingle();
+      if (error) throw error;
+      return data as { billing_mode: BillingMode } | null;
+    },
+    enabled: !!organizationId,
+  });
+  const billingMode: BillingMode = billingSettings?.billing_mode || 'advance';
+
+  // Fetch all subscriptions with client and property name
   const { data: subscriptions = [], isLoading } = useQuery({
     queryKey: ['all-subscriptions'],
     queryFn: async () => {
       const supabase = getClient();
       const { data, error } = await (supabase as any)
         .from('client_subscriptions')
-        .select('*, clients(name)')
+        .select('*, clients(name), properties(id, name)')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -138,6 +151,24 @@ export function InvoiceSubscriptions() {
     enabled: !!organizationId,
   });
 
+  // Fetch properties for the selected client
+  const { data: clientProperties = [] } = useQuery({
+    queryKey: ['subscription-client-properties', clientId],
+    queryFn: async () => {
+      const supabase = getClient();
+      const { data, error } = await (supabase as any)
+        .from('properties')
+        .select('id, name')
+        .eq('client_id', clientId)
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      return data as { id: string; name: string }[];
+    },
+    enabled: !!clientId,
+  });
+
   const resetForm = () => {
     setClientId('');
     setSubName('');
@@ -145,6 +176,8 @@ export function InvoiceSubscriptions() {
     setSubYearlyAmount('');
     setSubInterval('monthly');
     setSubNextBillingDate('');
+    setSubContractStartDate('');
+    setSubPropertyId('');
     setSubIsActive(true);
     setEditingSub(null);
     setShowForm(false);
@@ -157,13 +190,25 @@ export function InvoiceSubscriptions() {
     setSubYearlyAmount(String(sub.yearly_amount));
     setSubInterval(sub.interval);
     setSubNextBillingDate(sub.next_billing_date || '');
+    setSubContractStartDate(sub.contract_start_date || '');
+    setSubPropertyId(sub.property_id || '');
     setSubIsActive(sub.is_active);
     setEditingSub(sub);
     setShowForm(true);
   };
 
   const saveMutation = useMutation({
-    mutationFn: async (data: { client_id: string; name: string; description: string | null; yearly_amount: number; interval: SubscriptionInterval; next_billing_date: string | null; is_active: boolean }) => {
+    mutationFn: async (data: {
+      client_id: string;
+      name: string;
+      description: string | null;
+      yearly_amount: number;
+      interval: SubscriptionInterval;
+      next_billing_date: string | null;
+      contract_start_date: string | null;
+      property_id: string | null;
+      is_active: boolean;
+    }) => {
       const supabase = getClient();
       await ensureValidSession();
 
@@ -269,7 +314,7 @@ export function InvoiceSubscriptions() {
       // Fetch eligible subscriptions
       const { data: subs, error: subError } = await (supabase as any)
         .from('client_subscriptions')
-        .select('*, clients(name)')
+        .select('*, clients(name), properties(name)')
         .eq('is_active', true)
         .not('next_billing_date', 'is', null)
         .lte('next_billing_date', bulkPeriodEnd);
@@ -278,14 +323,10 @@ export function InvoiceSubscriptions() {
 
       const preview: BulkPreviewItem[] = [];
       for (const sub of (subs || [])) {
-        const periodAmount = getPeriodAmount(sub.yearly_amount, sub.interval);
-        // Parse as local date parts to avoid timezone shifts with toISOString
-        const [year, month] = (sub.next_billing_date as string).split('-').map(Number);
-        const periodStart = new Date(year, month, 1); // month is 1-based from string = next month in 0-based Date
-        const monthsMap = { monthly: 1, quarterly: 3, half_yearly: 6, annually: 12 } as const;
-        const periodEnd = new Date(periodStart.getFullYear(), periodStart.getMonth() + monthsMap[sub.interval as SubscriptionInterval], 0);
-        const pStart = formatDateLocal(periodStart);
-        const pEnd = formatDateLocal(periodEnd);
+        const period = calculatePeriodDates(
+          sub.next_billing_date, sub.interval, billingMode, sub.contract_start_date
+        );
+        const periodAmount = getPeriodAmount(sub.yearly_amount, sub.interval, period.proration_factor);
 
         // Check for existing invoices
         const { data: existing } = await (supabase as any)
@@ -293,17 +334,21 @@ export function InvoiceSubscriptions() {
           .select('id, invoice_id, invoices!inner(status)')
           .eq('subscription_id', sub.id)
           .neq('invoices.status', 'cancelled')
-          .lte('period_start', pEnd)
-          .gte('period_end', pStart);
+          .lte('period_start', period.period_end)
+          .gte('period_end', period.period_start);
+
+        let displayName = sub.name;
+        if (sub.properties?.name) displayName += ` (${sub.properties.name})`;
 
         preview.push({
           subscription_id: sub.id,
-          subscription_name: sub.name,
+          subscription_name: displayName,
           client_name: sub.clients?.name || tInv('subscriptionMgmt.unknown'),
           interval: sub.interval,
-          period_amount: Math.round(periodAmount * 100) / 100,
-          period_start: pStart,
-          period_end: pEnd,
+          period_amount: periodAmount,
+          period_start: period.period_start,
+          period_end: period.period_end,
+          is_prorated: period.is_prorated,
           status: existing && existing.length > 0 ? 'skipped' : 'eligible',
           skip_reason: existing && existing.length > 0 ? tInv('subscriptionMgmt.alreadyInvoiced') : undefined,
         });
@@ -406,6 +451,11 @@ export function InvoiceSubscriptions() {
                     <p className="text-sm text-muted-foreground mt-0.5">
                       {sub.clients?.name}
                     </p>
+                    {sub.properties?.name && (
+                      <p className="text-xs text-muted-foreground">
+                        {sub.properties.name}
+                      </p>
+                    )}
                     <p className="text-sm font-semibold text-primary-600 mt-0.5">
                       CHF {formatSwissNumber(sub.yearly_amount)} / {tInv('subscriptionMgmt.perYear')}
                     </p>
@@ -415,9 +465,14 @@ export function InvoiceSubscriptions() {
                     {sub.description && (
                       <p className="text-sm text-muted-foreground mt-0.5">{sub.description}</p>
                     )}
-                    {sub.next_billing_date && (
+                    {sub.contract_start_date && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        {tInv('subscriptionMgmt.nextBilling')}: {new Date(sub.next_billing_date).toLocaleDateString('de-CH')}
+                        {tInv('subscriptionMgmt.contractStart')}: {new Date(sub.contract_start_date + 'T00:00:00').toLocaleDateString('de-CH')}
+                      </p>
+                    )}
+                    {sub.next_billing_date && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {tInv('subscriptionMgmt.nextBilling')}: {new Date(sub.next_billing_date + 'T00:00:00').toLocaleDateString('de-CH')}
                       </p>
                     )}
                   </div>
@@ -467,6 +522,8 @@ export function InvoiceSubscriptions() {
                 yearly_amount: parseFloat(subYearlyAmount),
                 interval: subInterval,
                 next_billing_date: subNextBillingDate || null,
+                contract_start_date: subContractStartDate || null,
+                property_id: subPropertyId || null,
                 is_active: subIsActive,
               });
             }}
@@ -478,10 +535,13 @@ export function InvoiceSubscriptions() {
               </label>
               <select
                 value={clientId}
-                onChange={(e) => setClientId(e.target.value)}
+                onChange={(e) => {
+                  setClientId(e.target.value);
+                  setSubPropertyId(''); // Reset property when client changes
+                }}
                 disabled={!!editingSub}
                 required
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className={`${selectClass} disabled:cursor-not-allowed disabled:opacity-50`}
               >
                 <option value="">{tInv('subscriptionMgmt.selectClient')}</option>
                 {clients.map((client) => (
@@ -491,6 +551,25 @@ export function InvoiceSubscriptions() {
                 ))}
               </select>
             </div>
+
+            {/* Property dropdown (optional, shown when client is selected and has properties) */}
+            {clientId && clientProperties.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{tInv('subscriptionMgmt.propertyLabel')}</label>
+                <select
+                  value={subPropertyId}
+                  onChange={(e) => setSubPropertyId(e.target.value)}
+                  className={selectClass}
+                >
+                  <option value="">{tInv('subscriptionMgmt.noProperty')}</option>
+                  {clientProperties.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="space-y-2">
               <label className="text-sm font-medium">
@@ -533,7 +612,7 @@ export function InvoiceSubscriptions() {
                 <select
                   value={subInterval}
                   onChange={(e) => setSubInterval(e.target.value as SubscriptionInterval)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className={selectClass}
                 >
                   <option value="monthly">{tInv('intervals.monthly')}</option>
                   <option value="quarterly">{tInv('intervals.quarterly')}</option>
@@ -548,6 +627,18 @@ export function InvoiceSubscriptions() {
                 {tInv('subscriptionMgmt.periodAmountLabel')}: CHF {formatSwissNumber(getPeriodAmount(parseFloat(subYearlyAmount), subInterval))}
               </p>
             )}
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">{tInv('subscriptionMgmt.contractStartDateLabel')}</label>
+              <Input
+                type="date"
+                value={subContractStartDate}
+                onChange={(e) => setSubContractStartDate(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                {tInv('subscriptionMgmt.contractStartDateHint')}
+              </p>
+            </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium">{tInv('subscriptionMgmt.nextBillingDateLabel')}</label>
@@ -650,7 +741,7 @@ export function InvoiceSubscriptions() {
                               <CardContent className="p-3">
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2 flex-wrap">
                                       <span className="font-medium text-sm">{item.subscription_name}</span>
                                       {item.status === 'eligible' ? (
                                         <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
@@ -661,10 +752,15 @@ export function InvoiceSubscriptions() {
                                           {tInv('subscriptionMgmt.skipped')}
                                         </span>
                                       )}
+                                      {item.is_prorated && (
+                                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                                          {tInv('subscriptionMgmt.prorated')}
+                                        </span>
+                                      )}
                                     </div>
                                     <p className="text-xs text-muted-foreground">{item.client_name}</p>
                                     <p className="text-xs text-muted-foreground">
-                                      {new Date(item.period_start).toLocaleDateString('de-CH')} - {new Date(item.period_end).toLocaleDateString('de-CH')}
+                                      {new Date(item.period_start + 'T00:00:00').toLocaleDateString('de-CH')} – {new Date(item.period_end + 'T00:00:00').toLocaleDateString('de-CH')}
                                     </p>
                                     {item.skip_reason && (
                                       <p className="text-xs text-amber-600 flex items-center gap-1 mt-0.5">

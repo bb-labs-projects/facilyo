@@ -1090,7 +1090,13 @@
       "close": "Mbyll",
       "noInvoicesCreated": "Nuk u krijuan fatura",
       "bulkCreateError": "Gabim gjatë krijimit të faturave",
-      "unknown": "E panjohur"
+      "unknown": "E panjohur",
+      "contractStartDateLabel": "Data e fillimit të kontratës",
+      "contractStartDateHint": "Nëse vendoset, periudha e parë e faturimit do të llogaritet proporcionalisht.",
+      "contractStart": "Fillimi i kontratës",
+      "propertyLabel": "Prona",
+      "noProperty": "Pa pronë",
+      "prorated": "Proporcionalisht"
     },
     "settingsMgmt": {
       "loading": "Duke u ngarkuar...",
@@ -1118,6 +1124,10 @@
       "paymentTerms": "Afati i pagesës (ditë)",
       "invoicePrefix": "Prefiksi i numrit të faturës",
       "approvalRequired": "Nevojitet aprovim para dërgimit",
+      "billingModeLabel": "Mënyra e faturimit",
+      "billingModeAdvance": "Paraprakisht (faturë në fillim të periudhës)",
+      "billingModeArrears": "Prapa (faturë në fund të periudhës)",
+      "billingModeHint": "Përcakton nëse abonimet faturohen në fillim ose në fund të periudhës.",
       "save": "Ruaj",
       "saving": "Duke ruajtur...",
       "saved": "Cilësimet u ruajtën",
