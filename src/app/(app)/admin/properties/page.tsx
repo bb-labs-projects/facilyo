@@ -396,7 +396,7 @@ function AdminPropertiesPageContent() {
       return { propertyId, assign };
     },
     onSuccess: (_, { assign }) => {
-      toast.success(assign ? tProp('allAssigned') : tProp('allRemoved'));
+      toast.success(assign ? tProp('assignedAll') : tProp('removedAll'));
       queryClient.invalidateQueries({ queryKey: ['property-assignments', assigningProperty?.id] });
     },
     onError: (error: Error) => {
@@ -946,7 +946,7 @@ function AdminPropertiesPageContent() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">{tProp('email')}</label>
+                    <label className="text-sm font-medium">{t('profile.email')}</label>
                     <Input
                       type="email"
                       value={newClientEmail}
@@ -955,7 +955,7 @@ function AdminPropertiesPageContent() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">{tProp('phone')}</label>
+                    <label className="text-sm font-medium">{t('profile.phone')}</label>
                     <Input
                       value={newClientPhone}
                       onChange={(e) => setNewClientPhone(e.target.value)}
@@ -1009,10 +1009,10 @@ function AdminPropertiesPageContent() {
                 {isGeocoding
                   ? tProp('detectingCoordinates')
                   : isSubmitting
-                  ? tProp('saving')
+                  ? t('common.loading')
                   : editingProperty
                   ? t('common.save')
-                  : tProp('create')}
+                  : t('common.save')}
               </Button>
             </div>
           </form>
@@ -1080,7 +1080,7 @@ function AdminPropertiesPageContent() {
           <div className="mt-4 space-y-2 overflow-y-auto max-h-[calc(70vh-160px)]">
             {allUsers.map((user) => {
               const isAssigned = propertyAssignments.includes(user.id);
-              const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') || tProp('noName');
+              const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') || '–';
               const initials = getInitials(user.first_name, user.last_name);
 
               return (
