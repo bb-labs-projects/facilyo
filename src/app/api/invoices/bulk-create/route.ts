@@ -8,6 +8,14 @@ interface BulkCreateBody {
   billing_period_end: string;
 }
 
+/** Format a Date as YYYY-MM-DD using local year/month/day (avoids toISOString UTC shift) */
+function formatDateLocal(d: Date): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function getPeriodAmount(yearlyAmount: number, interval: SubscriptionInterval): number {
   switch (interval) {
     case 'monthly': return Math.round((yearlyAmount / 12) * 100) / 100;
@@ -18,26 +26,28 @@ function getPeriodAmount(yearlyAmount: number, interval: SubscriptionInterval): 
 }
 
 function calculatePeriodDates(nextBillingDate: string, interval: SubscriptionInterval): { period_start: string; period_end: string } {
-  const start = new Date(nextBillingDate);
+  // Parse as local date parts to avoid timezone shifts
+  const [year, month] = nextBillingDate.split('-').map(Number);
   // period_start = first of the next month after next_billing_date
-  const periodStart = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+  const periodStart = new Date(year, month, 1); // month is already 1-based from string, so this is next month (Date uses 0-based)
 
   const monthsMap = { monthly: 1, quarterly: 3, half_yearly: 6, annually: 12 } as const;
   // period_end = last day of the period
   const periodEnd = new Date(periodStart.getFullYear(), periodStart.getMonth() + monthsMap[interval], 0);
 
   return {
-    period_start: periodStart.toISOString().split('T')[0],
-    period_end: periodEnd.toISOString().split('T')[0],
+    period_start: formatDateLocal(periodStart),
+    period_end: formatDateLocal(periodEnd),
   };
 }
 
 function advanceNextBillingDate(nextBillingDate: string, interval: SubscriptionInterval): string {
-  const date = new Date(nextBillingDate);
+  const [year, month] = nextBillingDate.split('-').map(Number);
   const monthsMap = { monthly: 1, quarterly: 3, half_yearly: 6, annually: 12 } as const;
   // Advance to the last day of the month that is N months ahead
-  const advanced = new Date(date.getFullYear(), date.getMonth() + 1 + monthsMap[interval], 0);
-  return advanced.toISOString().split('T')[0];
+  // month is 1-based from string, +monthsMap gives target month (0-based for Date), day 0 = last day of previous month
+  const advanced = new Date(year, month + monthsMap[interval], 0);
+  return formatDateLocal(advanced);
 }
 
 export async function POST(request: NextRequest) {

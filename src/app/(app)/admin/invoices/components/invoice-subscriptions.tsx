@@ -38,6 +38,14 @@ interface BulkCreateResult {
   skipped_details: Array<{ subscription_name: string; client_name: string; reason: string }>;
 }
 
+/** Format a Date as YYYY-MM-DD using local year/month/day (avoids toISOString UTC shift) */
+function formatDateLocal(d: Date): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function getPeriodAmount(yearly: number, interval: SubscriptionInterval): number {
   switch (interval) {
     case 'monthly': return yearly / 12;
@@ -271,12 +279,13 @@ export function InvoiceSubscriptions() {
       const preview: BulkPreviewItem[] = [];
       for (const sub of (subs || [])) {
         const periodAmount = getPeriodAmount(sub.yearly_amount, sub.interval);
-        const start = new Date(sub.next_billing_date);
-        const periodStart = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+        // Parse as local date parts to avoid timezone shifts with toISOString
+        const [year, month] = (sub.next_billing_date as string).split('-').map(Number);
+        const periodStart = new Date(year, month, 1); // month is 1-based from string = next month in 0-based Date
         const monthsMap = { monthly: 1, quarterly: 3, half_yearly: 6, annually: 12 } as const;
         const periodEnd = new Date(periodStart.getFullYear(), periodStart.getMonth() + monthsMap[sub.interval as SubscriptionInterval], 0);
-        const pStart = periodStart.toISOString().split('T')[0];
-        const pEnd = periodEnd.toISOString().split('T')[0];
+        const pStart = formatDateLocal(periodStart);
+        const pEnd = formatDateLocal(periodEnd);
 
         // Check for existing invoices
         const { data: existing } = await (supabase as any)
