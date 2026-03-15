@@ -93,18 +93,27 @@ function AdminInvoicesPageContent() {
   const [searchQuery, setSearchQuery] = useState('');
 
 
-  // Fetch invoices with client info
+  // Fetch invoices with client info and line item periods
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ['admin-invoices'],
     queryFn: async () => {
       const supabase = getClient();
       const { data, error } = await (supabase as any)
         .from('invoices')
-        .select('*, clients(*)')
+        .select('*, clients(*), invoice_line_items(period_start, period_end)')
         .order('issue_date', { ascending: false });
 
       if (error) throw error;
-      return data as InvoiceWithClient[];
+      return (data as any[]).map((inv) => {
+        const items = inv.invoice_line_items || [];
+        const starts = items.map((i: any) => i.period_start).filter(Boolean) as string[];
+        const ends = items.map((i: any) => i.period_end).filter(Boolean) as string[];
+        return {
+          ...inv,
+          period_start: starts.length > 0 ? starts.sort()[0] : null,
+          period_end: ends.length > 0 ? ends.sort().reverse()[0] : null,
+        } as InvoiceWithClient & { period_start: string | null; period_end: string | null };
+      });
     },
     enabled: !!organizationId,
   });
@@ -432,6 +441,11 @@ function AdminInvoicesPageContent() {
                           <p className="text-xs text-muted-foreground">
                             {invoice.sent_to_email || invoice.clients?.email || tInv('noEmail')}
                           </p>
+                          {invoice.period_start && invoice.period_end && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {tInv('period')}: {formatDate(invoice.period_start)} – {formatDate(invoice.period_end)}
+                            </p>
+                          )}
                           <p className="text-xs text-muted-foreground mt-0.5">
                             {formatDate(invoice.issue_date)}
                           </p>

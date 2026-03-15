@@ -864,6 +864,7 @@
     "sentSuccess": "{sent} faturë/a u dërguan me sukses",
     "sentWithFailures": "{sent} të dërguara, {failed} të dështuara",
     "noEmail": "Pa e-mail",
+    "period": "Periudha",
     "bulkSendFailed": "Dërgimi masiv dështoi",
     "statuses": {
       "all": "Të gjitha",

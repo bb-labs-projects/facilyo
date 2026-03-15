@@ -864,6 +864,7 @@
     "sentSuccess": "{sent} fattura/e inviata/e con successo",
     "sentWithFailures": "{sent} inviata/e, {failed} fallita/e",
     "noEmail": "Nessuna e-mail",
+    "period": "Periodo",
     "bulkSendFailed": "L'invio di massa è fallito",
     "statuses": {
       "all": "Tutte",

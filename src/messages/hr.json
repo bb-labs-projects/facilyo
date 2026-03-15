@@ -864,6 +864,7 @@
     "sentSuccess": "{sent} račun(a) uspješno poslano",
     "sentWithFailures": "{sent} poslano, {failed} neuspjelo",
     "noEmail": "Nema e-pošte",
+    "period": "Razdoblje",
     "bulkSendFailed": "Skupno slanje neuspjelo",
     "statuses": {
       "all": "Sve",

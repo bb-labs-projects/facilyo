@@ -864,6 +864,7 @@
     "sentSuccess": "{sent} фактура/и успешно испратени",
     "sentWithFailures": "{sent} испратени, {failed} неуспешни",
     "noEmail": "Нема е-пошта",
+    "period": "Период",
     "bulkSendFailed": "Масовното испраќање не успеа",
     "statuses": {
       "all": "Сите",

@@ -864,6 +864,7 @@
     "sentSuccess": "{sent} invoice(s) sent successfully",
     "sentWithFailures": "{sent} sent, {failed} failed",
     "noEmail": "No email",
+    "period": "Period",
     "bulkSendFailed": "Bulk send failed",
     "statuses": {
       "all": "All",

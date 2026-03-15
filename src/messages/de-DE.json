@@ -864,6 +864,7 @@
     "sentSuccess": "{sent} Rechnung(en) erfolgreich versendet",
     "sentWithFailures": "{sent} versendet, {failed} fehlgeschlagen",
     "noEmail": "Keine E-Mail",
+    "period": "Zeitraum",
     "bulkSendFailed": "Massenversand fehlgeschlagen",
     "statuses": {
       "all": "Alle",
