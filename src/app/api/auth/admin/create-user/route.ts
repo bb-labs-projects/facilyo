@@ -237,7 +237,7 @@ export async function POST(request: NextRequest) {
       }));
       await (serviceClient as any)
         .from('property_assignments')
-        .insert(assignments);
+        .upsert(assignments, { onConflict: 'user_id,property_id', ignoreDuplicates: true });
     }
 
     // Log audit event

@@ -240,7 +240,7 @@ function AdminPropertiesPageContent() {
         }));
         await (supabase as any)
           .from('property_assignments')
-          .insert(assignments);
+          .upsert(assignments, { onConflict: 'user_id,property_id', ignoreDuplicates: true });
       }
 
       return result as Property;
@@ -349,7 +349,7 @@ function AdminPropertiesPageContent() {
       if (assign) {
         const { error } = await (supabase as any)
           .from('property_assignments')
-          .insert({ property_id: propertyId, user_id: userId, organization_id: organizationId });
+          .upsert({ property_id: propertyId, user_id: userId, organization_id: organizationId }, { onConflict: 'user_id,property_id', ignoreDuplicates: true });
         if (error) throw error;
       } else {
         const { error } = await (supabase as any)
@@ -382,7 +382,7 @@ function AdminPropertiesPageContent() {
         if (unassignedUsers.length > 0) {
           const { error } = await (supabase as any)
             .from('property_assignments')
-            .insert(unassignedUsers.map(u => ({ property_id: propertyId, user_id: u.id, organization_id: organizationId })));
+            .upsert(unassignedUsers.map(u => ({ property_id: propertyId, user_id: u.id, organization_id: organizationId })), { onConflict: 'user_id,property_id', ignoreDuplicates: true });
           if (error) throw error;
         }
       } else {
