@@ -247,7 +247,7 @@ function AdminUsersPageContent() {
       return { userId, assign };
     },
     onSuccess: (_, { assign }) => {
-      toast.success(assign ? tUsers('allPropertiesAssigned') : tUsers('allAssignmentsRemoved'));
+      toast.success(assign ? tUsers('allAssigned') : tUsers('allRemoved'));
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       // Update selectedUser state
       if (selectedUser) {
@@ -286,7 +286,7 @@ function AdminUsersPageContent() {
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || tUsers('createUserError'));
+        throw new Error(data.error || t('common.error'));
       }
       return data;
     },
@@ -324,7 +324,7 @@ function AdminUsersPageContent() {
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || tUsers('resetPasswordError'));
+        throw new Error(data.error || t('common.error'));
       }
       return data;
     },
@@ -357,7 +357,7 @@ function AdminUsersPageContent() {
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || tUsers('unlockError'));
+        throw new Error(data.error || t('common.error'));
       }
       return data;
     },
@@ -404,7 +404,7 @@ function AdminUsersPageContent() {
       return { userId, isActive };
     },
     onSuccess: (_, { isActive }) => {
-      toast.success(isActive ? tUsers('userActivated') : tUsers('userDeactivated'));
+      toast.success(isActive ? tUsers('activated') : tUsers('deactivatedSuccess'));
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       setShowDeactivateDialog(false);
       setSelectedUser(null);
@@ -461,7 +461,7 @@ function AdminUsersPageContent() {
 
   const handleCreateUser = () => {
     if (!newUserFirstName.trim() || !newUserLastName.trim()) {
-      toast.error(tUsers('nameRequired'));
+      toast.error(tUsers('firstAndLastRequired'));
       return;
     }
     createUserMutation.mutate({
@@ -528,7 +528,7 @@ function AdminUsersPageContent() {
         <div className="space-y-3">
           {filteredUsers.map((user) => {
             const initials = getInitials(user.first_name, user.last_name);
-            const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') || tUsers('noName');
+            const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ') || '–';
             const assignedCount = user.property_assignments?.length || 0;
             const username = user.auth_credentials?.[0]?.username;
             const locked = isUserLocked(user);
@@ -583,14 +583,14 @@ function AdminUsersPageContent() {
                         )}
                         {needsPasswordChange && !locked && !inactive && (
                           <span className="badge bg-amber-100 text-amber-700 text-xs">
-                            {tUsers('changePassword')}
+                            {tUsers('changePasswordBadge')}
                           </span>
                         )}
                         <span className="text-xs text-muted-foreground">
-                          {assignedCount} {assignedCount === 1 ? tUsers('property') : tUsers('properties')}
+                          {assignedCount} {assignedCount === 1 ? tUsers('propertySingular') : tUsers('propertyPlural')}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                          {user.vacation_days_per_year ?? 25} {tUsers('vacationDays')}
+                          {tUsers('vacationDaysCount', { count: user.vacation_days_per_year ?? 25 })}
                         </span>
                       </div>
                     </div>
@@ -611,7 +611,7 @@ function AdminUsersPageContent() {
                               setShowDeactivateDialog(true);
                             }
                           }}
-                          aria-label={inactive ? tUsers('activateUser') : tUsers('deactivateUser')}
+                          aria-label={inactive ? tUsers('activated') : tUsers('deactivateTitle')}
                           disabled={toggleActiveMutation.isPending}
                         >
                           <Power className={cn('h-4 w-4', inactive ? 'text-green-500' : 'text-gray-400')} />
@@ -626,7 +626,7 @@ function AdminUsersPageContent() {
                             e.stopPropagation();
                             unlockAccountMutation.mutate(user.id);
                           }}
-                          aria-label={tUsers('unlockAccount')}
+                          aria-label={tUsers('accountUnlocked')}
                           disabled={unlockAccountMutation.isPending}
                         >
                           <Unlock className="h-4 w-4 text-red-500" />
@@ -642,7 +642,7 @@ function AdminUsersPageContent() {
                             setSelectedUser(user);
                             setShowResetPasswordDialog(true);
                           }}
-                          aria-label={tUsers('resetPassword')}
+                          aria-label={tUsers('resetPasswordTitle')}
                         >
                           <KeyRound className="h-4 w-4" />
                         </Button>
@@ -672,7 +672,7 @@ function AdminUsersPageContent() {
                           setVacationDaysValue(user.vacation_days_per_year ?? 25);
                           setShowVacationDaysDialog(true);
                         }}
-                        aria-label={tUsers('editVacationDays')}
+                        aria-label={tUsers('vacationDaysTitle')}
                       >
                         <Palmtree className="h-4 w-4" />
                       </Button>
@@ -685,7 +685,7 @@ function AdminUsersPageContent() {
                           setSelectedUser(user);
                           setShowAssignmentsSheet(true);
                         }}
-                        aria-label={tUsers('assignProperties')}
+                        aria-label={tUsers('propertiesFor', { name: '' })}
                       >
                         <Building2 className="h-4 w-4" />
                       </Button>
@@ -709,7 +709,7 @@ function AdminUsersPageContent() {
           <DialogHeader>
             <DialogTitle>{tUsers('changeRole')}</DialogTitle>
             <DialogDescription>
-              {tUsers('selectNewRole', { name: `${selectedUser?.first_name} ${selectedUser?.last_name}` })}
+              {tUsers('selectRole', { name: `${selectedUser?.first_name} ${selectedUser?.last_name}` })}
             </DialogDescription>
           </DialogHeader>
 
@@ -828,7 +828,7 @@ function AdminUsersPageContent() {
           <DialogHeader>
             <DialogTitle>{tUsers('createUser')}</DialogTitle>
             <DialogDescription>
-              {tUsers('createUserDescription')}
+              {tUsers('createDesc')}
             </DialogDescription>
           </DialogHeader>
 
@@ -836,7 +836,7 @@ function AdminUsersPageContent() {
             <Input
               label={tUsers('usernameOptional')}
               type="text"
-              placeholder={tUsers('usernameGenerated')}
+              placeholder={tUsers('usernamePlaceholder')}
               value={newUserUsername}
               onChange={(e) => setNewUserUsername(e.target.value.toLowerCase())}
               autoCapitalize="none"
@@ -937,9 +937,9 @@ function AdminUsersPageContent() {
       <Dialog open={showDeactivateDialog} onOpenChange={setShowDeactivateDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{tUsers('deactivateUser')}</DialogTitle>
+            <DialogTitle>{tUsers('deactivateTitle')}</DialogTitle>
             <DialogDescription>
-              {tUsers('confirmDeactivate', { name: `${selectedUser?.first_name} ${selectedUser?.last_name}` })}
+              {tUsers('deactivateMessage', { name: `${selectedUser?.first_name} ${selectedUser?.last_name}` })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -951,7 +951,7 @@ function AdminUsersPageContent() {
               onClick={() => selectedUser && toggleActiveMutation.mutate({ userId: selectedUser.id, isActive: false })}
               disabled={toggleActiveMutation.isPending}
             >
-              {toggleActiveMutation.isPending ? tUsers('deactivating') : tUsers('deactivate')}
+              {toggleActiveMutation.isPending ? `${tUsers('deactivateTitle')}...` : tUsers('deactivateTitle')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -960,14 +960,14 @@ function AdminUsersPageContent() {
       <Dialog open={showVacationDaysDialog} onOpenChange={setShowVacationDaysDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{tUsers('vacationDaysPerYear')}</DialogTitle>
+            <DialogTitle>{tUsers('vacationDaysLabel')}</DialogTitle>
             <DialogDescription>
-              {tUsers('setVacationDays', { name: `${selectedUser?.first_name} ${selectedUser?.last_name}` })}
+              {tUsers('vacationDaysDesc', { name: `${selectedUser?.first_name} ${selectedUser?.last_name}` })}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Input
-              label={tUsers('vacationDaysPerYear')}
+              label={tUsers('vacationDaysLabel')}
               type="number"
               min={0}
               max={60}
@@ -984,7 +984,7 @@ function AdminUsersPageContent() {
               onClick={() => selectedUser && updateVacationDaysMutation.mutate({ userId: selectedUser.id, days: vacationDaysValue })}
               disabled={updateVacationDaysMutation.isPending}
             >
-              {updateVacationDaysMutation.isPending ? tUsers('saving') : t('common.save')}
+              {updateVacationDaysMutation.isPending ? t('common.loading') : t('common.save')}
             </Button>
           </DialogFooter>
         </DialogContent>
