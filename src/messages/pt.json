@@ -1128,6 +1128,7 @@
       "billingModeAdvance": "Antecipado (fatura no início do período)",
       "billingModeArrears": "Vencido (fatura no final do período)",
       "billingModeHint": "Determina se as assinaturas são faturadas no início ou no final do período.",
+      "billingModeAdjusted": "{count} assinatura(s) foram ajustadas automaticamente.",
       "save": "Guardar",
       "saving": "A guardar...",
       "saved": "Definições guardadas",

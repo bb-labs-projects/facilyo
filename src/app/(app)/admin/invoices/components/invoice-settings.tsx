@@ -10,7 +10,8 @@ import { useAuthStore } from '@/stores/auth-store';
 import { getClient } from '@/lib/supabase/client';
 import { formatSwissNumber } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
-import type { OrganizationBillingSettings, ServiceRate } from '@/types/database';
+import { convertNextBillingDate, type BillingMode } from '@/lib/billing-utils';
+import type { OrganizationBillingSettings, ServiceRate, SubscriptionInterval } from '@/types/database';
 
 interface BillingSettingsFormData {
   company_name: string | null;
@@ -139,6 +140,11 @@ export function InvoiceSettings() {
       const supabase = getClient();
       await ensureValidSession();
 
+      // Detect billing mode change
+      const oldMode: BillingMode = settings?.billing_mode || 'advance';
+      const newMode: BillingMode = data.billing_mode;
+      const modeChanged = oldMode !== newMode;
+
       const { error } = await (supabase as any)
         .from('organization_billing_settings')
         .upsert({
@@ -156,13 +162,46 @@ export function InvoiceSettings() {
               ...data,
             }, { onConflict: 'organization_id' });
           if (retryError) throw retryError;
-          return;
+        } else {
+          throw error;
         }
-        throw error;
       }
+
+      // Auto-adjust subscription next_billing_dates when billing mode changes
+      if (modeChanged) {
+        const { data: subs } = await (supabase as any)
+          .from('client_subscriptions')
+          .select('id, next_billing_date, interval')
+          .eq('is_active', true)
+          .not('next_billing_date', 'is', null);
+
+        let adjusted = 0;
+        for (const sub of (subs || [])) {
+          const newDate = convertNextBillingDate(
+            sub.next_billing_date,
+            sub.interval as SubscriptionInterval,
+            oldMode,
+            newMode,
+          );
+          if (newDate !== sub.next_billing_date) {
+            await (supabase as any)
+              .from('client_subscriptions')
+              .update({ next_billing_date: newDate })
+              .eq('id', sub.id);
+            adjusted++;
+          }
+        }
+        return { modeChanged: true, adjusted };
+      }
+
+      return { modeChanged: false, adjusted: 0 };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       toast.success(tInv('settingsMgmt.saved'));
+      if (result?.modeChanged && result.adjusted > 0) {
+        toast.info(tInv('settingsMgmt.billingModeAdjusted', { count: result.adjusted }));
+        queryClient.invalidateQueries({ queryKey: ['all-subscriptions'] });
+      }
       queryClient.invalidateQueries({ queryKey: ['billing-settings', organizationId] });
 
       // Regenerate PDFs for all draft invoices (fire and forget)

@@ -1128,6 +1128,7 @@
       "billingModeAdvance": "Advance (invoice at start of period)",
       "billingModeArrears": "Arrears (invoice at end of period)",
       "billingModeHint": "Determines whether subscriptions are invoiced at the start or end of the period.",
+      "billingModeAdjusted": "{count} subscription(s) were automatically adjusted.",
       "save": "Save",
       "saving": "Saving...",
       "saved": "Settings saved",

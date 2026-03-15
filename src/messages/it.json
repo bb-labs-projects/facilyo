@@ -1128,6 +1128,7 @@
       "billingModeAdvance": "Anticipato (fattura a inizio periodo)",
       "billingModeArrears": "Posticipato (fattura a fine periodo)",
       "billingModeHint": "Determina se gli abbonamenti vengono fatturati all'inizio o alla fine del periodo.",
+      "billingModeAdjusted": "{count} abbonamento/i sono stati adeguati automaticamente.",
       "save": "Salva",
       "saving": "Salvataggio...",
       "saved": "Impostazioni salvate",

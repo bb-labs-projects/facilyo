@@ -1128,6 +1128,7 @@
       "billingModeAdvance": "Avance (facture en début de période)",
       "billingModeArrears": "Arriéré (facture en fin de période)",
       "billingModeHint": "Détermine si les abonnements sont facturés au début ou à la fin de la période.",
+      "billingModeAdjusted": "{count} abonnement(s) ont été ajustés automatiquement.",
       "save": "Enregistrer",
       "saving": "Enregistrement...",
       "saved": "Paramètres enregistrés",

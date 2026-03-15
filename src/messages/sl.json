@@ -1128,6 +1128,7 @@
       "billingModeAdvance": "Vnaprej (račun na začetku obdobja)",
       "billingModeArrears": "Naknadno (račun na koncu obdobja)",
       "billingModeHint": "Določa, ali se naročnine zaračunajo na začetku ali na koncu obdobja.",
+      "billingModeAdjusted": "{count} naročnin(a) je bilo samodejno prilagojenih.",
       "save": "Shrani",
       "saving": "Shranjevanje...",
       "saved": "Nastavitve shranjene",

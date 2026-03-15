@@ -1128,6 +1128,7 @@
       "billingModeAdvance": "Унапред (фактура на почетку периода)",
       "billingModeArrears": "Накнадно (фактура на крају периода)",
       "billingModeHint": "Одређује да ли се претплате фактуришу на почетку или на крају периода.",
+      "billingModeAdjusted": "{count} претплата је аутоматски прилагођено.",
       "save": "Sačuvaj",
       "saving": "Čuvanje...",
       "saved": "Podešavanja sačuvana",

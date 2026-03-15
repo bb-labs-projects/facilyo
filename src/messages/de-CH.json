@@ -1128,6 +1128,7 @@
       "billingModeAdvance": "Vorschüssig (Rechnung zu Beginn der Periode)",
       "billingModeArrears": "Nachschüssig (Rechnung am Ende der Periode)",
       "billingModeHint": "Bestimmt ob Abonnements zu Beginn oder am Ende der Periode abgerechnet werden.",
+      "billingModeAdjusted": "{count} Abonnement(e) wurden automatisch angepasst.",
       "save": "Speichern",
       "saving": "Wird gespeichert...",
       "saved": "Einstellungen wurden gespeichert",

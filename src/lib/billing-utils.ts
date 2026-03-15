@@ -111,6 +111,35 @@ export function getPeriodAmount(
 }
 
 /**
+ * Convert a subscription's next_billing_date when switching billing mode.
+ * Ensures the same billing period is referenced regardless of mode.
+ *
+ * Advance→Arrears: next_billing_date moves to the period_end (end of the period it references)
+ * Arrears→Advance: next_billing_date moves to the last day of the month before period_start
+ */
+export function convertNextBillingDate(
+  nextBillingDate: string,
+  interval: SubscriptionInterval,
+  fromMode: BillingMode,
+  toMode: BillingMode,
+): string {
+  if (fromMode === toMode) return nextBillingDate;
+
+  // Calculate the period under the old mode (skip proration — we just need the full period boundaries)
+  const period = calculatePeriodDates(nextBillingDate, interval, fromMode);
+
+  if (toMode === 'arrears') {
+    // Advance→Arrears: the arrears trigger should be at period_end
+    return period.period_end;
+  } else {
+    // Arrears→Advance: the advance trigger should be the last day of the month before period_start
+    const [y, m] = parseDateParts(period.period_start);
+    const lastDayBefore = new Date(y, m - 1, 0); // day 0 of period_start's month = last day of previous month
+    return formatDateLocal(lastDayBefore);
+  }
+}
+
+/**
  * Advance next_billing_date after a successful billing run.
  * If the period was prorated, align to the next full cycle boundary.
  */

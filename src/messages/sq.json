@@ -1128,6 +1128,7 @@
       "billingModeAdvance": "Paraprakisht (faturë në fillim të periudhës)",
       "billingModeArrears": "Prapa (faturë në fund të periudhës)",
       "billingModeHint": "Përcakton nëse abonimet faturohen në fillim ose në fund të periudhës.",
+      "billingModeAdjusted": "{count} abonim(e) u përshtatën automatikisht.",
       "save": "Ruaj",
       "saving": "Duke ruajtur...",
       "saved": "Cilësimet u ruajtën",
