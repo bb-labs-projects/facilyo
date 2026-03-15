@@ -172,7 +172,7 @@ function AdminUsersPageContent() {
       if (assign) {
         const { error } = await (supabase as any)
           .from('property_assignments')
-          .upsert({ user_id: userId, property_id: propertyId, organization_id: organizationId }, { onConflict: 'user_id,property_id', ignoreDuplicates: true });
+          .upsert({ user_id: userId, property_id: propertyId, organization_id: selectedUser!.organization_id }, { onConflict: 'user_id,property_id', ignoreDuplicates: true });
         if (error) throw error;
       } else {
         const { error } = await (supabase as any)
@@ -231,7 +231,7 @@ function AdminUsersPageContent() {
           const { error } = await (supabase as any)
             .from('property_assignments')
             .upsert(
-              unassignedProperties.map(p => ({ user_id: userId, property_id: p.id, organization_id: organizationId })),
+              unassignedProperties.map(p => ({ user_id: userId, property_id: p.id, organization_id: selectedUser!.organization_id })),
               { onConflict: 'user_id,property_id', ignoreDuplicates: true }
             );
           if (error) throw error;
